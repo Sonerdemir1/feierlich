@@ -47,6 +47,7 @@ export default async function Home() {
     Botanisch: "Zarte Linien, natürliche Formen",
     Romantisch: "Weich, fließend, persönlich",
     Statement: "Dunkel, klar, selbstbewusst",
+    "Türkische Feste & Bräuche": "Kına, Nişan, Sünnet und mehr – mit eigener Handschrift",
   };
 
   return (

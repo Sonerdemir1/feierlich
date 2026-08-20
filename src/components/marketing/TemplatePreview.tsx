@@ -218,6 +218,83 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           </div>
         </div>
       );
+    case "kina-kirmizi":
+      return (
+        <div className="tpl-prev" style={{ background: "#7A1428" }}>
+          {[
+            [14, 16, 3.2, 0.55],
+            [34, 12, 2.4, 0.4],
+            [120, 20, 2.8, 0.5],
+            [140, 18, 2, 0.35],
+            [20, 132, 2.6, 0.45],
+            [128, 130, 3, 0.5],
+          ].map(([cx, cy, r, o], i) => (
+            <svg
+              key={i}
+              width="160"
+              height="160"
+              viewBox="0 0 160 160"
+              style={{ position: "absolute", inset: 0 }}
+              fill="#D4AF37"
+            >
+              <circle cx={cx} cy={cy} r={r} opacity={o} />
+            </svg>
+          ))}
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#F4D77A" }}>
+            Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 10 }}>KINA GECESİ</div>
+        </div>
+      );
+    case "oya-lace":
+      return (
+        <div className="tpl-prev" style={{ background: "#FAF6EF" }}>
+          <svg width="140" height="14" viewBox="0 0 140 14" style={{ position: "absolute", top: 10 }} fill="none" stroke="#C98E88" strokeWidth="1">
+            {[8, 24, 40, 56, 72, 88, 104, 120, 136].map((x) => (
+              <circle key={x} cx={x} cy={7} r={5} />
+            ))}
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 20, color: "#7A2E3A" }}>
+            Ayşe &amp; Emre
+          </div>
+          <svg width="140" height="14" viewBox="0 0 140 14" style={{ position: "absolute", bottom: 10 }} fill="none" stroke="#C98E88" strokeWidth="1">
+            {[8, 24, 40, 56, 72, 88, 104, 120, 136].map((x) => (
+              <circle key={x} cx={x} cy={7} r={5} />
+            ))}
+          </svg>
+        </div>
+      );
+    case "ottoman-line":
+      return (
+        <div className="tpl-prev" style={{ background: "#1B3A3E" }}>
+          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+            <rect x="4" y="4" width="30" height="30" transform="rotate(15 19 19)" />
+            <rect x="4" y="4" width="30" height="30" transform="rotate(-15 19 19)" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", bottom: 14, right: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+            <rect x="4" y="4" width="30" height="30" transform="rotate(15 19 19)" />
+            <rect x="4" y="4" width="30" height="30" transform="rotate(-15 19 19)" />
+          </svg>
+        </div>
+      );
+    case "nar-cicegi":
+      return (
+        <div className="tpl-prev" style={{ background: "#F7E3D9" }}>
+          <svg width="30" height="34" viewBox="0 0 30 34" style={{ marginBottom: 10 }} fill="none" stroke="#C9605C" strokeWidth="1.3">
+            <path d="M15 6C9 6 5 11 5 18c0 7 4.5 11 10 11s10-4 10-11c0-7-4-12-10-12z" />
+            <path d="M11 4l2 3M15 3v4M19 4l-2 3" />
+            <circle cx="11" cy="17" r="1.1" fill="#C9605C" stroke="none" />
+            <circle cx="15" cy="21" r="1.1" fill="#C9605C" stroke="none" />
+            <circle cx="18" cy="16" r="1.1" fill="#C9605C" stroke="none" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#7A2E3A" }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
     default:
       return (
         <div className="tpl-prev" style={{ background: "#F3ECDF" }}>

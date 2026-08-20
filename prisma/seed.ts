@@ -6,8 +6,13 @@ const eventTypes = [
   // Hochzeit & Liebe
   { key: 'hochzeit', name: 'Hochzeit', category: 'Hochzeit & Liebe' },
   { key: 'verlobung', name: 'Verlobung', category: 'Hochzeit & Liebe' },
-  { key: 'hennaabend', name: 'Hennaabend', category: 'Hochzeit & Liebe' },
   { key: 'jubilaeum', name: 'Jubiläum', category: 'Hochzeit & Liebe' },
+  // Türkische Feste & Bräuche
+  { key: 'kiz-isteme', name: 'Kız İsteme', category: 'Türkische Feste & Bräuche' },
+  { key: 'nisan-turkisch', name: 'Nişan', category: 'Türkische Feste & Bräuche' },
+  { key: 'hennaabend', name: 'Kına Gecesi', category: 'Türkische Feste & Bräuche' },
+  { key: 'gelin-alma', name: 'Gelin Alma', category: 'Türkische Feste & Bräuche' },
+  { key: 'suennet', name: 'Sünnet', category: 'Türkische Feste & Bräuche' },
   // Geburtstag
   { key: 'geburtstag', name: 'Geburtstag', category: 'Geburtstag' },
   { key: 'geburtstag-18', name: '18. Geburtstag', category: 'Geburtstag' },
@@ -139,6 +144,21 @@ const templates = [
     fonts: { display: 'Work Sans', body: 'Work Sans' } },
   { slug: 'kupferglanz', name: 'Kupferglanz', category: 'Statement', layoutKey: 'kupferglanz',
     colors: { primary: '#FAF6EF', accent: '#F0D9CC', background: '#A6512E' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  // Türkische Feste & Bräuche — eigene Rubrik, eigenständiges Design
+  // (keine religiösen Symbole; Muenzen/Granatapfel/Ornamentik als
+  // saekulare, dekorative Motive).
+  { slug: 'kina-kirmizi', name: 'Kına Kırmızı', category: 'Türkische Feste & Bräuche', layoutKey: 'kina-kirmizi',
+    colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#7A1428' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  { slug: 'oya-lace', name: 'Oya Lace', category: 'Türkische Feste & Bräuche', layoutKey: 'oya-lace',
+    colors: { primary: '#7A2E3A', accent: '#B2543A', background: '#FAF6EF' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  { slug: 'ottoman-line', name: 'Ottoman Line', category: 'Türkische Feste & Bräuche', layoutKey: 'ottoman-line',
+    colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#1B3A3E' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  { slug: 'nar-cicegi', name: 'Nar Çiçeği', category: 'Türkische Feste & Bräuche', layoutKey: 'nar-cicegi',
+    colors: { primary: '#7A2E3A', accent: '#C9605C', background: '#F7E3D9' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
 ];
 
