@@ -163,6 +163,15 @@ const templates = [
 ];
 
 async function main() {
+  // Admin-Zugang: diese E-Mail bekommt beim ersten Login automatisch die
+  // Admin-Rolle statt der normalen Kunden-Rolle.
+  await prisma.user.upsert({
+    where: { email: 'info@sonerdemir.de' },
+    update: { role: 'ADMIN' },
+    create: { email: 'info@sonerdemir.de', role: 'ADMIN' },
+  });
+  console.log('Admin-Nutzer: info@sonerdemir.de');
+
   for (const [i, et] of eventTypes.entries()) {
     await prisma.eventType.upsert({
       where: { key: et.key },

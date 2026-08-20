@@ -31,6 +31,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <span>feierlich</span>
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          {session.user.role === "ADMIN" && (
+            <a href="/admin" style={{ fontSize: 13, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+              Admin-Bereich
+            </a>
+          )}
           <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{session.user.email}</span>
           <form action={logout}>
             <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
