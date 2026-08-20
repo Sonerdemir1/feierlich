@@ -1,0 +1,536 @@
+// Digital Event Studio — Datenmodell
+// Prisma schema. SQLite lokal in der Entwicklung, Wechsel auf Postgres
+// spaeter nur ueber die DATABASE_URL/provider, ohne Code-Aenderung an
+// den Models.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------
+// Nutzer & Zugriff
+// ---------------------------------------------------------------------
+
+enum UserRole {
+  CUSTOMER
+  PARTNER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          UserRole  @default(CUSTOMER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  events        Event[]
+  orders        Order[]
+  subscriptions Subscription[]
+  notifications Notification[]
+  partner       Partner?  @relation(fields: [partnerId], references: [id])
+  partnerId     String?
+}
+
+// ---------------------------------------------------------------------
+// Eventtypen — datengetrieben, damit neue Typen ohne Code-Aenderung
+// hinzugefuegt werden koennen (Admin-Dashboard, spaeter).
+// ---------------------------------------------------------------------
+
+model EventType {
+  id        String   @id @default(cuid())
+  key       String   @unique // z.B. "hochzeit", "geburtstag-30"
+  name      String
+  category  String   // z.B. "Hochzeit & Liebe", "Geburtstag", "Business"
+  icon      String?
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+
+  events         Event[]
+  templateLinks  TemplateEventType[]
+}
+
+// ---------------------------------------------------------------------
+// Templates — Design-Vorlagen. Farben/Fonts/Layout als Metadaten in der
+// DB; die eigentliche visuelle Komponente lebt im Code (layoutKey
+// referenziert die React-Komponente). Auswahl, Preis, Kategorie und
+// Eventtyp-Zuordnung sind vollstaendig datengetrieben.
+// ---------------------------------------------------------------------
+
+enum TemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Template {
+  id          String         @id @default(cuid())
+  slug        String         @unique
+  name        String
+  category    String         // z.B. "Zeitlos", "Botanisch", "Business"
+  description String?
+  previewUrl  String?
+  colors      String         // JSON-String: {"primary":"#...", "accent":"#..."}
+  fonts       String         // JSON-String: {"display":"...", "body":"..."}
+  layoutKey   String         // referenziert die React-Template-Komponente
+  priceCents  Int            @default(0)
+  status      TemplateStatus @default(DRAFT)
+  sortOrder   Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  events        Event[]
+  eventTypeLinks TemplateEventType[]
+  moduleDefaults TemplateModule[]
+}
+
+// leere Zuordnung = Template fuer alle Eventtypen verfuegbar
+model TemplateEventType {
+  templateId  String
+  eventTypeId String
+
+  template  Template  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, eventTypeId])
+}
+
+// ---------------------------------------------------------------------
+// Modul-Katalog — jedes Feature (Countdown, RSVP, Sitzplan, ...) ist ein
+// Katalogeintrag. Neue Module-TYPEN brauchen weiterhin Code (die
+// eigentliche UI), aber welche Module ein Template standardmaessig
+// anbietet und welche pro Event an/aus sind, ist vollstaendig
+// datengetrieben (siehe EventModule).
+// ---------------------------------------------------------------------
+
+model Module {
+  id          String   @id @default(cuid())
+  key         String   @unique // z.B. "countdown", "rsvp", "seating"
+  name        String
+  description String?
+  category    String   // z.B. "Basis", "Gaeste", "Premium"
+  isPremium   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  templateDefaults TemplateModule[]
+  eventModules     EventModule[]
+}
+
+model TemplateModule {
+  templateId String
+  moduleId   String
+  enabledByDefault Boolean @default(true)
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  module   Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, moduleId])
+}
+
+// ---------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  slug        String      @unique // .../e/<slug>
+  title       String      // z.B. "Anna & Lukas"
+  subtitle    String?
+  description String?
+  eventDate   DateTime
+  eventTime   String?
+  locationName String?
+  locationAddress String?
+  locationLat  Float?
+  locationLng  Float?
+  coverImageId String?
+  status      EventStatus @default(DRAFT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  owner       User      @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  eventType   EventType @relation(fields: [eventTypeId], references: [id])
+  eventTypeId String
+  template    Template  @relation(fields: [templateId], references: [id])
+  templateId  String
+  coverImage  Media?    @relation("EventCoverImage", fields: [coverImageId], references: [id])
+  order       Order?
+
+  modules         EventModule[]
+  guests          Guest[]
+  tables          Table[]
+  guestbookEntries GuestbookEntry[]
+  galleryItems    GalleryItem[]
+  menuItems       MenuItem[]
+  wishlistItems   WishlistItem[]
+  musicRequests   MusicRequest[]
+  qrCodes         QRCode[]
+  checkIns        CheckIn[]
+  media           Media[]         @relation("EventMedia")
+}
+
+// pro Event an/aus geschaltete Module inkl. optionaler Konfiguration
+model EventModule {
+  id        String   @id @default(cuid())
+  eventId   String
+  moduleId  String
+  enabled   Boolean  @default(true)
+  config    String?  // JSON-String fuer modul-spezifische Einstellungen
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  module Module @relation(fields: [moduleId], references: [id])
+
+  @@unique([eventId, moduleId])
+}
+
+// ---------------------------------------------------------------------
+// Gaeste, RSVP, Sitzplan
+// ---------------------------------------------------------------------
+
+enum RsvpStatus {
+  PENDING
+  YES
+  NO
+}
+
+model Guest {
+  id            String   @id @default(cuid())
+  eventId       String
+  firstName     String
+  lastName      String?
+  email         String?
+  phone         String?
+  groupLabel    String?  // z.B. Haushalt/Familie fuer gruppierte Einladungen
+  invitedCount  Int      @default(1)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rsvp   RSVP?
+  seat   Seat?
+  checkIn CheckIn?
+}
+
+model RSVP {
+  id                String     @id @default(cuid())
+  guestId           String     @unique
+  status            RsvpStatus @default(PENDING)
+  attendingCount    Int?
+  childrenCount     Int?
+  menuChoice        String?
+  specialRequests   String?
+  message           String?
+  respondedAt       DateTime?
+
+  guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+}
+
+model Table {
+  id        String  @id @default(cuid())
+  eventId   String
+  name      String  // z.B. "Tisch 1"
+  capacity  Int     @default(8)
+  posX      Float?
+  posY      Float?
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  seats Seat[]
+}
+
+model Seat {
+  id         String  @id @default(cuid())
+  tableId    String
+  guestId    String? @unique
+  seatNumber Int
+
+  table Table  @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  guest Guest? @relation(fields: [guestId], references: [id])
+
+  @@unique([tableId, seatNumber])
+}
+
+// ---------------------------------------------------------------------
+// Gaestebuch, Galerie, Medien (Foto/Video/Audio)
+// ---------------------------------------------------------------------
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  HIDDEN
+  DELETED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+}
+
+// zentrale Ablage fuer alle hochgeladenen Dateien (Datenschutz/Groesse/
+// Status an einer Stelle steuerbar statt verstreut).
+model Media {
+  id          String            @id @default(cuid())
+  eventId     String?
+  type        MediaType
+  url         String
+  thumbnailUrl String?
+  mimeType    String
+  sizeBytes   Int
+  uploaderName String?
+  status      ModerationStatus  @default(PENDING)
+  createdAt   DateTime          @default(now())
+
+  event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
+  eventCoverFor    Event[]          @relation("EventCoverImage")
+  guestbookEntries GuestbookEntry[]
+  galleryItem      GalleryItem?
+}
+
+model GuestbookEntry {
+  id         String           @id @default(cuid())
+  eventId    String
+  authorName String
+  message    String?
+  mediaId    String?
+  status     ModerationStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  media Media? @relation(fields: [mediaId], references: [id])
+}
+
+model GalleryItem {
+  id        String           @id @default(cuid())
+  eventId   String
+  mediaId   String           @unique
+  status    ModerationStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------
+// Menue, Wunschliste, Musikwuensche
+// ---------------------------------------------------------------------
+
+enum MenuCourse {
+  STARTER
+  MAIN
+  DESSERT
+  DRINK
+}
+
+model MenuItem {
+  id          String     @id @default(cuid())
+  eventId     String
+  course      MenuCourse
+  name        String
+  description String?
+  sortOrder   Int        @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum WishlistType {
+  GIFT
+  CASH
+  HONEYMOON
+  EXTERNAL
+}
+
+model WishlistItem {
+  id          String       @id @default(cuid())
+  eventId     String
+  type        WishlistType
+  title       String
+  description String?
+  url         String?
+  sortOrder   Int          @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model MusicRequest {
+  id        String   @id @default(cuid())
+  eventId   String
+  guestName String
+  song      String
+  artist    String
+  message   String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------
+// QR-Codes, Check-in
+// ---------------------------------------------------------------------
+
+enum QRCodeType {
+  EVENT_PAGE
+  RSVP
+  SEATING
+  MENU
+  GUESTBOOK
+  MUSIC_REQUEST
+  GALLERY_UPLOAD
+  CHECK_IN
+}
+
+model QRCode {
+  id        String     @id @default(cuid())
+  eventId   String
+  type      QRCodeType
+  targetUrl String
+  createdAt DateTime   @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model CheckIn {
+  id           String   @id @default(cuid())
+  eventId      String
+  guestId      String   @unique
+  checkedInAt  DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------
+// Partner / White Label
+// ---------------------------------------------------------------------
+
+enum PartnerType {
+  LOCATION
+  DJ
+  PHOTOGRAPHER
+  VIDEOGRAPHER
+  PLANNER
+  CATERER
+  AGENCY
+}
+
+model Partner {
+  id             String      @id @default(cuid())
+  slug           String      @unique // .../partner/<slug>
+  name           String
+  type           PartnerType
+  contactEmail   String?
+  brandColor     String?
+  brandLogoUrl   String?
+  commissionRate Float?      // z.B. 0.1 = 10%
+  createdAt      DateTime    @default(now())
+
+  users  User[]
+  orders Order[]
+}
+
+// ---------------------------------------------------------------------
+// Pakete, Bestellungen, Zahlungen
+// ---------------------------------------------------------------------
+
+enum BillingType {
+  ONE_TIME
+  SUBSCRIPTION
+}
+
+model Package {
+  id          String      @id @default(cuid())
+  key         String      @unique // BASIC | PREMIUM | PREMIUM_PLUS | VIP | BUSINESS
+  name        String
+  description String?
+  priceCents  Int
+  billingType BillingType @default(ONE_TIME)
+  features    String      // JSON-String: Liste freigeschalteter Module/Limits
+  active      Boolean     @default(true)
+  sortOrder   Int         @default(0)
+
+  orders        Order[]
+  subscriptions Subscription[]
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id                    String      @id @default(cuid())
+  userId                String
+  packageId             String
+  partnerId             String?
+  eventId               String?     @unique
+  amountCents           Int
+  currency              String      @default("EUR")
+  status                OrderStatus @default(PENDING)
+  stripePaymentIntentId String?
+  discountCode          String?
+  createdAt             DateTime    @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  package Package  @relation(fields: [packageId], references: [id])
+  partner Partner? @relation(fields: [partnerId], references: [id])
+  event   Event?   @relation(fields: [eventId], references: [id])
+  payments Payment[]
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  packageId            String
+  status               String   @default("ACTIVE") // ACTIVE | CANCELLED | EXPIRED
+  startedAt            DateTime @default(now())
+  endsAt               DateTime?
+  stripeSubscriptionId String?
+
+  user    User    @relation(fields: [userId], references: [id])
+  package Package @relation(fields: [packageId], references: [id])
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  orderId         String
+  amountCents     Int
+  currency        String    @default("EUR")
+  status          String    // PENDING | SUCCEEDED | FAILED | REFUNDED
+  stripePaymentId String?
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------
+// Benachrichtigungen
+// ---------------------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
