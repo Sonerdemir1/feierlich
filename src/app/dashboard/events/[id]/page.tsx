@@ -48,11 +48,14 @@ export default async function EventDetailPage({
   const yesCount = event.guests.filter((g) => g.rsvp?.status === "YES").length;
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
 
-  const [allModules, eventModules] = await Promise.all([
+  const [allModules, eventModules, pendingGallery, pendingGuestbook] = await Promise.all([
     prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.eventModule.findMany({ where: { eventId: id } }),
+    prisma.galleryItem.count({ where: { eventId: id, status: "PENDING" } }),
+    prisma.guestbookEntry.count({ where: { eventId: id, status: "PENDING" } }),
   ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
+  const pendingMemories = pendingGallery + pendingGuestbook;
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
 
@@ -243,23 +246,28 @@ export default async function EventDetailPage({
           <span>Sitzplan</span>
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
-        {[["Gästebuch & Galerie", "Phase 10"]].map(([label, phase]) => (
-          <div
-            key={label}
-            style={{
-              border: "1px dashed var(--line)",
-              padding: "16px 18px",
-              fontSize: 13,
-              color: "var(--ink-faint)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span>{label}</span>
-            <span style={{ fontSize: 11 }}>{phase}</span>
-          </div>
-        ))}
+        <Link
+          href={`/dashboard/events/${event.id}/memories`}
+          style={{
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            padding: "16px 18px",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>
+            Gästebuch &amp; Galerie
+            {pendingMemories > 0 && (
+              <span style={{ marginLeft: 8, fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>{pendingMemories} neu</span>
+            )}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+        </Link>
       </div>
     </div>
   );

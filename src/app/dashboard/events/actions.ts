@@ -1,12 +1,10 @@
 "use server";
 
-import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { validateImageFile, saveEventImage } from "@/lib/uploads";
 
 function slugify(title: string): string {
   const base = title
@@ -64,35 +62,20 @@ export async function createEvent(formData: FormData) {
   redirect(`/dashboard/events/${event.id}`);
 }
 
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-
 export async function uploadCoverImage(eventId: string, formData: FormData) {
   await requireOwnedEvent(eventId);
 
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect(`/dashboard/events/${eventId}?error=no-file`);
-  }
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    redirect(`/dashboard/events/${eventId}?error=bad-type`);
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    redirect(`/dashboard/events/${eventId}?error=too-large`);
-  }
+  const error = validateImageFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const ext = path.extname(file.name) || "";
-  const filename = `${randomUUID()}${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "events", eventId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), bytes);
-  const url = `/uploads/events/${eventId}/${filename}`;
+  const { url, mimeType, sizeBytes } = await saveEventImage(eventId, file as File);
 
   // Eigene Uploads des Gastgebers sind sofort freigegeben; Gaeste-Uploads
-  // (Phase 12) starten dagegen mit status: PENDING zur Moderation.
+  // starten dagegen mit status: PENDING zur Moderation (siehe Gaestebuch/
+  // Galerie-Actions).
   const media = await prisma.media.create({
-    data: { eventId, type: "IMAGE", url, mimeType: file.type, sizeBytes: file.size, status: "APPROVED" },
+    data: { eventId, type: "IMAGE", url, mimeType, sizeBytes, status: "APPROVED" },
   });
   await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
 

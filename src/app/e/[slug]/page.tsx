@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
-import { submitRsvp, findSeat } from "./actions";
+import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -56,6 +56,26 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
   const rsvpStatus = typeof sp.rsvp === "string" ? sp.rsvp : undefined;
   const seatResult = typeof sp.seat === "string" ? sp.seat : undefined;
+  const galleryStatus = typeof sp.gallery === "string" ? sp.gallery : undefined;
+  const galleryError = typeof sp.galleryError === "string" ? sp.galleryError : undefined;
+  const guestbookStatus = typeof sp.guestbook === "string" ? sp.guestbook : undefined;
+  const guestbookError = typeof sp.guestbookError === "string" ? sp.guestbookError : undefined;
+
+  const [galleryItems, guestbookEntries] = await Promise.all([
+    isModuleOn("gallery")
+      ? prisma.galleryItem.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 24 })
+      : Promise.resolve([]),
+    isModuleOn("guestbook")
+      ? prisma.guestbookEntry.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 30 })
+      : Promise.resolve([]),
+  ]);
+
+  const uploadErrorLabel: Record<string, string> = {
+    "no-file": "Bitte eine Datei auswählen.",
+    "bad-type": "Nur JPG, PNG, WEBP oder GIF sind erlaubt.",
+    "too-large": "Datei ist größer als 8 MB.",
+    "no-name": "Bitte gib deinen Namen an.",
+  };
 
   return (
     <main style={{ background: colors.background, minHeight: "100vh", color: colors.primary, fontFamily: "var(--font-body)" }}>
@@ -188,6 +208,93 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               <p style={{ fontSize: 14, marginTop: 18, fontWeight: 600 }}>
                 {seatResult === "notfound" ? "Kein Sitzplatz gefunden." : `Euer Tisch: ${decodeURIComponent(seatResult)}`}
               </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("gallery") && (
+        <section id="galerie" style={{ maxWidth: 640, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
+            Teilt eure schönsten Momente
+          </div>
+
+          {galleryItems.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6, marginBottom: 24 }}>
+              {galleryItems.map((item) => (
+                // eslint-disable-next-line @next/next/no-img-element -- guest uploads, unknown dimensions
+                <img key={item.id} src={item.media.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+              ))}
+            </div>
+          )}
+
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px", textAlign: "center" }}>
+            {galleryStatus === "success" ? (
+              <p style={{ fontSize: 13.5 }}>Danke! Euer Foto wird nach kurzer Prüfung sichtbar.</p>
+            ) : (
+              <form action={uploadGalleryPhoto.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {galleryError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[galleryError]}</p>}
+                <input
+                  type="text"
+                  name="uploaderName"
+                  placeholder="Euer Name (optional)"
+                  style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
+                />
+                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required style={{ fontSize: 13 }} />
+                <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  Foto hochladen
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("guestbook") && (
+        <section id="gaestebuch" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
+            Eure Nachrichten
+          </div>
+
+          {guestbookEntries.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+              {guestbookEntries.map((entry) => (
+                <div key={entry.id} style={{ border: `1px solid ${colors.accent}33`, padding: "14px 16px" }}>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
+                  {entry.message && <div style={{ fontSize: 13, marginTop: 4, opacity: 0.85 }}>{entry.message}</div>}
+                  {entry.media && (
+                    // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
+                    <img src={entry.media.url} alt="" style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px" }}>
+            {guestbookStatus === "success" ? (
+              <p style={{ fontSize: 13.5, textAlign: "center" }}>Danke für eure Nachricht!</p>
+            ) : (
+              <form action={submitGuestbookEntry.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {guestbookError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[guestbookError]}</p>}
+                <input
+                  type="text"
+                  name="authorName"
+                  placeholder="Euer Name"
+                  required
+                  style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
+                />
+                <textarea
+                  name="message"
+                  placeholder="Eure Nachricht"
+                  rows={3}
+                  style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
+                />
+                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ fontSize: 12.5 }} />
+                <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  Nachricht senden
+                </button>
+              </form>
             )}
           </div>
         </section>
