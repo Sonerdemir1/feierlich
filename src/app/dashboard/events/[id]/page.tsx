@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -174,8 +175,24 @@ export default async function EventDetailPage({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        <Link
+          href={`/dashboard/events/${event.id}/guests`}
+          style={{
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            padding: "16px 18px",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Gästeliste</span>
+          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+        </Link>
         {[
-          ["Gästeliste", "Phase 7"],
           ["Sitzplan", "Phase 9"],
           ["Gästebuch & Galerie", "Phase 10"],
         ].map(([label, phase]) => (
