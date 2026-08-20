@@ -59,8 +59,9 @@ export default async function Home() {
           <a href="#vorlagen">Vorlagen</a>
           <a href="#editor">Editor</a>
           <a href="#preise">Preise</a>
+          <a href="/dashboard">Anmelden</a>
         </div>
-        <a href="#vorlagen" className="btn btn-primary">
+        <a href="/dashboard" className="btn btn-primary">
           Event gestalten
         </a>
       </nav>
