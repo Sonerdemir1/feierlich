@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
-import { submitRsvp } from "./actions";
+import { submitRsvp, findSeat } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -55,6 +55,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const headingFont = templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)";
 
   const rsvpStatus = typeof sp.rsvp === "string" ? sp.rsvp : undefined;
+  const seatResult = typeof sp.seat === "string" ? sp.seat : undefined;
 
   return (
     <main style={{ background: colors.background, minHeight: "100vh", color: colors.primary, fontFamily: "var(--font-body)" }}>
@@ -161,6 +162,32 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   Zusage senden
                 </button>
               </form>
+            )}
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("seating") && (
+        <section id="sitzplatz" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
+            <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8 }}>Finde deinen Sitzplatz</div>
+            <p style={{ fontSize: 12.5, opacity: 0.75, marginBottom: 18 }}>Gib deinen Namen ein.</p>
+            <form action={findSeat.bind(null, event.id, event.slug)} style={{ display: "flex", gap: 8 }}>
+              <input
+                type="text"
+                name="seatName"
+                placeholder="Euer Name"
+                required
+                style={{ flex: 1, padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
+              />
+              <button type="submit" style={{ padding: "0 18px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Suchen
+              </button>
+            </form>
+            {seatResult && (
+              <p style={{ fontSize: 14, marginTop: 18, fontWeight: 600 }}>
+                {seatResult === "notfound" ? "Kein Sitzplatz gefunden." : `Euer Tisch: ${decodeURIComponent(seatResult)}`}
+              </p>
             )}
           </div>
         </section>

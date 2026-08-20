@@ -226,10 +226,24 @@ export default async function EventDetailPage({
           <span>Gästeliste</span>
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
-        {[
-          ["Sitzplan", "Phase 9"],
-          ["Gästebuch & Galerie", "Phase 10"],
-        ].map(([label, phase]) => (
+        <Link
+          href={`/dashboard/events/${event.id}/seating`}
+          style={{
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            padding: "16px 18px",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Sitzplan</span>
+          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+        </Link>
+        {[["Gästebuch & Galerie", "Phase 10"]].map(([label, phase]) => (
           <div
             key={label}
             style={{

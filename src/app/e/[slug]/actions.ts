@@ -29,3 +29,16 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
   revalidatePath(`/e/${slug}`);
   redirect(`/e/${slug}?rsvp=success`);
 }
+
+export async function findSeat(eventId: string, slug: string, formData: FormData) {
+  const name = String(formData.get("seatName") ?? "").trim();
+  if (!name) redirect(`/e/${slug}#sitzplatz`);
+
+  const guest = await prisma.guest.findFirst({
+    where: { eventId, firstName: { contains: name } },
+    include: { seat: { include: { table: true } } },
+  });
+
+  const result = guest?.seat ? encodeURIComponent(guest.seat.table.name) : "notfound";
+  redirect(`/e/${slug}?seat=${result}#sitzplatz`);
+}
