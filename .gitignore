@@ -45,3 +45,7 @@ next-env.d.ts
 # local sqlite database (regenerated via prisma migrate + seed)
 *.db
 *.db-journal
+
+# user uploads (local filesystem storage — dev only, see actions.ts)
+/public/uploads/*
+!/public/uploads/.gitkeep

@@ -198,6 +198,7 @@ model Event {
   locationLat  Float?
   locationLng  Float?
   coverImageId String?
+  colorOverride String?   // JSON-String, ueberschreibt Template.colors wenn gesetzt
   status      EventStatus @default(DRAFT)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
