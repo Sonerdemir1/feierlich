@@ -37,12 +37,15 @@ export default async function EventDetailPage({
 
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { eventType: true, template: true, guests: true, coverImage: true },
+    include: { eventType: true, template: true, guests: { include: { rsvp: true } }, coverImage: true },
   });
 
   if (!event || event.ownerId !== session!.user.id) {
     notFound();
   }
+
+  const yesCount = event.guests.filter((g) => g.rsvp?.status === "YES").length;
+  const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
 
   const [allModules, eventModules] = await Promise.all([
     prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -73,17 +76,24 @@ export default async function EventDetailPage({
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 36 }}>
         <Tile label="Gäste" value={String(event.guests.length)} />
-        <Tile label="Zusagen" value="—" note="Phase 7" />
-        <Tile label="Aufrufe" value="—" note="Phase 6" />
+        <Tile label="Zusagen" value={String(yesCount)} note={noCount > 0 ? `${noCount} Absagen` : undefined} />
+        <Tile label="Aufrufe" value={String(event.viewCount)} />
         <Tile label="QR-Codes" value="—" note="Phase 8" />
       </div>
 
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Öffentliche Event-Seite</div>
-        <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>digitaleventstudio.de/e/{event.slug}</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
-          Die öffentliche Seite selbst kommt in Phase 6 (Event-Webseite).
+      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Öffentliche Event-Seite</div>
+          <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>feierlich.de/e/{event.slug}</div>
+          {event.status !== "PUBLISHED" && (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
+              Nur du kannst sie schon jetzt als Vorschau sehen.
+            </div>
+          )}
         </div>
+        <a href={`/e/${event.slug}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+          {event.status === "PUBLISHED" ? "Seite ansehen" : "Vorschau ansehen"}
+        </a>
       </div>
 
       {/* Titelbild */}
