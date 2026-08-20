@@ -79,7 +79,7 @@ export default async function EventDetailPage({
         <Tile label="Gäste" value={String(event.guests.length)} />
         <Tile label="Zusagen" value={String(yesCount)} note={noCount > 0 ? `${noCount} Absagen` : undefined} />
         <Tile label="Aufrufe" value={String(event.viewCount)} />
-        <Tile label="QR-Codes" value="—" note="Phase 8" />
+        <Tile label="QR-Codes" value="2" note="Eventseite · RSVP" />
       </div>
 
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
@@ -155,6 +155,40 @@ export default async function EventDetailPage({
             Module speichern
           </button>
         </form>
+      </div>
+
+      {/* QR-Codes */}
+      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>QR-Codes</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Zum Ausdrucken auf Einladung, Tischkarten oder Aushang.
+        </div>
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+          {[
+            ["EVENT_PAGE", "Eventseite"],
+            ["RSVP", "RSVP"],
+          ].map(([type, label]) => (
+            <div key={type} style={{ textAlign: "center" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- server-generated SVG, not an optimizable asset */}
+              <img
+                src={`/dashboard/events/${event.id}/qr/${type}?format=svg`}
+                alt={`QR-Code ${label}`}
+                width={110}
+                height={110}
+                style={{ border: "1px solid var(--line)", background: "var(--ivory)" }}
+              />
+              <div style={{ fontSize: 12, fontWeight: 600, marginTop: 8 }}>{label}</div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 6 }}>
+                <a href={`/dashboard/events/${event.id}/qr/${type}?format=svg&download=1`} style={{ fontSize: 11 }}>
+                  SVG
+                </a>
+                <a href={`/dashboard/events/${event.id}/qr/${type}?format=png&download=1`} style={{ fontSize: 11 }}>
+                  PNG
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Veroeffentlichen */}

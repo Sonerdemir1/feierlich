@@ -111,7 +111,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("rsvp") && (
-        <section style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="rsvp" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px" }}>
             <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>Zusagen</div>
 
