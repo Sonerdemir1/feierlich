@@ -1,6 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { putObject } from "./storage";
 
 export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -31,8 +30,6 @@ export async function saveEventImage(eventId: string, file: File): Promise<{ url
   const bytes = Buffer.from(await file.arrayBuffer());
   const ext = EXTENSION_BY_MIME[file.type] ?? "";
   const filename = `${randomUUID()}${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "events", eventId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), bytes);
-  return { url: `/uploads/events/${eventId}/${filename}`, mimeType: file.type, sizeBytes: file.size };
+  const url = await putObject(`events/${eventId}/${filename}`, bytes, file.type);
+  return { url, mimeType: file.type, sizeBytes: file.size };
 }
