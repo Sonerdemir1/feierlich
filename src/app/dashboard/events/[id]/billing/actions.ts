@@ -29,6 +29,8 @@ export async function startCheckout(eventId: string, formData: FormData) {
     redirect(`/dashboard/events/${eventId}/billing`);
   }
 
+  const user = await prisma.user.findUnique({ where: { id: session.user!.id } });
+
   const order = existingOrder
     ? await prisma.order.update({
         where: { id: existingOrder.id },
@@ -40,6 +42,7 @@ export async function startCheckout(eventId: string, formData: FormData) {
           packageId: pkg.id,
           eventId: event.id,
           amountCents: pkg.priceCents,
+          partnerId: user?.partnerId ?? null,
         },
       });
 

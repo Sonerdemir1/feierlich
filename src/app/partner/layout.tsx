@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session?.user) {
-    redirect("/login");
-  }
+  if (!session?.user) redirect("/login");
+  if (session.user.role !== "PARTNER") redirect("/dashboard");
 
   async function logout() {
     "use server";
@@ -23,24 +22,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
           borderBottom: "1px solid var(--line)",
         }}
       >
-        <a href="/dashboard" className="logo">
+        <a href="/partner" className="logo">
           <svg width="26" height="20" viewBox="0 0 28 22" fill="none" stroke="#B2543A" strokeWidth="1.4">
             <rect x="1" y="1" width="26" height="20" rx="1.5" />
             <path d="M1.5 2l12 9.5 12-9.5" />
           </svg>
-          <span>feierlich</span>
+          <span>feierlich · Partner</span>
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          {session.user.role === "ADMIN" && (
-            <a href="/admin" style={{ fontSize: 13, color: "var(--terracotta-dark)", fontWeight: 600 }}>
-              Admin-Bereich
-            </a>
-          )}
-          {session.user.role === "PARTNER" && (
-            <a href="/partner" style={{ fontSize: 13, color: "var(--terracotta-dark)", fontWeight: 600 }}>
-              Partner-Bereich
-            </a>
-          )}
           <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{session.user.email}</span>
           <form action={logout}>
             <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>

@@ -2,9 +2,29 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateImageFile, saveEventImage } from "@/lib/uploads";
+
+const REFERRAL_COOKIE = "ref_partner";
+
+// Ordnet einen Kunden bei seinem ersten Event dem Partner zu, ueber
+// dessen Empfehlungslink (/p/<slug>) er gekommen ist. Einmalig: ein
+// bereits zugeordneter Kunde behaelt seinen Partner dauerhaft.
+async function attachReferralPartner(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (user?.partnerId) return;
+
+  const jar = await cookies();
+  const slug = jar.get(REFERRAL_COOKIE)?.value;
+  if (!slug) return;
+
+  const partner = await prisma.partner.findUnique({ where: { slug } });
+  if (!partner) return;
+
+  await prisma.user.update({ where: { id: userId }, data: { partnerId: partner.id } });
+}
 
 function slugify(title: string): string {
   const base = title
@@ -43,6 +63,8 @@ export async function createEvent(formData: FormData) {
   if (!title || !eventTypeId || !templateId || !eventDate) {
     throw new Error("Bitte Eventtyp, Template, Titel und Datum ausfüllen.");
   }
+
+  await attachReferralPartner(session.user.id);
 
   const event = await prisma.event.create({
     data: {

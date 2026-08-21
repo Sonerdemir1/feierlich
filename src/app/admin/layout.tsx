@@ -39,6 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               ["/admin/events", "Events"],
               ["/admin/templates", "Templates"],
               ["/admin/packages", "Pakete"],
+              ["/admin/partners", "Partner"],
               ["/admin/event-types", "Eventtypen"],
             ].map(([href, label]) => (
               <Link key={href} href={href} style={{ fontSize: 13, color: "#C9C1B8" }}>
