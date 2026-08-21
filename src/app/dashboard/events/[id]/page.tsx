@@ -10,6 +10,13 @@ const statusLabel: Record<string, string> = {
   ARCHIVED: "Archiviert",
 };
 
+const orderStatusLabel: Record<string, string> = {
+  PENDING: "Ausstehend",
+  PAID: "Bezahlt",
+  CANCELLED: "Storniert",
+  REFUNDED: "Erstattet",
+};
+
 const uploadErrorLabel: Record<string, string> = {
   "no-file": "Bitte eine Datei auswählen.",
   "bad-type": "Nur JPG, PNG, WEBP oder GIF sind erlaubt.",
@@ -38,7 +45,13 @@ export default async function EventDetailPage({
 
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { eventType: true, template: true, guests: { include: { rsvp: true } }, coverImage: true },
+    include: {
+      eventType: true,
+      template: true,
+      guests: { include: { rsvp: true } },
+      coverImage: true,
+      order: { include: { package: true } },
+    },
   });
 
   if (!event || event.ownerId !== session!.user.id) {
@@ -244,6 +257,37 @@ export default async function EventDetailPage({
           }}
         >
           <span>Sitzplan</span>
+          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+        </Link>
+        <Link
+          href={`/dashboard/events/${event.id}/billing`}
+          style={{
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            padding: "16px 18px",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>
+            Paket &amp; Zahlung
+            {event.order && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  fontSize: 10.5,
+                  color: event.order.status === "PAID" ? "var(--sage)" : "var(--gold)",
+                  fontWeight: 700,
+                }}
+              >
+                {event.order.package.name} · {orderStatusLabel[event.order.status] ?? event.order.status}
+              </span>
+            )}
+          </span>
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
         <Link

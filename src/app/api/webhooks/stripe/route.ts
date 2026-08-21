@@ -1,0 +1,63 @@
+import { NextResponse } from "next/server";
+import type Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
+
+// Zweiter, robusterer Bestaetigungspfad neben der Success-Seite: greift auch
+// dann, wenn der Kunde den Tab schliesst, bevor Stripe zurueck-redirected.
+// Erfordert einen konfigurierten Webhook-Endpunkt (Dashboard oder
+// `stripe listen`) und STRIPE_WEBHOOK_SECRET in der Umgebung.
+export async function POST(req: Request) {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    return NextResponse.json({ error: "Webhook nicht konfiguriert." }, { status: 400 });
+  }
+
+  const signature = req.headers.get("stripe-signature");
+  if (!signature) {
+    return NextResponse.json({ error: "Fehlende Signatur." }, { status: 400 });
+  }
+
+  const body = await req.text();
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(body, signature, secret);
+  } catch {
+    return NextResponse.json({ error: "Ungültige Signatur." }, { status: 400 });
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const checkoutSession = event.data.object as Stripe.Checkout.Session;
+    const orderId = checkoutSession.metadata?.orderId;
+
+    if (orderId && checkoutSession.payment_status === "paid") {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (order && order.status !== "PAID") {
+        const paymentIntentId =
+          typeof checkoutSession.payment_intent === "string"
+            ? checkoutSession.payment_intent
+            : checkoutSession.payment_intent?.id;
+
+        await prisma.$transaction([
+          prisma.order.update({
+            where: { id: order.id },
+            data: { status: "PAID", stripePaymentIntentId: paymentIntentId ?? null },
+          }),
+          prisma.payment.create({
+            data: {
+              orderId: order.id,
+              amountCents: order.amountCents,
+              currency: order.currency,
+              status: "SUCCEEDED",
+              stripePaymentId: paymentIntentId ?? checkoutSession.id,
+              paidAt: new Date(),
+            },
+          }),
+        ]);
+      }
+    }
+  }
+
+  return NextResponse.json({ received: true });
+}
