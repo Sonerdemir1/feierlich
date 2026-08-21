@@ -3,22 +3,47 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Nodemailer from "next-auth/providers/nodemailer";
 import { prisma } from "@/lib/prisma";
 
-// DEV-STAND-IN: the magic-link sign-in flow itself (token generation,
-// verification, session creation) is fully real. Only the actual email
-// DELIVERY is stubbed here — it logs the link to the server console
-// instead of sending a real email. Before going live this needs a real
-// transactional-email provider (e.g. Resend, Postmark) wired in via the
-// `server`/`from` options, which costs money per email sent.
-const emailProvider = Nodemailer({
-  // Required by the provider's validation even though it's unused here —
-  // sendVerificationRequest below never touches the real SMTP transport.
-  server: "smtp://localhost:1025",
-  from: "no-reply@feierlich.local",
-  async sendVerificationRequest({ identifier, url }) {
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM = process.env.EMAIL_FROM;
+const emailSendingConfigured = Boolean(RESEND_API_KEY && EMAIL_FROM);
+
+// Ohne RESEND_API_KEY/EMAIL_FROM (lokale Entwicklung) wird der Link nur
+// in die Server-Konsole geloggt statt wirklich verschickt — der Rest des
+// Magic-Link-Flows (Token, Verifizierung, Session) ist davon unabhaengig
+// und voll funktionsfaehig. Resend statt eines SMTP-Providers, weil ein
+// simpler REST-Call reicht und keine zusaetzliche Abhaengigkeit braucht.
+async function sendMagicLinkEmail(to: string, url: string) {
+  if (!emailSendingConfigured) {
     console.log("\n──────────────────────────────────────────");
-    console.log(`Anmelde-Link für ${identifier}:`);
+    console.log(`Anmelde-Link für ${to}:`);
     console.log(url);
     console.log("──────────────────────────────────────────\n");
+    return;
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: EMAIL_FROM,
+      to,
+      subject: "Dein Anmelde-Link für feierlich",
+      html: `<p>Klicke auf den Link, um dich anzumelden:</p><p><a href="${url}">${url}</a></p><p>Der Link ist 24 Stunden gültig. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>`,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`E-Mail-Versand fehlgeschlagen (${res.status}): ${await res.text()}`);
+  }
+}
+
+const emailProvider = Nodemailer({
+  // Required by the provider's validation even though it's unused —
+  // sendVerificationRequest below never touches the SMTP transport.
+  server: "smtp://localhost:1025",
+  from: EMAIL_FROM ?? "no-reply@feierlich.local",
+  async sendVerificationRequest({ identifier, url }) {
+    await sendMagicLinkEmail(identifier, url);
   },
 });
 
