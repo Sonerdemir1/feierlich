@@ -1,6 +1,6 @@
 // Statische Illustrationen der Gaeste-/Teilen-/Galerie-Ansichten fuer
-// die Marketing-Startseite. Zeigen Beispieldaten ("Anna & Lukas"), keine
-// echten Events — das Rendering echter Event-Seiten kommt in Phase 6.
+// die Marketing-Startseite. Zeigen bewusst Beispieldaten ("Anna & Lukas"),
+// keine echten Kunden-Events.
 
 export function GuestPagePreview() {
   return (
