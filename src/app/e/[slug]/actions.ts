@@ -6,13 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { validateImageFile, saveEventImage } from "@/lib/uploads";
 
 export async function submitRsvp(eventId: string, slug: string, formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim().slice(0, 80);
   if (!name) redirect(`/e/${slug}?rsvp=error`);
 
   const attending = formData.get("attending") === "yes";
   const countRaw = Number(formData.get("count") ?? 1);
   const count = Number.isFinite(countRaw) && countRaw > 0 ? Math.min(countRaw, 20) : 1;
-  const message = String(formData.get("message") ?? "").trim() || null;
+  const message = String(formData.get("message") ?? "").trim().slice(0, 1000) || null;
 
   const guest = await prisma.guest.create({
     data: { eventId, firstName: name, invitedCount: count },
@@ -32,7 +32,7 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
 }
 
 export async function findSeat(eventId: string, slug: string, formData: FormData) {
-  const name = String(formData.get("seatName") ?? "").trim();
+  const name = String(formData.get("seatName") ?? "").trim().slice(0, 80);
   if (!name) redirect(`/e/${slug}#sitzplatz`);
 
   const guest = await prisma.guest.findFirst({

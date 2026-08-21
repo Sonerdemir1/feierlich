@@ -18,10 +18,14 @@ async function getEvent(slug: string) {
 export async function generateMetadata({ params }: PageProps<"/e/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEvent(slug);
-  if (!event) return {};
+  // Persoenliche Einladungsseiten sind privat (per Link/QR geteilt) — nie
+  // fuer Suchmaschinen bestimmt, unabhaengig vom Veroeffentlichungsstatus.
+  const robots = { index: false, follow: false };
+  if (!event) return { robots };
   return {
     title: `${event.title} – feierlich`,
     description: event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`,
+    robots,
   };
 }
 

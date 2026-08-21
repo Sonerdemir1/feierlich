@@ -16,15 +16,31 @@ const workSans = Work_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
+const title = "Feierlich – Digital Event Studio";
+const description =
+  "Digitale Einladungen und komplette Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.";
+
 export const metadata: Metadata = {
-  title: "Feierlich – Digital Event Studio",
-  description:
-    "Digitale Einladungen und komplette Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  title,
+  description,
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "feierlich",
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    siteName: "feierlich",
+    title,
+    description,
+  },
+  twitter: {
+    card: "summary",
+    title,
+    description,
   },
 };
 
