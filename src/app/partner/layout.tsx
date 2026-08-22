@@ -32,7 +32,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
             <rect x="1" y="1" width="26" height="20" rx="1.5" />
             <path d="M1.5 2l12 9.5 12-9.5" />
           </svg>
-          <span>feierlich · Partner</span>
+          <span>einladi · Partner</span>
         </a>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{session.user.email}</span>

@@ -105,7 +105,7 @@ const packages = [
   },
 ];
 
-// Templates: die zwoelf im Chat entworfenen "Feierlich"-Designs als
+// Templates: die zwoelf im Chat entworfenen "einladi"-Designs als
 // echte Datensaetze. `layoutKey` referenziert die spaetere React-
 // Template-Komponente.
 const templates = [

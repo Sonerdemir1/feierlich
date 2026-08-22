@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/e/[slug]">): Prom
   const robots = { index: false, follow: false };
   if (!event) return { robots };
   return {
-    title: `${event.title} – feierlich`,
+    title: `${event.title} – einladi`,
     description: event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`,
     robots,
   };
@@ -305,7 +305,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       <footer style={{ textAlign: "center", padding: "24px 28px 40px", fontSize: 11, opacity: 0.5 }}>
-        Erstellt mit feierlich
+        Erstellt mit einladi
       </footer>
     </main>
   );

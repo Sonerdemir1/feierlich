@@ -27,7 +27,7 @@ async function sendMagicLinkEmail(to: string, url: string) {
     body: JSON.stringify({
       from: EMAIL_FROM,
       to,
-      subject: "Dein Anmelde-Link für feierlich",
+      subject: "Dein Anmelde-Link für einladi",
       html: `<p>Klicke auf den Link, um dich anzumelden:</p><p><a href="${url}">${url}</a></p><p>Der Link ist 24 Stunden gültig. Wenn du diese Anmeldung nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>`,
     }),
   });
@@ -41,7 +41,7 @@ const emailProvider = Nodemailer({
   // Required by the provider's validation even though it's unused —
   // sendVerificationRequest below never touches the SMTP transport.
   server: "smtp://localhost:1025",
-  from: EMAIL_FROM ?? "no-reply@feierlich.local",
+  from: EMAIL_FROM ?? "no-reply@einladi.local",
   async sendVerificationRequest({ identifier, url }) {
     await sendMagicLinkEmail(identifier, url);
   },

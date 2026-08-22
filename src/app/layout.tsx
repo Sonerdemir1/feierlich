@@ -16,7 +16,7 @@ const workSans = Work_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-const title = "Feierlich – Digital Event Studio";
+const title = "einladi – Digital Event Studio";
 const description =
   "Digitale Einladungen und komplette Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.";
 
@@ -28,12 +28,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "feierlich",
+    title: "einladi",
   },
   openGraph: {
     type: "website",
     locale: "de_DE",
-    siteName: "feierlich",
+    siteName: "einladi",
     title,
     description,
   },

@@ -1,6 +1,6 @@
 {
-  "name": "feierlich",
-  "short_name": "feierlich",
+  "name": "einladi",
+  "short_name": "einladi",
   "description": "Digitale Einladungen und Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.",
   "start_url": "/dashboard",
   "scope": "/",

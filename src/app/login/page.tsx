@@ -24,7 +24,7 @@ export default function LoginPage() {
             <rect x="1" y="1" width="26" height="20" rx="1.5" />
             <path d="M1.5 2l12 9.5 12-9.5" />
           </svg>
-          <span>feierlich</span>
+          <span>einladi</span>
         </Link>
         <h1
           style={{

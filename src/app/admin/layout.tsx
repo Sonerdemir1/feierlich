@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <rect x="1" y="1" width="26" height="20" rx="1.5" />
               <path d="M1.5 2l12 9.5 12-9.5" />
             </svg>
-            <span style={{ color: "#FAF6EF" }}>feierlich · Admin</span>
+            <span style={{ color: "#FAF6EF" }}>einladi · Admin</span>
           </Link>
           <nav style={{ display: "flex", gap: 20 }}>
             {[

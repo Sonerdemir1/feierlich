@@ -165,7 +165,7 @@ export function SharePreview() {
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 16, color: "#8F4029" }}>
             Anna &amp; Lukas
           </div>
-          <div style={{ fontSize: 10.5, color: "#5C5248", marginTop: 3 }}>annaundlukas.feierlich.de</div>
+          <div style={{ fontSize: 10.5, color: "#5C5248", marginTop: 3 }}>annaundlukas.einladi.de</div>
         </div>
       </section>
       <section style={{ padding: "0 22px 40px" }}>

@@ -21,7 +21,7 @@ function Logo({ dark = false }: { dark?: boolean }) {
         <rect x="1" y="1" width="26" height="20" rx="1.5" />
         <path d="M1.5 2l12 9.5 12-9.5" />
       </svg>
-      <span style={dark ? { color: "#FAF6EF" } : undefined}>feierlich</span>
+      <span style={dark ? { color: "#FAF6EF" } : undefined}>einladi</span>
     </a>
   );
 }
@@ -108,7 +108,7 @@ export default async function Home() {
               <path d="M1.5 2l12 9.5 12-9.5" />
             </svg>
             <span className="lockup-word" style={{ color: "#211C19" }}>
-              feierlich
+              einladi
             </span>
           </div>
           <div className="brandmark-tile dark">
@@ -117,7 +117,7 @@ export default async function Home() {
               <path d="M1.5 2l12 9.5 12-9.5" />
             </svg>
             <span className="lockup-word" style={{ color: "#FAF6EF" }}>
-              feierlich
+              einladi
             </span>
           </div>
           <div className="brandmark-tile alt">
@@ -130,7 +130,7 @@ export default async function Home() {
           </div>
           <div className="brandmark-tile alt">
             <span className="lockup-word" style={{ color: "#211C19", fontSize: 30 }}>
-              feierlich
+              einladi
             </span>
           </div>
         </div>
@@ -340,7 +340,7 @@ export default async function Home() {
         <p>
           Digitale Einladungen und Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.
           <br />
-          [KONTAKT E-MAIL] · © 2026 feierlich
+          [KONTAKT E-MAIL] · © 2026 einladi
         </p>
       </footer>
     </>

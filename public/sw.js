@@ -5,7 +5,7 @@
 // anzeigen. Der Service Worker existiert vor allem, damit der Browser
 // die App ueberhaupt als installierbar erkennt (PWA-Grundvoraussetzung).
 
-const CACHE_NAME = "feierlich-static-v1";
+const CACHE_NAME = "einladi-static-v1";
 const STATIC_ASSETS = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {

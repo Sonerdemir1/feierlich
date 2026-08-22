@@ -56,7 +56,7 @@ export async function startCheckout(eventId: string, formData: FormData) {
         price_data: {
           currency: order.currency.toLowerCase(),
           product_data: {
-            name: `Feierlich – Paket ${pkg.name}`,
+            name: `einladi – Paket ${pkg.name}`,
             description: `Event: ${event.title}`,
           },
           unit_amount: pkg.priceCents,
