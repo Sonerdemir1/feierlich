@@ -48,6 +48,8 @@ export default async function Home() {
     Romantisch: "Weich, fließend, persönlich",
     Statement: "Dunkel, klar, selbstbewusst",
     "Türkische Feste & Bräuche": "Kına, Nişan, Sünnet und mehr – mit eigener Handschrift",
+    Verspielt: "Fröhlich, bunt, verspielt",
+    "Business Modern": "Klar, professionell, zeitgemäß",
   };
 
   return (

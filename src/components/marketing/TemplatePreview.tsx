@@ -295,6 +295,236 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           </div>
         </div>
       );
+    case "altin-sedef":
+      return (
+        <div className="tpl-prev" style={{ background: "#5C0F1F" }}>
+          <div style={{ position: "absolute", top: 8, left: 8, right: 8, bottom: 8, border: "2px solid #E3B23C" }} />
+          <div style={{ position: "absolute", top: 12, left: 12, right: 12, bottom: 12, border: "1px solid #E3B23C" }} />
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "safir-davet":
+      return (
+        <div className="tpl-prev" style={{ background: "#0B2447" }}>
+          <svg width="160" height="160" viewBox="0 0 160 160" style={{ position: "absolute", inset: 0 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+            <rect x="14" y="14" width="132" height="132" />
+            <path d="M14 14 L34 34 M146 14 L126 34 M14 146 L34 126 M146 146 L126 126" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "kraliyet-moru":
+      return (
+        <div className="tpl-prev" style={{ background: "#2E1A47" }}>
+          <svg width="60" height="24" viewBox="0 0 60 24" style={{ position: "absolute", top: 10 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+            <path d="M2 20 Q15 2 30 12 Q45 2 58 20" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#F4EEE4", marginTop: 20 }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "soz-guemuesue":
+      return (
+        <div className="tpl-prev" style={{ background: "#FBEAEE" }}>
+          <svg width="40" height="40" viewBox="0 0 40 40" style={{ marginBottom: 8 }} fill="none" stroke="#D4A574" strokeWidth="1.4">
+            <path d="M20 4 L36 20 L20 36 L4 20 Z" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#5C1A2E" }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "zuemruet":
+      return (
+        <div className="tpl-prev" style={{ background: "#0F3D2E" }}>
+          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+            <rect x="4" y="4" width="30" height="30" transform="rotate(45 19 19)" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "gul-bahcesi":
+      return (
+        <div className="tpl-prev" style={{ background: "#FBEFEA" }}>
+          <svg width="30" height="30" viewBox="0 0 30 30" style={{ marginBottom: 8 }} fill="none" stroke="#E8A6B0" strokeWidth="1.3">
+            <circle cx="15" cy="15" r="12" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#6B2737" }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "papier-weiss":
+      return (
+        <div className="tpl-prev" style={{ background: "#FFFFFF" }}>
+          <div style={{ width: 24, height: 1, background: "#7C7267", margin: "0 auto 10px" }} />
+          <div style={{ fontSize: 11, letterSpacing: "0.16em", color: "#211C19" }}>ANNA &amp; LUKAS</div>
+          <div style={{ width: 24, height: 1, background: "#7C7267", margin: "10px auto 0" }} />
+        </div>
+      );
+    case "sandstein":
+      return (
+        <div className="tpl-prev" style={{ background: "#EFE7D8", padding: 16 }}>
+          <div style={{ width: "100%", height: 2, background: "#A6875B", marginBottom: 12 }} />
+          <div style={{ fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", color: "#3A332C" }}>ANNA &amp; LUKAS</div>
+          <div style={{ width: "100%", height: 2, background: "#A6875B", marginTop: 12 }} />
+        </div>
+      );
+    case "eukalyptus":
+      return (
+        <div className="tpl-prev" style={{ background: "#EEF2E9" }}>
+          <svg width="120" height="60" viewBox="0 0 120 60" style={{ position: "absolute", top: 6, right: 6, opacity: 0.6 }} fill="#6B8F71" stroke="none">
+            <ellipse cx="14" cy="14" rx="9" ry="5" transform="rotate(30 14 14)" />
+            <ellipse cx="34" cy="10" rx="9" ry="5" transform="rotate(10 34 10)" />
+            <ellipse cx="54" cy="16" rx="9" ry="5" transform="rotate(-15 54 16)" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#2F4739" }}>
+            Anna &amp; Lukas
+          </div>
+        </div>
+      );
+    case "wildblume":
+      return (
+        <div className="tpl-prev" style={{ background: "#FBF1E4" }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" style={{ position: "absolute", top: 12, left: 14 }} fill="#C97B4A">
+            <circle cx="8" cy="8" r="3" />
+            <circle cx="8" cy="2" r="2.4" />
+            <circle cx="14" cy="8" r="2.4" />
+            <circle cx="8" cy="14" r="2.4" />
+            <circle cx="2" cy="8" r="2.4" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#5C3A21" }}>
+            Anna &amp; Lukas
+          </div>
+        </div>
+      );
+    case "pfingstrose":
+      return (
+        <div className="tpl-prev" style={{ background: "#FBEEF1" }}>
+          <svg width="34" height="34" viewBox="0 0 34 34" style={{ marginBottom: 8 }} fill="none" stroke="#E4A0AE" strokeWidth="1.3">
+            <circle cx="17" cy="17" r="14" />
+            <circle cx="17" cy="17" r="8" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#7A3B4A" }}>
+            Anna &amp; Lukas
+          </div>
+        </div>
+      );
+    case "champagner":
+      return (
+        <div className="tpl-prev" style={{ background: "#FAF3E6", padding: 16 }}>
+          <div style={{ position: "absolute", top: 9, left: 9, right: 9, bottom: 9, border: "1px solid #D9C8A8" }} />
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#6B5842" }}>
+            Anna &amp; Lukas
+          </div>
+        </div>
+      );
+    case "mitternacht":
+      return (
+        <div className="tpl-prev" style={{ background: "#10131F" }}>
+          <svg width="60" height="60" viewBox="0 0 60 60" style={{ position: "absolute", top: -14, right: -14, opacity: 0.5 }} fill="none" stroke="#7C93C4" strokeWidth="1">
+            <circle cx="30" cy="30" r="18" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "#EDEFF5" }}>
+            Anna &amp; Lukas
+          </div>
+        </div>
+      );
+    case "bordeaux":
+      return (
+        <div className="tpl-prev" style={{ background: "#2B1014" }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#C9605C", marginBottom: 10 }} />
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#F4E9E6" }}>
+            Anna &amp; Lukas
+          </div>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#C9605C", marginTop: 10 }} />
+        </div>
+      );
+    case "konfetti":
+      return (
+        <div className="tpl-prev" style={{ background: "#FFF4E3" }}>
+          {[
+            [16, 14],
+            [140, 20],
+            [26, 132],
+            [130, 128],
+            [70, 10],
+            [80, 140],
+          ].map(([cx, cy], i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: cx,
+                top: cy,
+                width: 6,
+                height: 6,
+                borderRadius: i % 2 ? 2 : "50%",
+                background: i % 3 === 0 ? "#F2A65A" : i % 3 === 1 ? "#3A2E4A" : "#8F9B6E",
+              }}
+            />
+          ))}
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#3A2E4A" }}>
+            Mia wird 5
+          </div>
+        </div>
+      );
+    case "zuckerwatte":
+      return (
+        <div className="tpl-prev" style={{ background: "#FBEFF6" }}>
+          <svg width="60" height="70" viewBox="0 0 60 70" style={{ position: "absolute", top: 4, left: 10, opacity: 0.7 }} fill="none" stroke="#F2A6C9" strokeWidth="1.3">
+            <circle cx="14" cy="16" r="10" />
+            <circle cx="34" cy="10" r="8" />
+            <path d="M14 26 L14 50 M34 18 L34 44" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#4A3350" }}>
+            Mia wird 5
+          </div>
+        </div>
+      );
+    case "pastellwiese":
+      return (
+        <div className="tpl-prev" style={{ background: "#EAF6EE" }}>
+          <svg width="120" height="30" viewBox="0 0 120 30" style={{ position: "absolute", bottom: 10 }} fill="#6FB98F">
+            {[10, 30, 50, 70, 90, 110].map((x) => (
+              <circle key={x} cx={x} cy={15} r={4} />
+            ))}
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#33424A" }}>
+            Mia wird 5
+          </div>
+        </div>
+      );
+    case "klarblau":
+      return (
+        <div className="tpl-prev" style={{ background: "#F4F7FC", padding: 16 }}>
+          <div style={{ width: "100%", height: 2, background: "#2F6FED", marginBottom: 12 }} />
+          <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: "0.04em", color: "#16233B" }}>JAHRESEMPFANG 2026</div>
+          <div style={{ width: "100%", height: 2, background: "#2F6FED", marginTop: 12 }} />
+        </div>
+      );
+    case "graphit":
+      return (
+        <div className="tpl-prev" style={{ background: "#1E2328" }}>
+          <div style={{ width: "100%", height: 1, background: "#9AA5B1", marginBottom: 14 }} />
+          <div style={{ fontSize: 11, letterSpacing: "0.14em", color: "#FFFFFF" }}>JAHRESEMPFANG 2026</div>
+          <div style={{ width: "100%", height: 1, background: "#9AA5B1", marginTop: 14 }} />
+        </div>
+      );
+    case "minz-corporate":
+      return (
+        <div className="tpl-prev" style={{ background: "#F0F7F4" }}>
+          <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#2E9E7B", margin: "0 auto 10px" }} />
+          <div style={{ fontSize: 11, letterSpacing: "0.1em", color: "#1D2B28" }}>JAHRESEMPFANG 2026</div>
+        </div>
+      );
     default:
       return (
         <div className="tpl-prev" style={{ background: "#F3ECDF" }}>
