@@ -49,6 +49,11 @@ const emailProvider = Nodemailer({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  // Ohne dies lehnt Auth.js in production ausserhalb von Vercel/Cloudflare
+  // Pages Requests als "untrusted host" ab (es kennt Railway/Render/Fly
+  // nicht automatisch). Unbedenklich hier: die App laeuft nur unter der
+  // eigenen Domain, kein Multi-Tenant-Host-Szenario.
+  trustHost: true,
   providers: [emailProvider],
   session: { strategy: "database" },
   pages: {
