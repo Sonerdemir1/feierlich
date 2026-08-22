@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { publicHost } from "@/lib/site";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -60,7 +61,7 @@ export default async function PartnerDashboardPage() {
 
       <div style={{ border: "1px solid var(--line)", padding: "18px 20px", marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Dein Empfehlungslink</div>
-        <div style={{ fontSize: 14, color: "var(--terracotta-dark)" }}>feierlich.de/p/{partner.slug}</div>
+        <div style={{ fontSize: 14, color: "var(--terracotta-dark)" }}>{publicHost()}/p/{partner.slug}</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
           Kunden, die über diesen Link ein Konto anlegen und ein Event erstellen, werden dir automatisch zugeordnet.
         </div>

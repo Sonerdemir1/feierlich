@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { publicHost } from "@/lib/site";
 import { uploadCoverImage, saveModules, publishEvent } from "../actions";
 
 const statusLabel: Record<string, string> = {
@@ -101,7 +102,7 @@ export default async function EventDetailPage({
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Öffentliche Event-Seite</div>
-          <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>feierlich.de/e/{event.slug}</div>
+          <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{publicHost()}/e/{event.slug}</div>
           {event.status !== "PUBLISHED" && (
             <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
               Nur du kannst sie schon jetzt als Vorschau sehen.

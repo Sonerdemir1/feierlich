@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { publicHost } from "@/lib/site";
 import { PartnerForm } from "@/components/admin/PartnerForm";
 import { updatePartner, linkPartnerAccount } from "../../actions";
 
@@ -22,7 +23,7 @@ export default async function EditPartnerPage({ params }: PageProps<"/admin/part
 
       <div style={{ border: "1px solid var(--line)", background: "var(--ivory-2)", padding: "16px 18px", marginBottom: 28, maxWidth: 480 }}>
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Empfehlungslink</div>
-        <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>feierlich.de/p/{partner.slug}</div>
+        <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{publicHost()}/p/{partner.slug}</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
           Kunden, die über diesen Link ein Konto anlegen, werden diesem Partner zugeordnet.
         </div>
