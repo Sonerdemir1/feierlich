@@ -9,7 +9,7 @@ import { stripe } from "@/lib/stripe";
 // `stripe listen`) und STRIPE_WEBHOOK_SECRET in der Umgebung.
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) {
+  if (!secret || !stripe) {
     return NextResponse.json({ error: "Webhook nicht konfiguriert." }, { status: 400 });
   }
 

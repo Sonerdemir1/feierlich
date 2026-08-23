@@ -17,7 +17,7 @@ export default async function BillingSuccessPage({
   if (!event || event.ownerId !== session.user.id) notFound();
 
   const sessionId = typeof sp.session_id === "string" ? sp.session_id : undefined;
-  if (!sessionId) redirect(`/dashboard/events/${id}/billing`);
+  if (!sessionId || !stripe) redirect(`/dashboard/events/${id}/billing`);
 
   const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
   const orderId = checkoutSession.metadata?.orderId;

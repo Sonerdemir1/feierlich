@@ -18,6 +18,10 @@ async function requireOwnedEvent(eventId: string) {
 export async function startCheckout(eventId: string, formData: FormData) {
   const { session, event } = await requireOwnedEvent(eventId);
 
+  if (!stripe) {
+    redirect(`/dashboard/events/${eventId}/billing?error=stripe-not-configured`);
+  }
+
   const packageId = String(formData.get("packageId") ?? "");
   const pkg = await prisma.package.findUnique({ where: { id: packageId } });
   if (!pkg || !pkg.active) {

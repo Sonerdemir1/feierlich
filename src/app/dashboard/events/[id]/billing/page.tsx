@@ -51,6 +51,11 @@ export default async function BillingPage({
           Dieses Paket ist nicht verfügbar.
         </div>
       )}
+      {errorKey === "stripe-not-configured" && (
+        <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.
+        </div>
+      )}
 
       {order && (
         <div style={{ border: "1px solid var(--line)", padding: "16px 18px", marginBottom: 24 }}>
