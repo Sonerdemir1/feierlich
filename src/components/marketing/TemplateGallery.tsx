@@ -15,6 +15,7 @@ export type GalleryTemplate = {
   colors: Colors;
   defaultText: string;
   defaultEventLabel: string;
+  photoBackground: string | null;
 };
 
 export type GalleryCategory = {
@@ -88,6 +89,7 @@ type Draft = {
   showRsvp: boolean;
   showSeating: boolean;
   showGallery: boolean;
+  showPhotoBackground: boolean;
   extraFeatures: Record<string, boolean>;
 };
 
@@ -163,6 +165,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showRsvp: true,
     showSeating: true,
     showGallery: true,
+    showPhotoBackground: true,
     extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, true])),
   };
 }
@@ -258,10 +261,20 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                       <div className="customizer-preview">
                         <div
                           className="customizer-card"
-                          style={{ background: draft.background, borderColor: draft.accent }}
+                          style={{
+                            background: draft.background,
+                            borderColor: draft.accent,
+                            ...(item.photoBackground && draft.showPhotoBackground
+                              ? {
+                                  backgroundImage: `linear-gradient(180deg, rgba(20,6,10,0.3) 0%, rgba(20,6,10,0.55) 55%, rgba(20,6,10,0.85) 100%), url(${item.photoBackground})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                }
+                              : {}),
+                          }}
                         >
                           <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
-                            {draft.showFloral && (
+                            {draft.showFloral && !(item.photoBackground && draft.showPhotoBackground) && (
                               <svg
                                 className="customizer-card-floral"
                                 viewBox="0 0 300 400"
@@ -645,6 +658,16 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               />
                               Eck-Ornamente &amp; Streumuster
                             </label>
+                            {item.photoBackground && (
+                              <label className="customizer-toggle">
+                                <input
+                                  type="checkbox"
+                                  checked={draft.showPhotoBackground}
+                                  onChange={(e) => updateDraft(item, { showPhotoBackground: e.target.checked })}
+                                />
+                                Foto-Hintergrund
+                              </label>
+                            )}
                           </div>
                         </div>
 

@@ -21,6 +21,13 @@ function defaultTextForCategory(category: string): string {
   return "Anna & Lukas";
 }
 
+// Lizenzfreie Foto-Hintergruende (Pexels-Lizenz, kommerziell nutzbar ohne
+// Zuschreibung) je layoutKey — bisher nur fuer das Duegue-Flaggschiff als
+// Machbarkeitsnachweis, weitere folgen nach Rueckmeldung.
+const PHOTO_BACKGROUND: Record<string, string> = {
+  "altin-sedef": "/images/templates/bosphorus-night.jpg",
+};
+
 function defaultEventLabelForCategory(category: string): string {
   if (category === "Düğün") return "DÜĞÜN DAVETİYESİ";
   if (category === "Kına Gecesi") return "KINA GECESİ";
@@ -93,6 +100,7 @@ export default async function Home() {
       colors: JSON.parse(t.colors) as { primary: string; accent: string; background: string },
       defaultText: defaultTextForCategory(category),
       defaultEventLabel: defaultEventLabelForCategory(category),
+      photoBackground: PHOTO_BACKGROUND[t.layoutKey] ?? null,
     })),
   }));
 

@@ -372,10 +372,17 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "altin-sedef":
       return (
-        <div className="tpl-prev" style={{ background: "#5C0F1F" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(20,6,10,0.35) 0%, rgba(20,6,10,0.55) 55%, rgba(20,6,10,0.85) 100%), url(/images/templates/bosphorus-night.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ position: "absolute", top: 8, left: 8, right: 8, bottom: 8, border: "2px solid #E3B23C" }} />
           <div style={{ position: "absolute", top: 12, left: 12, right: 12, bottom: 12, border: "1px solid #E3B23C" }} />
-          <DotScatter color="#E3B23C" seed={1} />
           <CornerMotif color="#E3B23C" corner="tl" />
           <CornerMotif color="#E3B23C" corner="tr" />
           <CornerMotif color="#E3B23C" corner="bl" />
