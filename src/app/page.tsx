@@ -22,10 +22,14 @@ function defaultTextForCategory(category: string): string {
 }
 
 // Lizenzfreie Foto-Hintergruende (Pexels-Lizenz, kommerziell nutzbar ohne
-// Zuschreibung) je layoutKey — bisher nur fuer das Duegue-Flaggschiff als
-// Machbarkeitsnachweis, weitere folgen nach Rueckmeldung.
-const PHOTO_BACKGROUND: Record<string, string> = {
-  "altin-sedef": "/images/templates/bosphorus-night.jpg",
+// Zuschreibung) je layoutKey. `tint` ist die Vorlagenfarbe als "r,g,b" —
+// der dunkle Verlauf ueber dem Foto wird daraus gebaut, damit Bosporus-
+// Nachtfoto und Iznik-Fliesenmuster farblich zur jeweiligen Vorlage passen
+// statt immer denselben Ton zu haben.
+const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
+  "altin-sedef": { src: "/images/templates/bosphorus-night.jpg", tint: "92,15,31" },
+  "kina-kirmizi": { src: "/images/templates/iznik-floral.jpg", tint: "122,20,40" },
+  "kraliyet-moru": { src: "/images/templates/iznik-floral.jpg", tint: "46,26,71" },
 };
 
 function defaultEventLabelForCategory(category: string): string {

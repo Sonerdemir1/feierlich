@@ -15,7 +15,7 @@ export type GalleryTemplate = {
   colors: Colors;
   defaultText: string;
   defaultEventLabel: string;
-  photoBackground: string | null;
+  photoBackground: { src: string; tint: string } | null;
 };
 
 export type GalleryCategory = {
@@ -322,7 +322,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                         borderColor: draft.accent,
                         ...(item.photoBackground && draft.showPhotoBackground
                           ? {
-                              backgroundImage: `linear-gradient(180deg, rgba(20,6,10,0.3) 0%, rgba(20,6,10,0.55) 55%, rgba(20,6,10,0.85) 100%), url(${item.photoBackground})`,
+                              backgroundImage: `linear-gradient(180deg, rgba(${item.photoBackground.tint},0.55) 0%, rgba(${item.photoBackground.tint},0.78) 55%, rgba(${item.photoBackground.tint},0.94) 100%), url(${item.photoBackground.src})`,
                               backgroundSize: "cover",
                               backgroundPosition: "center",
                             }
@@ -395,9 +395,15 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
 
                             {(draft.familyLeft || draft.familyRight) && (
                               <div className="customizer-card-families" style={{ color: draft.primary }}>
-                                {draft.familyLeft && <span>{draft.familyLeft} Ailesi</span>}
-                                {draft.familyLeft && draft.familyRight && <span> &amp; </span>}
-                                {draft.familyRight && <span>{draft.familyRight} Ailesi</span>}
+                                <div>
+                                  <span>{draft.familyLeft || "—"}</span>
+                                  <small>AİLESİ</small>
+                                </div>
+                                <div className="customizer-card-families-div" style={{ background: `${draft.accent}66` }} />
+                                <div>
+                                  <span>{draft.familyRight || "—"}</span>
+                                  <small>AİLESİ</small>
+                                </div>
                               </div>
                             )}
 

@@ -308,17 +308,26 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "kina-kirmizi":
       return (
-        <div className="tpl-prev" style={{ background: "#7A1428" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(122,20,40,0.55) 0%, rgba(122,20,40,0.78) 55%, rgba(122,20,40,0.94) 100%), url(/images/templates/iznik-floral.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ position: "absolute", inset: 6, border: "1px solid #D4AF3799" }} />
-          <DotScatter color="#D4AF37" />
           <CornerMotif color="#D4AF37" corner="tl" />
           <CornerMotif color="#D4AF37" corner="tr" />
           <CornerMotif color="#D4AF37" corner="bl" />
           <CornerMotif color="#D4AF37" corner="br" />
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#F4D77A" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#F4D77A", zIndex: 1 }}>
             Ayşe &amp; Emre
           </div>
-          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 10 }}>KINA GECESİ</div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 10, zIndex: 1 }}>
+            KINA GECESİ
+          </div>
         </div>
       );
     case "oya-lace":
@@ -376,7 +385,7 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           className="tpl-prev"
           style={{
             backgroundImage:
-              "linear-gradient(180deg, rgba(20,6,10,0.35) 0%, rgba(20,6,10,0.55) 55%, rgba(20,6,10,0.85) 100%), url(/images/templates/bosphorus-night.jpg)",
+              "linear-gradient(180deg, rgba(92,15,31,0.5) 0%, rgba(92,15,31,0.72) 55%, rgba(92,15,31,0.92) 100%), url(/images/templates/bosphorus-night.jpg)",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -411,20 +420,27 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "kraliyet-moru":
       return (
-        <div className="tpl-prev" style={{ background: "#2E1A47" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(46,26,71,0.55) 0%, rgba(46,26,71,0.78) 55%, rgba(46,26,71,0.94) 100%), url(/images/templates/iznik-floral.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ position: "absolute", inset: 7, border: "1px solid #D4AF3799" }} />
-          <DotScatter color="#D4AF37" seed={1} />
           <CornerMotif color="#D4AF37" corner="tl" />
           <CornerMotif color="#D4AF37" corner="tr" />
           <CornerMotif color="#D4AF37" corner="bl" />
           <CornerMotif color="#D4AF37" corner="br" />
-          <svg width="60" height="24" viewBox="0 0 60 24" style={{ position: "absolute", top: 26 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+          <svg width="60" height="24" viewBox="0 0 60 24" style={{ position: "absolute", top: 26, zIndex: 1 }} fill="none" stroke="#D4AF37" strokeWidth="1">
             <path d="M2 20 Q15 2 30 12 Q45 2 58 20" />
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#F4EEE4", marginTop: 20 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#F4EEE4", marginTop: 20, zIndex: 1 }}>
             Ayşe &amp; Emre
           </div>
-          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8 }}>NİŞAN</div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8, zIndex: 1 }}>NİŞAN</div>
         </div>
       );
     case "soz-guemuesue":
