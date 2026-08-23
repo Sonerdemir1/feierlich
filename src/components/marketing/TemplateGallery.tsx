@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { TemplatePreview } from "@/components/marketing/TemplatePreview";
+import { TemplatePreview, CornerMotif, DotScatter } from "@/components/marketing/TemplatePreview";
 
 type Colors = { primary: string; accent: string; background: string };
 
@@ -35,17 +36,56 @@ const FONT_OPTIONS: FontOption[] = [
   { id: "poppins", label: "Poppins", cssVar: "var(--font-poppins)" },
 ];
 
+type PhotoShape = "rect" | "circle" | "star" | "polaroid";
+
+const PHOTO_SHAPES: { id: PhotoShape; label: string }[] = [
+  { id: "polaroid", label: "Polaroid" },
+  { id: "rect", label: "Rechteck" },
+  { id: "circle", label: "Kreis" },
+  { id: "star", label: "Stern" },
+];
+
+const STAR_CLIP = "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)";
+
+function photoStyle(shape: PhotoShape): CSSProperties {
+  switch (shape) {
+    case "circle":
+      return { width: "52%", aspectRatio: "1", borderRadius: "50%", objectFit: "cover" };
+    case "star":
+      return { width: "58%", aspectRatio: "1", objectFit: "cover", clipPath: STAR_CLIP };
+    case "polaroid":
+      return {
+        width: "68%",
+        aspectRatio: "4 / 3",
+        objectFit: "cover",
+        border: "8px solid #FAF6EF",
+        borderBottom: "22px solid #FAF6EF",
+        boxShadow: "0 10px 20px rgba(0,0,0,0.28)",
+        transform: "rotate(-2deg)",
+      };
+    default:
+      return { width: "80%", aspectRatio: "4 / 3", objectFit: "cover" };
+  }
+}
+
 type Draft = {
   text: string;
   eventLabel: string;
   dateText: string;
   locationText: string;
+  familyLeft: string;
+  familyRight: string;
   fontId: string;
   fontSize: number;
   primary: string;
   accent: string;
   background: string;
   image: string | null;
+  photoShape: PhotoShape;
+  showFloral: boolean;
+  showOrnaments: boolean;
+  showCountdown: boolean;
+  showRsvp: boolean;
 };
 
 const STORAGE_KEY = "einladi:design-drafts:v1";
@@ -67,12 +107,19 @@ function defaultDraft(item: GalleryTemplate): Draft {
     eventLabel: item.defaultEventLabel,
     dateText: "",
     locationText: "",
+    familyLeft: "",
+    familyRight: "",
     fontId: "cormorant",
     fontSize: 26,
     primary: item.colors.primary,
     accent: item.colors.accent,
     background: item.colors.background,
     image: null,
+    photoShape: "polaroid",
+    showFloral: true,
+    showOrnaments: true,
+    showCountdown: true,
+    showRsvp: true,
   };
 }
 
@@ -94,13 +141,17 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
   const [drafts, setDrafts] = useState<Record<string, Draft>>(loadDrafts);
   const [savedHint, setSavedHint] = useState(false);
 
+  // Merge statt reinem Fallback: ein in localStorage gespeicherter Entwurf
+  // aus einer aelteren Version (vor neuen Draft-Feldern wie showFloral)
+  // soll die neuen Felder aus dem Default ziehen, nicht stillschweigend
+  // als "aus" gelten.
   function draftFor(item: GalleryTemplate): Draft {
-    return drafts[item.id] ?? defaultDraft(item);
+    return { ...defaultDraft(item), ...drafts[item.id] };
   }
 
   function updateDraft(item: GalleryTemplate, patch: Partial<Draft>) {
     setDrafts((prev) => {
-      const base = prev[item.id] ?? defaultDraft(item);
+      const base = { ...defaultDraft(item), ...prev[item.id] };
       const next = { ...prev, [item.id]: { ...base, ...patch } };
       saveDrafts(next);
       return next;
@@ -157,10 +208,53 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                           style={{ background: draft.background, borderColor: draft.accent }}
                         >
                           <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
-                            {draft.image && (
-                              // eslint-disable-next-line @next/next/no-img-element -- user upload (data URL), unknown dimensions
-                              <img className="customizer-card-photo" src={draft.image} alt="" />
+                            {draft.showFloral && (
+                              <svg
+                                className="customizer-card-floral"
+                                viewBox="0 0 300 400"
+                                preserveAspectRatio="xMidYMid slice"
+                                aria-hidden="true"
+                              >
+                                <defs>
+                                  <pattern
+                                    id={`floral-${item.id}`}
+                                    width="70"
+                                    height="70"
+                                    patternUnits="userSpaceOnUse"
+                                    patternTransform="rotate(8)"
+                                  >
+                                    <path
+                                      d="M8 62 Q18 42 34 46 Q30 24 8 18 M34 46 Q46 38 44 20"
+                                      fill="none"
+                                      stroke={draft.accent}
+                                      strokeWidth="1.1"
+                                    />
+                                    <circle cx="34" cy="46" r="1.8" fill={draft.accent} stroke="none" />
+                                    <circle cx="8" cy="18" r="1.4" fill={draft.accent} stroke="none" />
+                                  </pattern>
+                                </defs>
+                                <rect width="300" height="400" fill={`url(#floral-${item.id})`} />
+                              </svg>
                             )}
+                            {draft.showOrnaments && (
+                              <>
+                                <CornerMotif color={draft.accent} corner="tl" />
+                                <CornerMotif color={draft.accent} corner="tr" />
+                                <CornerMotif color={draft.accent} corner="bl" />
+                                <CornerMotif color={draft.accent} corner="br" />
+                                <div className="customizer-card-dots">
+                                  <DotScatter color={draft.accent} />
+                                </div>
+                              </>
+                            )}
+
+                            {draft.image && (
+                              <div className="customizer-card-photo-wrap">
+                                {/* eslint-disable-next-line @next/next/no-img-element -- user upload (data URL), unknown dimensions */}
+                                <img src={draft.image} alt="" style={photoStyle(draft.photoShape)} />
+                              </div>
+                            )}
+
                             <div className="customizer-card-eyebrow" style={{ color: draft.accent }}>
                               {draft.eventLabel || item.defaultEventLabel}
                             </div>
@@ -176,6 +270,15 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                             >
                               {draft.text || item.defaultText}
                             </div>
+
+                            {(draft.familyLeft || draft.familyRight) && (
+                              <div className="customizer-card-families" style={{ color: draft.primary }}>
+                                {draft.familyLeft && <span>{draft.familyLeft} Ailesi</span>}
+                                {draft.familyLeft && draft.familyRight && <span> &amp; </span>}
+                                {draft.familyRight && <span>{draft.familyRight} Ailesi</span>}
+                              </div>
+                            )}
+
                             <div className="customizer-card-divider" style={{ background: draft.accent }} />
                             <div className="customizer-card-date" style={{ color: draft.primary }}>
                               {draft.dateText || "Datum & Uhrzeit"}
@@ -186,6 +289,44 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               </svg>
                               {draft.locationText || "Ort / Location eingeben"}
                             </div>
+
+                            {draft.showCountdown && (
+                              <div className="customizer-card-countdown">
+                                {[
+                                  ["14", "TAGE"],
+                                  ["06", "STD"],
+                                  ["32", "MIN"],
+                                ].map(([n, l]) => (
+                                  <div key={l} style={{ color: draft.primary }}>
+                                    <div style={{ fontFamily: font.cssVar, color: draft.accent }}>{n}</div>
+                                    <div>{l}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="customizer-card-actions">
+                              <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                                Google Maps
+                              </span>
+                              <span
+                                style={{ background: draft.accent, borderColor: draft.accent, color: draft.background }}
+                              >
+                                Kalender
+                              </span>
+                            </div>
+
+                            {draft.showRsvp && (
+                              <div className="customizer-card-rsvp" style={{ borderColor: `${draft.accent}66` }}>
+                                <div style={{ color: draft.primary }}>Kommt ihr?</div>
+                                <div>
+                                  <span style={{ background: draft.accent, color: draft.background }}>Zusagen</span>
+                                  <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                                    Absagen
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <button type="button" className="customizer-close" onClick={() => setOpenId(null)}>
@@ -245,6 +386,31 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                           <span className="customizer-hint">
                             Google-Maps-Autovervollständigung folgt hier in Kürze.
                           </span>
+                        </div>
+
+                        <div className="customizer-row">
+                          <div className="customizer-field" style={{ flex: 1, minWidth: 140 }}>
+                            <label htmlFor={`fam-left-${item.id}`}>Familie (links)</label>
+                            <input
+                              id={`fam-left-${item.id}`}
+                              className="customizer-text-input"
+                              type="text"
+                              value={draft.familyLeft}
+                              placeholder="z. B. Demir"
+                              onChange={(e) => updateDraft(item, { familyLeft: e.target.value })}
+                            />
+                          </div>
+                          <div className="customizer-field" style={{ flex: 1, minWidth: 140 }}>
+                            <label htmlFor={`fam-right-${item.id}`}>Familie (rechts)</label>
+                            <input
+                              id={`fam-right-${item.id}`}
+                              className="customizer-text-input"
+                              type="text"
+                              value={draft.familyRight}
+                              placeholder="z. B. Yılmaz"
+                              onChange={(e) => updateDraft(item, { familyRight: e.target.value })}
+                            />
+                          </div>
                         </div>
 
                         <div className="customizer-field">
@@ -345,6 +511,58 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 Entfernen
                               </button>
                             )}
+                          </div>
+                          {draft.image && (
+                            <div className="customizer-shapes">
+                              {PHOTO_SHAPES.map((s) => (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  className={`customizer-shape-btn${s.id === draft.photoShape ? " is-active" : ""}`}
+                                  onClick={() => updateDraft(item, { photoShape: s.id })}
+                                >
+                                  {s.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="customizer-field">
+                          <label>Verzierungen</label>
+                          <div className="customizer-toggles">
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showFloral}
+                                onChange={(e) => updateDraft(item, { showFloral: e.target.checked })}
+                              />
+                              Floral-Muster
+                            </label>
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showOrnaments}
+                                onChange={(e) => updateDraft(item, { showOrnaments: e.target.checked })}
+                              />
+                              Eck-Ornamente &amp; Streumuster
+                            </label>
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showCountdown}
+                                onChange={(e) => updateDraft(item, { showCountdown: e.target.checked })}
+                              />
+                              Countdown
+                            </label>
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showRsvp}
+                                onChange={(e) => updateDraft(item, { showRsvp: e.target.checked })}
+                              />
+                              Zusagen-Bereich
+                            </label>
                           </div>
                         </div>
 

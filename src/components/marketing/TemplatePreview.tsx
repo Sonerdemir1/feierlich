@@ -5,7 +5,7 @@
 // Wiederverwendbares Eckornament (Paisley-artige Filigranranke) fuer die
 // "kitschigen" tuerkischen Vorlagen — sorgt fuer dichtere Ornamentik statt
 // nur duenner Linien, ohne 8x eine komplett eigene Ranke zu zeichnen.
-function CornerMotif({ color, corner }: { color: string; corner: "tl" | "tr" | "bl" | "br" }) {
+export function CornerMotif({ color, corner }: { color: string; corner: "tl" | "tr" | "bl" | "br" }) {
   const pos: Record<string, React.CSSProperties> = {
     tl: { top: 9, left: 9 },
     tr: { top: 9, right: 9, transform: "scaleX(-1)" },
@@ -20,7 +20,7 @@ function CornerMotif({ color, corner }: { color: string; corner: "tl" | "tr" | "
   );
 }
 
-function DotScatter({ color, seed = 0 }: { color: string; seed?: number }) {
+export function DotScatter({ color, seed = 0 }: { color: string; seed?: number }) {
   const sets = [
     [
       [14, 16, 3.2, 0.55],
