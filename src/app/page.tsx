@@ -4,6 +4,7 @@ import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
 import { HeroRotator } from "@/components/marketing/HeroRotator";
+import { HeroStory } from "@/components/marketing/HeroStory";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -93,6 +94,8 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <HeroStory />
 
       <section className="brandmark reveal">
         <div className="brandmark-head">

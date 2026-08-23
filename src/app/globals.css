@@ -594,3 +594,239 @@ footer p {
     padding-right: 22px;
   }
 }
+
+/* story — animierte Erklär-Sequenz auf der Startseite ("So funktioniert
+   einladi"). Eigener Wein/Gold-Farbraum bewusst losgelöst von den
+   :root-Marken-Tokens (via Inline-Custom-Properties am Wrapper gesetzt),
+   weil sie die opulente Duegue-Vorlage widerspiegeln, nicht die
+   neutrale Marken-Palette. */
+.story-section {
+  padding: 8px 28px 72px;
+  max-width: 1160px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.story-head {
+  max-width: 540px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.story-head h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(24px, 3vw, 30px);
+  margin-top: 10px;
+}
+.story-frame {
+  position: relative;
+  width: min(88vw, 340px);
+  aspect-ratio: 9 / 16;
+  max-height: 600px;
+  background: linear-gradient(165deg, var(--story-wine) 0%, var(--story-wine-deep) 100%);
+  border: 1px solid rgba(212, 175, 106, 0.55);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.55);
+  isolation: isolate;
+}
+.story-frame::before,
+.story-frame::after,
+.story-corner-tl,
+.story-corner-br {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--story-gold);
+  opacity: 0.75;
+  z-index: 2;
+  pointer-events: none;
+}
+.story-frame::before { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+.story-frame::after { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+.story-corner-tl { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+.story-corner-br { bottom: 12px; left: 12px; border-right: none; border-top: none; }
+
+.story-progress-row {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  right: 9px;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 5px;
+  z-index: 4;
+}
+.story-progress-track {
+  height: 3px;
+  background: rgba(246, 238, 224, 0.22);
+  overflow: hidden;
+}
+.story-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--story-gold-bright);
+}
+.story-progress-track.done .story-progress-fill { width: 100%; }
+.story-progress-track.active .story-progress-fill {
+  animation: storyFillBeat var(--story-beat-duration, 5.2s) linear forwards;
+}
+@keyframes storyFillBeat {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.story-controls {
+  position: absolute;
+  top: 20px;
+  right: 10px;
+  z-index: 5;
+}
+.story-icon-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: rgba(23, 16, 15, 0.35);
+  border: 1px solid rgba(212, 175, 106, 0.4);
+  border-radius: 50%;
+  color: var(--story-gold-bright);
+  cursor: pointer;
+}
+.story-icon-btn svg { width: 11px; height: 11px; }
+
+.story-tap-zones {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  z-index: 3;
+}
+.story-tap-zone {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.story-beat {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 54px 24px 64px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+.story-beat.is-active {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.story-beat-graphic {
+  width: 100%;
+  height: 108px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  color: var(--story-gold);
+}
+.story-mock {
+  border: 1px solid rgba(212, 175, 106, 0.5);
+  background: rgba(246, 238, 224, 0.04);
+}
+.story-mock-label {
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--story-rose-dim);
+}
+.story-chip {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--story-gold);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--story-gold);
+}
+.story-chip svg { width: 13px; height: 13px; }
+.story-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--story-gold);
+  margin-bottom: 14px;
+}
+.story-headline {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(21px, 5vw, 25px);
+  line-height: 1.18;
+  color: var(--story-cream);
+  text-wrap: balance;
+  margin-bottom: 12px;
+}
+.story-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--story-rose-dim);
+  max-width: 28ch;
+}
+.story-replay {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--story-gold);
+  color: var(--story-gold-bright);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.story-replay:hover { background: rgba(212, 175, 106, 0.1); }
+.story-nav-hint {
+  position: absolute;
+  bottom: 44px;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  text-align: center;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: rgba(246, 238, 224, 0.42);
+  pointer-events: none;
+}
+.story-brandmark {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  text-align: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--story-gold);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-beat { transition: opacity 0.3s ease; transform: none; }
+  .story-progress-track.active .story-progress-fill { animation: none; }
+}
