@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 
 type Colors = { primary: string; accent: string; background: string };
@@ -75,13 +76,14 @@ function saveDrafts(drafts: Record<string, Draft>) {
 }
 
 export function TemplateGallery({ categories }: { categories: GalleryCategory[] }) {
+  const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  // Lazy initializer statt Effect: laeuft einmalig bei Mount, liest
+  // sicher {} waehrend SSR (loadDrafts prueft `typeof window`). Der
+  // Entwurf beeinflusst nie den initialen Render (Panel startet immer
+  // geschlossen), daher kein Hydration-Mismatch-Risiko.
+  const [drafts, setDrafts] = useState<Record<string, Draft>>(loadDrafts);
   const [savedHint, setSavedHint] = useState(false);
-
-  useEffect(() => {
-    setDrafts(loadDrafts());
-  }, []);
 
   function draftFor(item: GalleryTemplate): Draft {
     return drafts[item.id] ?? defaultDraft(item);
@@ -145,7 +147,10 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                           className="customizer-card"
                           style={{ background: draft.background, borderColor: `${draft.accent}55` }}
                         >
-                          {draft.image && <img src={draft.image} alt="" />}
+                          {draft.image && (
+                            // eslint-disable-next-line @next/next/no-img-element -- user upload (data URL), unknown dimensions
+                            <img src={draft.image} alt="" />
+                          )}
                           <div
                             style={{
                               fontFamily: font.cssVar,
@@ -275,7 +280,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                             onClick={() => {
                               saveDrafts(drafts);
                               setSavedHint(true);
-                              window.location.href = "/login";
+                              router.push("/login");
                             }}
                           >
                             Design speichern &amp; Konto erstellen

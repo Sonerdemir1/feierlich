@@ -6,6 +6,12 @@ import { HeroRotator } from "@/components/marketing/HeroRotator";
 import { HeroStory } from "@/components/marketing/HeroStory";
 import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
 
+// Ohne dies versucht `next build`, diese Seite bei jedem Deploy statisch
+// vorzurendern und braucht dafuer eine live erreichbare Datenbank zur
+// Build-Zeit — auf Railway (Build-Schritt vor dem Start des
+// Postgres-Containers) schlaegt das sonst fehl.
+export const dynamic = "force-dynamic";
+
 function defaultTextForCategory(category: string): string {
   if (category === "Türkische Feste & Bräuche") return "Ayşe & Emre";
   if (category === "Verspielt") return "Mia wird 5";

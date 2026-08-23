@@ -185,8 +185,6 @@ export function HeroStory() {
     setIndex(Math.max(0, Math.min(beats.length - 1, i)));
   };
 
-  const beat = beats[index];
-
   return (
     <section className="story-section reveal">
       <div className="story-head">
