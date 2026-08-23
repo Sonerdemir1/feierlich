@@ -410,12 +410,18 @@ nav {
   display: grid;
   grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
   gap: 32px;
+  align-items: start;
 }
 .customizer-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 .customizer-card {
   width: 100%;
@@ -558,6 +564,48 @@ nav {
   font-weight: 600;
   padding: 6px 14px;
   border: 1px solid;
+}
+.customizer-card-section {
+  position: relative;
+  z-index: 1;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid;
+  width: 100%;
+  text-align: center;
+}
+.customizer-card-section > div:first-child {
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.customizer-card-seating-input {
+  display: inline-block;
+  font-size: 10px;
+  padding: 6px 12px;
+  border: 1px solid;
+  margin-bottom: 10px;
+}
+.customizer-card-seating-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 10px);
+  gap: 7px;
+  justify-content: center;
+}
+.customizer-card-seating-grid span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid;
+}
+.customizer-card-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+}
+.customizer-card-gallery-grid span {
+  aspect-ratio: 1;
+  display: block;
 }
 .customizer-close {
   font-size: 11.5px;
@@ -714,6 +762,16 @@ nav {
   width: 15px;
   height: 15px;
   cursor: pointer;
+}
+.customizer-tier-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+  background: var(--blush);
+  padding: 2px 7px;
+  margin-left: auto;
 }
 .customizer-cta {
   display: flex;

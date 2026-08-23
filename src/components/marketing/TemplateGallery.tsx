@@ -3,7 +3,7 @@
 import { Fragment, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { TemplatePreview, CornerMotif, DotScatter } from "@/components/marketing/TemplatePreview";
+import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
 
 type Colors = { primary: string; accent: string; background: string };
 
@@ -86,6 +86,18 @@ type Draft = {
   showOrnaments: boolean;
   showCountdown: boolean;
   showRsvp: boolean;
+  showSeating: boolean;
+  showGallery: boolean;
+};
+
+// Welches Paket ein Feature freischaltet — aus prisma/seed.ts (Package.
+// features) uebernommen, damit die Anzeige hier nicht aus der Luft
+// gegriffen ist. Bei Aenderungen an den Paketen auch hier nachziehen.
+const FEATURE_TIER: Record<string, string> = {
+  countdown: "Basic",
+  rsvp: "Premium",
+  seating: "Premium Plus",
+  gallery: "Premium Plus",
 };
 
 const STORAGE_KEY = "einladi:design-drafts:v1";
@@ -120,6 +132,8 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showOrnaments: true,
     showCountdown: true,
     showRsvp: true,
+    showSeating: true,
+    showGallery: true,
   };
 }
 
@@ -243,7 +257,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 <CornerMotif color={draft.accent} corner="bl" />
                                 <CornerMotif color={draft.accent} corner="br" />
                                 <div className="customizer-card-dots">
-                                  <DotScatter color={draft.accent} />
+                                  {category === "Sünnet" ? <NazarScatter /> : <DotScatter color={draft.accent} />}
                                 </div>
                               </>
                             )}
@@ -324,6 +338,38 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                   <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
                                     Absagen
                                   </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {draft.showSeating && (
+                              <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
+                                <div style={{ color: draft.primary }}>Sitzplan-Suche</div>
+                                <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                                  Euer Name …
+                                </div>
+                                <div className="customizer-card-seating-grid">
+                                  {Array.from({ length: 8 }).map((_, i) => (
+                                    <span
+                                      key={i}
+                                      style={
+                                        i === 2
+                                          ? { background: draft.accent }
+                                          : { borderColor: `${draft.accent}55` }
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {draft.showGallery && (
+                              <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
+                                <div style={{ color: draft.primary }}>Foto- &amp; Videogalerie</div>
+                                <div className="customizer-card-gallery-grid">
+                                  {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
+                                    <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
+                                  ))}
                                 </div>
                               </div>
                             )}
@@ -547,6 +593,12 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               />
                               Eck-Ornamente &amp; Streumuster
                             </label>
+                          </div>
+                        </div>
+
+                        <div className="customizer-field">
+                          <label>Funktionen</label>
+                          <div className="customizer-toggles">
                             <label className="customizer-toggle">
                               <input
                                 type="checkbox"
@@ -554,6 +606,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 onChange={(e) => updateDraft(item, { showCountdown: e.target.checked })}
                               />
                               Countdown
+                              <span className="customizer-tier-badge">ab {FEATURE_TIER.countdown}</span>
                             </label>
                             <label className="customizer-toggle">
                               <input
@@ -562,8 +615,31 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 onChange={(e) => updateDraft(item, { showRsvp: e.target.checked })}
                               />
                               Zusagen-Bereich
+                              <span className="customizer-tier-badge">ab {FEATURE_TIER.rsvp}</span>
+                            </label>
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showSeating}
+                                onChange={(e) => updateDraft(item, { showSeating: e.target.checked })}
+                              />
+                              Sitzplan-Suche
+                              <span className="customizer-tier-badge">ab {FEATURE_TIER.seating}</span>
+                            </label>
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showGallery}
+                                onChange={(e) => updateDraft(item, { showGallery: e.target.checked })}
+                              />
+                              Foto- &amp; Videogalerie
+                              <span className="customizer-tier-badge">ab {FEATURE_TIER.gallery}</span>
                             </label>
                           </div>
+                          <span className="customizer-hint">
+                            Alle Funktionen sind hier zur Ansicht aktiv — welches Paket ihr braucht, hängt davon ab,
+                            was ihr am Ende nutzen wollt.
+                          </span>
                         </div>
 
                         <div className="customizer-cta">

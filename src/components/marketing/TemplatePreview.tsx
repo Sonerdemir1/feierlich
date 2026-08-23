@@ -2,20 +2,24 @@
 // (Template-Tabelle) — neue layoutKeys brauchen einen neuen Fall hier,
 // alles andere (Name, Kategorie, Preis, Verfuegbarkeit) ist datengetrieben.
 
-// Wiederverwendbares Eckornament (Paisley-artige Filigranranke) fuer die
-// "kitschigen" tuerkischen Vorlagen — sorgt fuer dichtere Ornamentik statt
-// nur duenner Linien, ohne 8x eine komplett eigene Ranke zu zeichnen.
+// Wiederverwendbares Eckornament (gefuellte Paisley-Tropfenform, kein
+// duenner Strich) fuer die "kitschigen" tuerkischen Vorlagen — gefuellte
+// Flaechen lesen sich als echte Grafik statt als Skizze.
 export function CornerMotif({ color, corner }: { color: string; corner: "tl" | "tr" | "bl" | "br" }) {
   const pos: Record<string, React.CSSProperties> = {
-    tl: { top: 9, left: 9 },
-    tr: { top: 9, right: 9, transform: "scaleX(-1)" },
-    bl: { bottom: 9, left: 9, transform: "scaleY(-1)" },
-    br: { bottom: 9, right: 9, transform: "scale(-1,-1)" },
+    tl: { top: 8, left: 8 },
+    tr: { top: 8, right: 8, transform: "scaleX(-1)" },
+    bl: { bottom: 8, left: 8, transform: "scaleY(-1)" },
+    br: { bottom: 8, right: 8, transform: "scale(-1,-1)" },
   };
   return (
-    <svg width="30" height="30" viewBox="0 0 30 30" style={{ position: "absolute", ...pos[corner] }} fill="none" stroke={color} strokeWidth="1.1">
-      <path d="M1 1 Q1 17 17 17 M1 1 Q17 1 17 17 M5 5 Q5 12 12 12 M1 1 L6 1 M1 1 L1 6" />
-      <circle cx="9.5" cy="9.5" r="1.3" fill={color} stroke="none" />
+    <svg width="32" height="32" viewBox="0 0 34 34" style={{ position: "absolute", ...pos[corner] }}>
+      <path
+        d="M3 30 C0 18 3 3 20 2 C23 2 24 5 21 6 C11 9 6 17 9 25 C11 30 8 32 3 30 Z"
+        fill={color}
+        opacity="0.92"
+      />
+      <circle cx="19.5" cy="5" r="1.7" fill={color} />
     </svg>
   );
 }
@@ -46,6 +50,43 @@ export function DotScatter({ color, seed = 0 }: { color: string; seed?: number }
         <circle key={i} cx={cx} cy={cy} r={r} opacity={o} />
       ))}
     </svg>
+  );
+}
+
+// Nazar Boncuğu (Blaues Auge) — saekulares, sehr verbreitetes tuerkisches
+// Schutz-/Glueckssymbol, konzentrische gefuellte Kreise. Fuer Sünnet
+// explizit gewuenscht statt einer schlichten Flaechenfarbe.
+export function NazarBoncugu({ size, x, y, opacity = 1 }: { size: number; x: number; y: number; opacity?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      style={{ position: "absolute", top: y, left: x, opacity }}
+    >
+      <circle cx="20" cy="20" r="19" fill="#16305C" />
+      <circle cx="20" cy="20" r="15" fill="#F4F4F0" />
+      <circle cx="20" cy="20" r="11" fill="#2F6FED" />
+      <circle cx="20" cy="20" r="6.5" fill="#F4F4F0" />
+      <circle cx="20" cy="20" r="3.2" fill="#16305C" />
+    </svg>
+  );
+}
+
+export function NazarScatter() {
+  const set: [number, number, number, number][] = [
+    [10, 14, 20, 0.9],
+    [128, 10, 16, 0.75],
+    [16, 118, 15, 0.7],
+    [124, 126, 22, 0.85],
+    [66, 8, 12, 0.55],
+  ];
+  return (
+    <>
+      {set.map(([x, y, size, opacity], i) => (
+        <NazarBoncugu key={i} x={x} y={y} size={size} opacity={opacity} />
+      ))}
+    </>
   );
 }
 
@@ -406,29 +447,35 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       return (
         <div className="tpl-prev" style={{ background: "#0E2F5A" }}>
           <div style={{ position: "absolute", inset: 7, border: "1px solid #D4AF3799" }} />
-          <DotScatter color="#D4AF37" />
+          <NazarScatter />
           <CornerMotif color="#D4AF37" corner="tl" />
           <CornerMotif color="#D4AF37" corner="tr" />
           <CornerMotif color="#D4AF37" corner="bl" />
           <CornerMotif color="#D4AF37" corner="br" />
-          <svg width="32" height="24" viewBox="0 0 32 24" style={{ marginBottom: 8 }} fill="none" stroke="#D4AF37" strokeWidth="1.3">
+          <svg width="32" height="24" viewBox="0 0 32 24" style={{ marginBottom: 8, zIndex: 1, position: "relative" }} fill="none" stroke="#D4AF37" strokeWidth="1.3">
             <path d="M2 20 L2 11 L8 16 L16 6 L24 16 L30 11 L30 20 Z" />
             <circle cx="16" cy="4" r="1.5" fill="#D4AF37" stroke="none" />
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF" }}>Kaan</div>
-          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8 }}>SÜNNET</div>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1, position: "relative" }}>
+            Kaan
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8, zIndex: 1, position: "relative" }}>
+            SÜNNET
+          </div>
         </div>
       );
     case "masmavi":
       return (
         <div className="tpl-prev" style={{ background: "#EAF1F8" }}>
           <div style={{ position: "absolute", top: 9, left: 9, right: 9, bottom: 9, border: "1px solid #8FA8C9" }} />
+          <NazarBoncugu x={12} y={116} size={22} opacity={0.85} />
+          <NazarBoncugu x={126} y={12} size={18} opacity={0.7} />
           <CornerMotif color="#8FA8C9" corner="tl" />
           <CornerMotif color="#8FA8C9" corner="br" />
-          <svg width="22" height="17" viewBox="0 0 32 24" style={{ marginBottom: 8 }} fill="none" stroke="#1B3A5C" strokeWidth="1.3">
+          <svg width="22" height="17" viewBox="0 0 32 24" style={{ marginBottom: 8, zIndex: 1, position: "relative" }} fill="none" stroke="#1B3A5C" strokeWidth="1.3">
             <path d="M2 20 L2 11 L8 16 L16 6 L24 16 L30 11 L30 20 Z" />
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#1B3A5C" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#1B3A5C", zIndex: 1, position: "relative" }}>
             Kaan
           </div>
         </div>
