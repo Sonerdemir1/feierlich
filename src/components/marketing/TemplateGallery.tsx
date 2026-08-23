@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
@@ -181,12 +181,53 @@ function saveDrafts(drafts: Record<string, Draft>) {
 export function TemplateGallery({ categories }: { categories: GalleryCategory[] }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
+  // Vollbild-Vorschau startet immer geschlossen (nur die Karte, gross und
+  // mittig) — das Formular blendet man sich bewusst per "Bearbeiten" ein,
+  // statt es immer daneben stehen zu haben. Passt zum Vorbild: erst die
+  // Karte in Ruhe ansehen, dann editieren.
+  const [formOpen, setFormOpen] = useState(false);
   // Lazy initializer statt Effect: laeuft einmalig bei Mount, liest
   // sicher {} waehrend SSR (loadDrafts prueft `typeof window`). Der
   // Entwurf beeinflusst nie den initialen Render (Panel startet immer
   // geschlossen), daher kein Hydration-Mismatch-Risiko.
   const [drafts, setDrafts] = useState<Record<string, Draft>>(loadDrafts);
   const [savedHint, setSavedHint] = useState(false);
+
+  const flatItems = categories.flatMap((c) => c.items.map((item) => ({ item, category: c.category })));
+
+  function openItem(id: string) {
+    setOpenId(id);
+    setFormOpen(false);
+  }
+
+  function closeOverlay() {
+    setOpenId(null);
+    setFormOpen(false);
+  }
+
+  function step(dir: 1 | -1) {
+    const idx = flatItems.findIndex((f) => f.item.id === openId);
+    if (idx === -1) return;
+    const next = flatItems[(idx + dir + flatItems.length) % flatItems.length];
+    setOpenId(next.item.id);
+    setFormOpen(false);
+  }
+
+  // Esc schliesst die Vollbild-Vorschau, Body-Scroll wird gesperrt solange
+  // sie offen ist — sonst scrollt die Seite dahinter unsichtbar mit.
+  useEffect(() => {
+    if (!openId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeOverlay();
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [openId]);
 
   // Merge statt reinem Fallback: ein in localStorage gespeicherter Entwurf
   // aus einer aelteren Version (vor neuen Draft-Feldern wie showFloral)
@@ -226,6 +267,8 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
     reader.readAsDataURL(file);
   }
 
+  const activeEntry = flatItems.find((f) => f.item.id === openId) ?? null;
+
   return (
     <>
       {categories.map(({ category, subtitle, items }) => (
@@ -235,45 +278,58 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
             <span className="cat-sub">{subtitle}</span>
           </div>
           <div className="cat-grid">
-            {items.map((item) => {
-              const isOpen = openId === item.id;
-              const draft = draftFor(item);
-              const font = FONT_OPTIONS.find((f) => f.id === draft.fontId) ?? FONT_OPTIONS[0];
+            {items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`tpl${openId === item.id ? " is-open" : ""}`}
+                onClick={() => openItem(item.id)}
+                aria-expanded={openId === item.id}
+              >
+                <span className="tpl-open-hint">Design anpassen</span>
+                <TemplatePreview layoutKey={item.layoutKey} />
+                <span className="tpl-label">
+                  <span>{item.name}</span>
+                  {item.priceCents > 0 && <span className="tpl-price">{eur.format(item.priceCents / 100)}</span>}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
-              return (
-                <Fragment key={item.id}>
-                  <button
-                    type="button"
-                    className={`tpl${isOpen ? " is-open" : ""}`}
-                    onClick={() => setOpenId(isOpen ? null : item.id)}
-                    aria-expanded={isOpen}
-                  >
-                    <span className="tpl-open-hint">{isOpen ? "Schließen" : "Design anpassen"}</span>
-                    <TemplatePreview layoutKey={item.layoutKey} />
-                    <span className="tpl-label">
-                      <span>{item.name}</span>
-                      {item.priceCents > 0 && <span className="tpl-price">{eur.format(item.priceCents / 100)}</span>}
-                    </span>
-                  </button>
+      {activeEntry &&
+        (() => {
+          const { item, category } = activeEntry;
+          const draft = draftFor(item);
+          const font = FONT_OPTIONS.find((f) => f.id === draft.fontId) ?? FONT_OPTIONS[0];
 
-                  {isOpen && (
-                    <div className="customizer" key={`${item.id}-customizer`}>
-                      <div className="customizer-preview">
-                        <div
-                          className="customizer-card"
-                          style={{
-                            background: draft.background,
-                            borderColor: draft.accent,
-                            ...(item.photoBackground && draft.showPhotoBackground
-                              ? {
-                                  backgroundImage: `linear-gradient(180deg, rgba(20,6,10,0.3) 0%, rgba(20,6,10,0.55) 55%, rgba(20,6,10,0.85) 100%), url(${item.photoBackground})`,
-                                  backgroundSize: "cover",
-                                  backgroundPosition: "center",
-                                }
-                              : {}),
-                          }}
-                        >
-                          <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
+          return (
+            <div className="tpl-overlay" onClick={(e) => e.target === e.currentTarget && closeOverlay()}>
+              <button type="button" className="tpl-overlay-close" onClick={closeOverlay} aria-label="Schließen">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+
+              <div className="tpl-overlay-stage">
+                <div className="tpl-overlay-card-col">
+                  <div key={item.id} className="tpl-overlay-card-anim">
+                    <div
+                      className="customizer-card"
+                      style={{
+                        background: draft.background,
+                        borderColor: draft.accent,
+                        ...(item.photoBackground && draft.showPhotoBackground
+                          ? {
+                              backgroundImage: `linear-gradient(180deg, rgba(20,6,10,0.3) 0%, rgba(20,6,10,0.55) 55%, rgba(20,6,10,0.85) 100%), url(${item.photoBackground})`,
+                              backgroundSize: "cover",
+                              backgroundPosition: "center",
+                            }
+                          : {}),
+                      }}
+                    >
+                      <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
                             {draft.showFloral && !(item.photoBackground && draft.showPhotoBackground) && (
                               <svg
                                 className="customizer-card-floral"
@@ -440,14 +496,13 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                             )}
                           </div>
                         </div>
-                        <button type="button" className="customizer-close" onClick={() => setOpenId(null)}>
-                          Vorschau schließen
-                        </button>
-                      </div>
-
-                      <div className="customizer-form">
-                        <div className="customizer-field">
-                          <label htmlFor={`text-${item.id}`}>Name / Titel</label>
+                    </div>
+                  </div>
+                {formOpen && (
+                  <div className="tpl-overlay-form" onClick={(e) => e.stopPropagation()}>
+                    <div className="customizer-form">
+                      <div className="customizer-field">
+                        <label htmlFor={`text-${item.id}`}>Name / Titel</label>
                           <input
                             id={`text-${item.id}`}
                             className="customizer-text-input"
@@ -744,17 +799,44 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                           >
                             Design speichern &amp; Konto erstellen
                           </button>
-                          {savedHint && <span className="customizer-saved">Gespeichert — geht gleich weiter.</span>}
-                        </div>
+                        {savedHint && <span className="customizer-saved">Gespeichert — geht gleich weiter.</span>}
                       </div>
                     </div>
-                  )}
-                </Fragment>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="tpl-overlay-bar">
+                <button type="button" onClick={closeOverlay}>
+                  Zurück
+                </button>
+                <button type="button" onClick={() => step(-1)} aria-label="Vorheriges Design">
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="tpl-overlay-bar-primary"
+                  onClick={() => setFormOpen((f) => !f)}
+                >
+                  {formOpen ? "Vorschau" : "Bearbeiten"}
+                </button>
+                <button type="button" onClick={() => step(1)} aria-label="Nächstes Design">
+                  ›
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveDrafts(drafts);
+                    setSavedHint(true);
+                    router.push("/login");
+                  }}
+                >
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          );
+        })()}
     </>
   );
 }

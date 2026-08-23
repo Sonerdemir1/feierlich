@@ -401,28 +401,128 @@ nav {
 
 /* customizer — erscheint direkt neben/unter der angeklickten Vorlage,
    volle Rasterbreite, keine Anmeldung noetig. */
-.customizer {
-  grid-column: 1 / -1;
-  border: 1px solid var(--ink);
-  background: var(--ivory-2);
-  padding: 26px;
-  margin-top: -1px;
-  display: grid;
-  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
-  gap: 32px;
-  align-items: start;
+/* tpl-overlay — Vollbild-Vorschau statt Inline-Panel im Raster: klicken
+   oeffnet die Karte gross und animiert, wie bei einer dedizierten
+   Vorschau-Seite. Schwebende Leiste unten bleibt beim Scrollen sichtbar
+   (das Formular scrollt intern innerhalb der Buehne, nicht die Seite). */
+.tpl-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(18, 15, 12, 0.92);
+  display: flex;
+  flex-direction: column;
+  animation: tplOverlayFade 0.25s ease;
 }
-.customizer-preview {
+@keyframes tplOverlayFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.tpl-overlay-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(250, 246, 239, 0.3);
+  background: rgba(250, 246, 239, 0.08);
+  color: var(--ivory);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.tpl-overlay-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  padding: 64px 24px;
+  overflow-y: auto;
+  flex-wrap: wrap;
+}
+.tpl-overlay-card-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  position: sticky;
-  top: 24px;
-  align-self: start;
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
 }
+.tpl-overlay-card-anim {
+  animation: tplCardOpen 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes tplCardOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tpl-overlay-form {
+  width: min(100%, 380px);
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  background: var(--ivory-2);
+  border: 1px solid var(--line);
+  padding: 24px;
+  animation: tplFormSlide 0.3s ease;
+}
+@keyframes tplFormSlide {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tpl-overlay-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  background: rgba(250, 246, 239, 0.06);
+  border-top: 1px solid rgba(250, 246, 239, 0.14);
+}
+.tpl-overlay-bar button {
+  border: 1px solid rgba(250, 246, 239, 0.3);
+  background: none;
+  color: var(--ivory);
+  font-size: 12.5px;
+  font-family: var(--font-body);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.tpl-overlay-bar-primary {
+  background: var(--terracotta) !important;
+  border-color: var(--terracotta) !important;
+  font-weight: 600;
+}
+@media (max-width: 640px) {
+  .tpl-overlay-stage {
+    padding: 48px 16px;
+    gap: 20px;
+  }
+  .tpl-overlay-bar span,
+  .tpl-overlay-bar button {
+    font-size: 11.5px;
+    padding: 9px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tpl-overlay,
+  .tpl-overlay-card-anim,
+  .tpl-overlay-form {
+    animation: none;
+  }
+}
+
 .customizer-card {
   width: 100%;
   max-width: 320px;
