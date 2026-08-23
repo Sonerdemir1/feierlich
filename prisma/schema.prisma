@@ -1,7 +1,7 @@
 // Digital Event Studio — Datenmodell
-// Prisma schema. SQLite lokal in der Entwicklung, Wechsel auf Postgres
-// spaeter nur ueber die DATABASE_URL/provider, ohne Code-Aenderung an
-// den Models.
+// Prisma schema. Postgres (Railway-Managed-Datenbank in Produktion und
+// lokal via dieselbe DATABASE_URL — SQLite diente nur als initialer
+// Entwicklungsstand vor dem ersten echten Deploy).
 
 generator client {
   provider = "prisma-client"
@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ---------------------------------------------------------------------
