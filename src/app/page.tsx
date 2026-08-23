@@ -3,6 +3,7 @@ import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
+import { HeroRotator } from "@/components/marketing/HeroRotator";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -88,11 +89,7 @@ export default async function Home() {
             </div>
           </div>
           <div className="hero-visual">
-            <div className="hero-card">
-              <div className="name">Anna &amp; Lukas</div>
-              <div className="rule" />
-              <div className="meta">14. JUNI 2026 · SCHLOSS EHRENFELS</div>
-            </div>
+            <HeroRotator />
           </div>
         </div>
       </section>

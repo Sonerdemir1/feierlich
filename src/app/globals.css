@@ -57,6 +57,20 @@ a {
     opacity: 1;
     transform: none;
   }
+
+  .hero-card-fade {
+    animation: heroFadeIn 0.6s ease;
+  }
+  @keyframes heroFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 /* logo */
