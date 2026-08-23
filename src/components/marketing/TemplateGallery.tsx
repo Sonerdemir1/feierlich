@@ -13,6 +13,7 @@ export type GalleryTemplate = {
   priceCents: number;
   colors: Colors;
   defaultText: string;
+  defaultEventLabel: string;
 };
 
 export type GalleryCategory = {
@@ -36,8 +37,12 @@ const FONT_OPTIONS: FontOption[] = [
 
 type Draft = {
   text: string;
+  eventLabel: string;
+  dateText: string;
+  locationText: string;
   fontId: string;
   fontSize: number;
+  primary: string;
   accent: string;
   background: string;
   image: string | null;
@@ -59,8 +64,12 @@ function loadDrafts(): Record<string, Draft> {
 function defaultDraft(item: GalleryTemplate): Draft {
   return {
     text: item.defaultText,
+    eventLabel: item.defaultEventLabel,
+    dateText: "",
+    locationText: "",
     fontId: "cormorant",
     fontSize: 26,
+    primary: item.colors.primary,
     accent: item.colors.accent,
     background: item.colors.background,
     image: null,
@@ -145,24 +154,38 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                       <div className="customizer-preview">
                         <div
                           className="customizer-card"
-                          style={{ background: draft.background, borderColor: `${draft.accent}55` }}
+                          style={{ background: draft.background, borderColor: draft.accent }}
                         >
-                          {draft.image && (
-                            // eslint-disable-next-line @next/next/no-img-element -- user upload (data URL), unknown dimensions
-                            <img src={draft.image} alt="" />
-                          )}
-                          <div
-                            style={{
-                              fontFamily: font.cssVar,
-                              fontStyle: font.italic ? "italic" : "normal",
-                              textTransform: font.uppercase ? "uppercase" : "none",
-                              fontSize: draft.fontSize,
-                              color: draft.accent,
-                              lineHeight: 1.15,
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {draft.text || item.defaultText}
+                          <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
+                            {draft.image && (
+                              // eslint-disable-next-line @next/next/no-img-element -- user upload (data URL), unknown dimensions
+                              <img className="customizer-card-photo" src={draft.image} alt="" />
+                            )}
+                            <div className="customizer-card-eyebrow" style={{ color: draft.accent }}>
+                              {draft.eventLabel || item.defaultEventLabel}
+                            </div>
+                            <div
+                              className="customizer-card-name"
+                              style={{
+                                fontFamily: font.cssVar,
+                                fontStyle: font.italic ? "italic" : "normal",
+                                textTransform: font.uppercase ? "uppercase" : "none",
+                                fontSize: draft.fontSize,
+                                color: draft.accent,
+                              }}
+                            >
+                              {draft.text || item.defaultText}
+                            </div>
+                            <div className="customizer-card-divider" style={{ background: draft.accent }} />
+                            <div className="customizer-card-date" style={{ color: draft.primary }}>
+                              {draft.dateText || "Datum & Uhrzeit"}
+                            </div>
+                            <div className="customizer-card-location" style={{ color: draft.primary }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
+                                <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
+                              </svg>
+                              {draft.locationText || "Ort / Location eingeben"}
+                            </div>
                           </div>
                         </div>
                         <button type="button" className="customizer-close" onClick={() => setOpenId(null)}>
@@ -181,6 +204,47 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                             placeholder={item.defaultText}
                             onChange={(e) => updateDraft(item, { text: e.target.value })}
                           />
+                        </div>
+
+                        <div className="customizer-field">
+                          <label htmlFor={`label-${item.id}`}>Anlass</label>
+                          <input
+                            id={`label-${item.id}`}
+                            className="customizer-text-input"
+                            type="text"
+                            value={draft.eventLabel}
+                            placeholder={item.defaultEventLabel}
+                            onChange={(e) => updateDraft(item, { eventLabel: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="customizer-row">
+                          <div className="customizer-field" style={{ flex: 1, minWidth: 160 }}>
+                            <label htmlFor={`date-${item.id}`}>Datum &amp; Uhrzeit</label>
+                            <input
+                              id={`date-${item.id}`}
+                              className="customizer-text-input"
+                              type="text"
+                              value={draft.dateText}
+                              placeholder="z. B. 20. Juni 2026, 18 Uhr"
+                              onChange={(e) => updateDraft(item, { dateText: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="customizer-field">
+                          <label htmlFor={`location-${item.id}`}>Ort / Location</label>
+                          <input
+                            id={`location-${item.id}`}
+                            className="customizer-text-input"
+                            type="text"
+                            value={draft.locationText}
+                            placeholder="z. B. Dedeman Sarayı, Bremen"
+                            onChange={(e) => updateDraft(item, { locationText: e.target.value })}
+                          />
+                          <span className="customizer-hint">
+                            Google-Maps-Autovervollständigung folgt hier in Kürze.
+                          </span>
                         </div>
 
                         <div className="customizer-field">
@@ -225,6 +289,17 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                         </div>
 
                         <div className="customizer-row">
+                          <div className="customizer-field customizer-color">
+                            <div>
+                              <label htmlFor={`primary-${item.id}`}>Textfarbe</label>
+                              <input
+                                id={`primary-${item.id}`}
+                                type="color"
+                                value={draft.primary}
+                                onChange={(e) => updateDraft(item, { primary: e.target.value })}
+                              />
+                            </div>
+                          </div>
                           <div className="customizer-field customizer-color">
                             <div>
                               <label htmlFor={`accent-${item.id}`}>Akzentfarbe</label>

@@ -12,11 +12,23 @@ import { TemplateGallery, type GalleryCategory } from "@/components/marketing/Te
 // Postgres-Containers) schlaegt das sonst fehl.
 export const dynamic = "force-dynamic";
 
+const TURKISH_CATEGORIES = new Set(["Düğün", "Kına Gecesi", "Nişan", "Sünnet"]);
+
 function defaultTextForCategory(category: string): string {
-  if (category === "Türkische Feste & Bräuche") return "Ayşe & Emre";
+  if (TURKISH_CATEGORIES.has(category)) return "Ayşe & Emre";
   if (category === "Verspielt") return "Mia wird 5";
   if (category === "Business Modern") return "Jahresempfang 2026";
   return "Anna & Lukas";
+}
+
+function defaultEventLabelForCategory(category: string): string {
+  if (category === "Düğün") return "DÜĞÜN DAVETİYESİ";
+  if (category === "Kına Gecesi") return "KINA GECESİ";
+  if (category === "Nişan") return "NİŞAN DAVETİYESİ";
+  if (category === "Sünnet") return "SÜNNET DAVETİYESİ";
+  if (category === "Verspielt") return "GEBURTSTAGSPARTY";
+  if (category === "Business Modern") return "JAHRESEMPFANG";
+  return "HOCHZEITSEINLADUNG";
 }
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
@@ -62,7 +74,10 @@ export default async function Home() {
     Botanisch: "Zarte Linien, natürliche Formen",
     Romantisch: "Weich, fließend, persönlich",
     Statement: "Dunkel, klar, selbstbewusst",
-    "Türkische Feste & Bräuche": "Kına, Nişan, Sünnet und mehr – mit eigener Handschrift",
+    Düğün: "Für den großen Tag – opulent oder elegant",
+    "Kına Gecesi": "Für die Henna-Nacht – opulent oder elegant",
+    Nişan: "Für die Verlobung – opulent oder elegant",
+    Sünnet: "Für das Fest – opulent oder elegant",
     Verspielt: "Fröhlich, bunt, verspielt",
     "Business Modern": "Klar, professionell, zeitgemäß",
   };
@@ -77,6 +92,7 @@ export default async function Home() {
       priceCents: t.priceCents,
       colors: JSON.parse(t.colors) as { primary: string; accent: string; background: string },
       defaultText: defaultTextForCategory(category),
+      defaultEventLabel: defaultEventLabelForCategory(category),
     })),
   }));
 
@@ -123,43 +139,23 @@ export default async function Home() {
 
       <HeroStory />
 
-      <section className="brandmark reveal">
-        <div className="brandmark-head">
-          <div className="eyebrow">Markenzeichen</div>
-          <h2>Ein Zeichen, das ankommt</h2>
-          <p>Ein Umschlag als Symbol – jede gute Feier beginnt mit einer Einladung, die ankommt.</p>
-        </div>
-        <div className="brandmark-grid">
-          <div className="brandmark-tile light">
-            <svg width="30" height="24" viewBox="0 0 28 22" fill="none" stroke="#B2543A" strokeWidth="1.4">
-              <rect x="1" y="1" width="26" height="20" rx="1.5" />
-              <path d="M1.5 2l12 9.5 12-9.5" />
-            </svg>
-            <span className="lockup-word" style={{ color: "#211C19" }}>
-              einladi
-            </span>
+      <section className="stats reveal">
+        <div className="stats-grid">
+          <div className="stats-item">
+            <div className="stats-num">{templates.length}</div>
+            <div className="stats-label">Designs zur Auswahl</div>
           </div>
-          <div className="brandmark-tile dark">
-            <svg width="30" height="24" viewBox="0 0 28 22" fill="none" stroke="#B9975B" strokeWidth="1.4">
-              <rect x="1" y="1" width="26" height="20" rx="1.5" />
-              <path d="M1.5 2l12 9.5 12-9.5" />
-            </svg>
-            <span className="lockup-word" style={{ color: "#FAF6EF" }}>
-              einladi
-            </span>
+          <div className="stats-item">
+            <div className="stats-num">0€</div>
+            <div className="stats-label">Zum Ausprobieren, ohne Konto</div>
           </div>
-          <div className="brandmark-tile alt">
-            <div className="icon-tile">
-              <svg width="34" height="27" viewBox="0 0 28 22" fill="none" stroke="#FAF6EF" strokeWidth="1.5">
-                <rect x="1" y="1" width="26" height="20" rx="1.5" />
-                <path d="M1.5 2l12 9.5 12-9.5" />
-              </svg>
-            </div>
+          <div className="stats-item">
+            <div className="stats-num">5&nbsp;Min.</div>
+            <div className="stats-label">Bis eure Seite live ist</div>
           </div>
-          <div className="brandmark-tile alt">
-            <span className="lockup-word" style={{ color: "#211C19", fontSize: 30 }}>
-              einladi
-            </span>
+          <div className="stats-item">
+            <div className="stats-num">1</div>
+            <div className="stats-label">Link für Einladung, QR-Code &amp; Tischkarte</div>
           </div>
         </div>
       </section>

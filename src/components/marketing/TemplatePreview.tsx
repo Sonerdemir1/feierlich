@@ -2,6 +2,53 @@
 // (Template-Tabelle) — neue layoutKeys brauchen einen neuen Fall hier,
 // alles andere (Name, Kategorie, Preis, Verfuegbarkeit) ist datengetrieben.
 
+// Wiederverwendbares Eckornament (Paisley-artige Filigranranke) fuer die
+// "kitschigen" tuerkischen Vorlagen — sorgt fuer dichtere Ornamentik statt
+// nur duenner Linien, ohne 8x eine komplett eigene Ranke zu zeichnen.
+function CornerMotif({ color, corner }: { color: string; corner: "tl" | "tr" | "bl" | "br" }) {
+  const pos: Record<string, React.CSSProperties> = {
+    tl: { top: 9, left: 9 },
+    tr: { top: 9, right: 9, transform: "scaleX(-1)" },
+    bl: { bottom: 9, left: 9, transform: "scaleY(-1)" },
+    br: { bottom: 9, right: 9, transform: "scale(-1,-1)" },
+  };
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" style={{ position: "absolute", ...pos[corner] }} fill="none" stroke={color} strokeWidth="1.1">
+      <path d="M1 1 Q1 17 17 17 M1 1 Q17 1 17 17 M5 5 Q5 12 12 12 M1 1 L6 1 M1 1 L1 6" />
+      <circle cx="9.5" cy="9.5" r="1.3" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
+function DotScatter({ color, seed = 0 }: { color: string; seed?: number }) {
+  const sets = [
+    [
+      [14, 16, 3.2, 0.55],
+      [34, 12, 2.4, 0.4],
+      [120, 20, 2.8, 0.5],
+      [140, 18, 2, 0.35],
+      [20, 132, 2.6, 0.45],
+      [128, 130, 3, 0.5],
+    ],
+    [
+      [26, 24, 2.6, 0.5],
+      [130, 14, 2.2, 0.4],
+      [146, 100, 2.8, 0.45],
+      [12, 108, 2.4, 0.4],
+      [80, 22, 2, 0.35],
+      [78, 138, 2.6, 0.45],
+    ],
+  ];
+  const set = sets[seed % sets.length];
+  return (
+    <svg width="160" height="160" viewBox="0 0 160 160" style={{ position: "absolute", inset: 0 }} fill={color}>
+      {set.map(([cx, cy, r, o], i) => (
+        <circle key={i} cx={cx} cy={cy} r={r} opacity={o} />
+      ))}
+    </svg>
+  );
+}
+
 export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
   switch (layoutKey) {
     case "minimal-ivory":
@@ -221,25 +268,12 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
     case "kina-kirmizi":
       return (
         <div className="tpl-prev" style={{ background: "#7A1428" }}>
-          {[
-            [14, 16, 3.2, 0.55],
-            [34, 12, 2.4, 0.4],
-            [120, 20, 2.8, 0.5],
-            [140, 18, 2, 0.35],
-            [20, 132, 2.6, 0.45],
-            [128, 130, 3, 0.5],
-          ].map(([cx, cy, r, o], i) => (
-            <svg
-              key={i}
-              width="160"
-              height="160"
-              viewBox="0 0 160 160"
-              style={{ position: "absolute", inset: 0 }}
-              fill="#D4AF37"
-            >
-              <circle cx={cx} cy={cy} r={r} opacity={o} />
-            </svg>
-          ))}
+          <div style={{ position: "absolute", inset: 6, border: "1px solid #D4AF3799" }} />
+          <DotScatter color="#D4AF37" />
+          <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="tr" />
+          <CornerMotif color="#D4AF37" corner="bl" />
+          <CornerMotif color="#D4AF37" corner="br" />
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#F4D77A" }}>
             Ayşe &amp; Emre
           </div>
@@ -300,8 +334,16 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
         <div className="tpl-prev" style={{ background: "#5C0F1F" }}>
           <div style={{ position: "absolute", top: 8, left: 8, right: 8, bottom: 8, border: "2px solid #E3B23C" }} />
           <div style={{ position: "absolute", top: 12, left: 12, right: 12, bottom: 12, border: "1px solid #E3B23C" }} />
+          <DotScatter color="#E3B23C" seed={1} />
+          <CornerMotif color="#E3B23C" corner="tl" />
+          <CornerMotif color="#E3B23C" corner="tr" />
+          <CornerMotif color="#E3B23C" corner="bl" />
+          <CornerMotif color="#E3B23C" corner="br" />
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#E3B23C", marginTop: 8, zIndex: 1 }}>
+            DÜĞÜN
           </div>
         </div>
       );
@@ -312,6 +354,8 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
             <rect x="14" y="14" width="132" height="132" />
             <path d="M14 14 L34 34 M146 14 L126 34 M14 146 L34 126 M146 146 L126 126" />
           </svg>
+          <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="br" />
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
           </div>
@@ -320,12 +364,19 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
     case "kraliyet-moru":
       return (
         <div className="tpl-prev" style={{ background: "#2E1A47" }}>
-          <svg width="60" height="24" viewBox="0 0 60 24" style={{ position: "absolute", top: 10 }} fill="none" stroke="#D4AF37" strokeWidth="1">
+          <div style={{ position: "absolute", inset: 7, border: "1px solid #D4AF3799" }} />
+          <DotScatter color="#D4AF37" seed={1} />
+          <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="tr" />
+          <CornerMotif color="#D4AF37" corner="bl" />
+          <CornerMotif color="#D4AF37" corner="br" />
+          <svg width="60" height="24" viewBox="0 0 60 24" style={{ position: "absolute", top: 26 }} fill="none" stroke="#D4AF37" strokeWidth="1">
             <path d="M2 20 Q15 2 30 12 Q45 2 58 20" />
           </svg>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#F4EEE4", marginTop: 20 }}>
             Ayşe &amp; Emre
           </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8 }}>NİŞAN</div>
         </div>
       );
     case "soz-guemuesue":
@@ -342,11 +393,43 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
     case "zuemruet":
       return (
         <div className="tpl-prev" style={{ background: "#0F3D2E" }}>
+          <div style={{ position: "absolute", inset: 9, border: "1px solid #D4AF3766" }} />
           <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
             <rect x="4" y="4" width="30" height="30" transform="rotate(45 19 19)" />
           </svg>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "sehzade-mavisi":
+      return (
+        <div className="tpl-prev" style={{ background: "#0E2F5A" }}>
+          <div style={{ position: "absolute", inset: 7, border: "1px solid #D4AF3799" }} />
+          <DotScatter color="#D4AF37" />
+          <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="tr" />
+          <CornerMotif color="#D4AF37" corner="bl" />
+          <CornerMotif color="#D4AF37" corner="br" />
+          <svg width="32" height="24" viewBox="0 0 32 24" style={{ marginBottom: 8 }} fill="none" stroke="#D4AF37" strokeWidth="1.3">
+            <path d="M2 20 L2 11 L8 16 L16 6 L24 16 L30 11 L30 20 Z" />
+            <circle cx="16" cy="4" r="1.5" fill="#D4AF37" stroke="none" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF" }}>Kaan</div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8 }}>SÜNNET</div>
+        </div>
+      );
+    case "masmavi":
+      return (
+        <div className="tpl-prev" style={{ background: "#EAF1F8" }}>
+          <div style={{ position: "absolute", top: 9, left: 9, right: 9, bottom: 9, border: "1px solid #8FA8C9" }} />
+          <CornerMotif color="#8FA8C9" corner="tl" />
+          <CornerMotif color="#8FA8C9" corner="br" />
+          <svg width="22" height="17" viewBox="0 0 32 24" style={{ marginBottom: 8 }} fill="none" stroke="#1B3A5C" strokeWidth="1.3">
+            <path d="M2 20 L2 11 L8 16 L16 6 L24 16 L30 11 L30 20 Z" />
+          </svg>
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#1B3A5C" }}>
+            Kaan
           </div>
         </div>
       );
