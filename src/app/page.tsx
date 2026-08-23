@@ -1,10 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
-import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
 import { HeroRotator } from "@/components/marketing/HeroRotator";
 import { HeroStory } from "@/components/marketing/HeroStory";
+import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+
+function defaultTextForCategory(category: string): string {
+  if (category === "Türkische Feste & Bräuche") return "Ayşe & Emre";
+  if (category === "Verspielt") return "Mia wird 5";
+  if (category === "Business Modern") return "Jahresempfang 2026";
+  return "Anna & Lukas";
+}
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -53,6 +60,19 @@ export default async function Home() {
     Verspielt: "Fröhlich, bunt, verspielt",
     "Business Modern": "Klar, professionell, zeitgemäß",
   };
+
+  const galleryCategories: GalleryCategory[] = [...templatesByCategory.entries()].map(([category, items]) => ({
+    category,
+    subtitle: categorySubtitle[category] ?? "",
+    items: items.map((t) => ({
+      id: t.id,
+      name: t.name,
+      layoutKey: t.layoutKey,
+      priceCents: t.priceCents,
+      colors: JSON.parse(t.colors) as { primary: string; accent: string; background: string },
+      defaultText: defaultTextForCategory(category),
+    })),
+  }));
 
   return (
     <>
@@ -169,25 +189,7 @@ export default async function Home() {
           <p>Bewusst kuratiert statt endlos – in Kategorien, damit ihr schnell findet, was zu euch passt.</p>
         </div>
 
-        {[...templatesByCategory.entries()].map(([category, items]) => (
-          <div className="cat" key={category}>
-            <div className="cat-head">
-              <h3>{category}</h3>
-              <span className="cat-sub">{categorySubtitle[category] ?? ""}</span>
-            </div>
-            <div className="cat-grid">
-              {items.map((t) => (
-                <div className="tpl" key={t.id}>
-                  <TemplatePreview layoutKey={t.layoutKey} />
-                  <div className="tpl-label">
-                    <span>{t.name}</span>
-                    {t.priceCents > 0 && <span className="tpl-price">{eur.format(t.priceCents / 100)}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+        <TemplateGallery categories={galleryCategories} />
       </section>
 
       <section className="feature reveal" id="editor">

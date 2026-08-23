@@ -357,6 +357,38 @@ nav {
 }
 .tpl {
   border: 1px solid var(--line);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  display: block;
+  width: 100%;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.tpl:hover,
+.tpl.is-open {
+  border-color: var(--ink);
+}
+.tpl-open-hint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--ink);
+  color: var(--ivory);
+  padding: 4px 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.tpl:hover .tpl-open-hint {
+  opacity: 1;
 }
 .tpl-prev {
   height: 160px;
@@ -384,6 +416,167 @@ nav {
   color: var(--ink-faint);
   font-size: 11px;
   white-space: nowrap;
+}
+
+/* customizer — erscheint direkt neben/unter der angeklickten Vorlage,
+   volle Rasterbreite, keine Anmeldung noetig. */
+.customizer {
+  grid-column: 1 / -1;
+  border: 1px solid var(--ink);
+  background: var(--ivory-2);
+  padding: 26px;
+  margin-top: -1px;
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 32px;
+}
+.customizer-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.customizer-card {
+  width: 100%;
+  max-width: 260px;
+  border: 1px solid var(--line);
+  padding: 32px 22px;
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.customizer-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  margin-bottom: 18px;
+}
+.customizer-close {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.customizer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.customizer-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.customizer-text-input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  background: var(--ivory);
+  font-size: 14px;
+  font-family: var(--font-body);
+}
+.customizer-fonts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+.customizer-font-btn {
+  border: 1px solid var(--line);
+  background: var(--ivory);
+  padding: 12px 10px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 16px;
+  color: var(--ink);
+}
+.customizer-font-btn.is-active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--ivory);
+}
+.customizer-font-btn small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 6px;
+  opacity: 0.7;
+}
+.customizer-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.customizer-color {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.customizer-color input[type="color"] {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  padding: 0;
+  cursor: pointer;
+  background: none;
+}
+.customizer-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.customizer-slider input[type="range"] {
+  flex: 1;
+  accent-color: var(--terracotta);
+}
+.customizer-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.customizer-upload-btn {
+  border: 1px dashed var(--ink-faint);
+  background: none;
+  padding: 11px 16px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.customizer-upload-remove {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.customizer-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+}
+.customizer-saved {
+  font-size: 11.5px;
+  color: var(--sage);
+}
+@media (max-width: 720px) {
+  .customizer {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* feature sections (phone-frame) */
