@@ -88,17 +88,46 @@ type Draft = {
   showRsvp: boolean;
   showSeating: boolean;
   showGallery: boolean;
+  extraFeatures: Record<string, boolean>;
 };
 
 // Welches Paket ein Feature freischaltet — aus prisma/seed.ts (Package.
-// features) uebernommen, damit die Anzeige hier nicht aus der Luft
+// features, ueber alle fuenf Pakete hinweg das jeweils guenstigste, das
+// es enthaelt) uebernommen, damit die Anzeige hier nicht aus der Luft
 // gegriffen ist. Bei Aenderungen an den Paketen auch hier nachziehen.
 const FEATURE_TIER: Record<string, string> = {
   countdown: "Basic",
+  agenda: "Premium",
   rsvp: "Premium",
   seating: "Premium Plus",
   gallery: "Premium Plus",
+  guestbook: "Premium Plus",
+  dresscode: "VIP",
+  "social-media": "VIP",
+  menu: "VIP",
+  wishlist: "VIP",
+  "music-requests": "VIP",
+  "thank-you-card": "VIP",
+  "audio-invitation": "VIP",
+  "video-invitation": "VIP",
 };
+
+// Zusaetzliche VIP-Funktionen, kompakt als Chips statt als eigene grosse
+// Kartenabschnitte — sonst waechst die Karte ins Unendliche. Countdown,
+// Zusagen, Sitzplan und Galerie bleiben die einzigen mit eigenem grossen
+// Vorschau-Block, weil sie die auffaelligsten/haeufigsten sind.
+const EXTRA_FEATURES: { key: string; label: string }[] = [
+  { key: "agenda", label: "Ablaufplan" },
+  { key: "guestbook", label: "Gästebuch" },
+  { key: "dresscode", label: "Dresscode" },
+  { key: "social-media", label: "Social Media" },
+  { key: "menu", label: "Digitale Menükarte" },
+  { key: "wishlist", label: "Wunschliste" },
+  { key: "music-requests", label: "Musikwünsche" },
+  { key: "thank-you-card", label: "Digitale Dankeskarte" },
+  { key: "audio-invitation", label: "Audio-Einladung" },
+  { key: "video-invitation", label: "Video-Einladung" },
+];
 
 const STORAGE_KEY = "einladi:design-drafts:v1";
 const MAX_IMAGE_BYTES = 2_500_000;
@@ -134,6 +163,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showRsvp: true,
     showSeating: true,
     showGallery: true,
+    extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, true])),
   };
 }
 
@@ -159,13 +189,22 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
   // aus einer aelteren Version (vor neuen Draft-Feldern wie showFloral)
   // soll die neuen Felder aus dem Default ziehen, nicht stillschweigend
   // als "aus" gelten.
+  // Deep-mergt extraFeatures mit, statt es 1:1 aus einem aelteren Entwurf
+  // zu uebernehmen — sonst fehlt ein spaeter hinzugefuegtes Feature bei
+  // Bestandsentwuerfen wieder stillschweigend.
+  function mergedDraft(item: GalleryTemplate, saved?: Draft): Draft {
+    const base = defaultDraft(item);
+    if (!saved) return base;
+    return { ...base, ...saved, extraFeatures: { ...base.extraFeatures, ...saved.extraFeatures } };
+  }
+
   function draftFor(item: GalleryTemplate): Draft {
-    return { ...defaultDraft(item), ...drafts[item.id] };
+    return mergedDraft(item, drafts[item.id]);
   }
 
   function updateDraft(item: GalleryTemplate, patch: Partial<Draft>) {
     setDrafts((prev) => {
-      const base = { ...defaultDraft(item), ...prev[item.id] };
+      const base = mergedDraft(item, prev[item.id]);
       const next = { ...prev, [item.id]: { ...base, ...patch } };
       saveDrafts(next);
       return next;
@@ -369,6 +408,19 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 <div className="customizer-card-gallery-grid">
                                   {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
                                     <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {EXTRA_FEATURES.some((f) => draft.extraFeatures[f.key]) && (
+                              <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
+                                <div style={{ color: draft.primary }}>Weitere Funktionen</div>
+                                <div className="customizer-card-chips">
+                                  {EXTRA_FEATURES.filter((f) => draft.extraFeatures[f.key]).map((f) => (
+                                    <span key={f.key} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                                      {f.label}
+                                    </span>
                                   ))}
                                 </div>
                               </div>
@@ -635,6 +687,21 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               Foto- &amp; Videogalerie
                               <span className="customizer-tier-badge">ab {FEATURE_TIER.gallery}</span>
                             </label>
+                            {EXTRA_FEATURES.map((f) => (
+                              <label className="customizer-toggle" key={f.key}>
+                                <input
+                                  type="checkbox"
+                                  checked={draft.extraFeatures[f.key] ?? true}
+                                  onChange={(e) =>
+                                    updateDraft(item, {
+                                      extraFeatures: { ...draft.extraFeatures, [f.key]: e.target.checked },
+                                    })
+                                  }
+                                />
+                                {f.label}
+                                <span className="customizer-tier-badge">ab {FEATURE_TIER[f.key]}</span>
+                              </label>
+                            ))}
                           </div>
                           <span className="customizer-hint">
                             Alle Funktionen sind hier zur Ansicht aktiv — welches Paket ihr braucht, hängt davon ab,

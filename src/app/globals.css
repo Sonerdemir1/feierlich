@@ -607,6 +607,17 @@ nav {
   aspect-ratio: 1;
   display: block;
 }
+.customizer-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.customizer-card-chips span {
+  font-size: 9.5px;
+  padding: 5px 10px;
+  border: 1px solid;
+}
 .customizer-close {
   font-size: 11.5px;
   color: var(--ink-soft);
