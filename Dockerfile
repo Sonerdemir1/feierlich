@@ -12,6 +12,11 @@
 FROM node:22-slim
 WORKDIR /app
 
+# Ohne dies findet Prisma zur Laufzeit keine libssl/openssl-Version und
+# warnt beim Start ("failed to detect the libssl/openssl version to
+# use") — node:22-slim bringt das anders als node:22 nicht mit.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
