@@ -267,6 +267,7 @@ model Guest {
   rsvp   RSVP?
   seat   Seat?
   checkIn CheckIn?
+  photoTags PhotoTag[]
 }
 
 model RSVP {
@@ -342,6 +343,7 @@ model Media {
   eventCoverFor    Event[]          @relation("EventCoverImage")
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
+  photoTags        PhotoTag[]
 }
 
 model GuestbookEntry {
@@ -366,6 +368,22 @@ model GalleryItem {
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+}
+
+// Verknuepft Media (n) mit Guest (n) — wer auf welchem Foto/Video markiert
+// ist. Haengt bewusst an Media statt an GalleryItem/GuestbookEntry: Media
+// ist die zentrale Ablage, GalleryItem und GuestbookEntry haengen beide
+// 1:1 daran, daher gilt ein Tag automatisch fuer beide Oberflaechen.
+model PhotoTag {
+  id        String   @id @default(cuid())
+  mediaId   String
+  guestId   String
+  createdAt DateTime @default(now())
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, guestId])
 }
 
 // ---------------------------------------------------------------------
