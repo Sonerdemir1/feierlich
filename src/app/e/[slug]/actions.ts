@@ -61,6 +61,31 @@ export async function uploadGalleryPhoto(eventId: string, slug: string, formData
   redirect(`/e/${slug}?gallery=success#galerie`);
 }
 
+export async function addPhotoTag(mediaId: string, guestId: string) {
+  const media = await prisma.media.findUnique({ where: { id: mediaId }, include: { event: true } });
+  if (!media || !media.event) throw new Error("Foto nicht gefunden.");
+  const { slug } = media.event;
+
+  const guest = await prisma.guest.findUnique({ where: { id: guestId } });
+  if (!guest || guest.eventId !== media.eventId) redirect(`/e/${slug}?tagError=mismatch#galerie`);
+
+  await prisma.photoTag.create({ data: { mediaId, guestId } });
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?tag=success#galerie`);
+}
+
+export async function removePhotoTag(mediaId: string, guestId: string) {
+  const media = await prisma.media.findUnique({ where: { id: mediaId }, include: { event: true } });
+  if (!media || !media.event) throw new Error("Foto nicht gefunden.");
+  const { slug } = media.event;
+
+  await prisma.photoTag.delete({ where: { mediaId_guestId: { mediaId, guestId } } });
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?tag=removed#galerie`);
+}
+
 export async function submitGuestbookEntry(eventId: string, slug: string, formData: FormData) {
   const authorName = String(formData.get("authorName") ?? "").trim().slice(0, 80);
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000) || null;
