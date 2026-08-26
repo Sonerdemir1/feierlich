@@ -86,6 +86,18 @@ export async function removePhotoTag(mediaId: string, guestId: string) {
   redirect(`/e/${slug}?tag=removed#galerie`);
 }
 
+// Gaestelisten sind ueberschaubar (typischerweise unter 300 Personen) —
+// eine einfache sortierte Liste reicht, das Filtern nach Tipp-Eingabe
+// passiert clientseitig in der Tagging-Komponente statt per serverseitiger
+// Suche mit Debounce.
+export async function getEventGuestsForTagging(eventId: string) {
+  return prisma.guest.findMany({
+    where: { eventId },
+    select: { id: true, firstName: true, groupLabel: true },
+    orderBy: { firstName: "asc" },
+  });
+}
+
 export async function submitGuestbookEntry(eventId: string, slug: string, formData: FormData) {
   const authorName = String(formData.get("authorName") ?? "").trim().slice(0, 80);
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000) || null;
