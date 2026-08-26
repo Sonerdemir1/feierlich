@@ -61,29 +61,46 @@ export async function uploadGalleryPhoto(eventId: string, slug: string, formData
   redirect(`/e/${slug}?gallery=success#galerie`);
 }
 
-export async function addPhotoTag(mediaId: string, guestId: string) {
+// Anders als die Actions oben: werden aus einer interaktiven Client-
+// Komponente (PhotoTagger) per useTransition aufgerufen, nicht aus einem
+// <form action={...}> ohne JS. Ein redirect() wuerde dort das optimistische
+// Update im Client-State durch einen vollen Reload wieder ueberschreiben —
+// daher hier bewusst ein einfaches Ergebnisobjekt statt redirect()/throw().
+export type PhotoTagResult = { success: true } | { success: false; error: string };
+
+export async function addPhotoTag(mediaId: string, guestId: string): Promise<PhotoTagResult> {
   const media = await prisma.media.findUnique({ where: { id: mediaId }, include: { event: true } });
-  if (!media || !media.event) throw new Error("Foto nicht gefunden.");
+  if (!media || !media.event) return { success: false, error: "Foto nicht gefunden." };
   const { slug } = media.event;
 
   const guest = await prisma.guest.findUnique({ where: { id: guestId } });
-  if (!guest || guest.eventId !== media.eventId) redirect(`/e/${slug}?tagError=mismatch#galerie`);
+  if (!guest || guest.eventId !== media.eventId) {
+    return { success: false, error: "Gast gehört nicht zu diesem Event." };
+  }
 
-  await prisma.photoTag.create({ data: { mediaId, guestId } });
+  try {
+    await prisma.photoTag.create({ data: { mediaId, guestId } });
+  } catch {
+    return { success: false, error: "Markierung konnte nicht gespeichert werden." };
+  }
 
-  revalidatePath(`/e/${slug}`);
-  redirect(`/e/${slug}?tag=success#galerie`);
+  revalidatePath(`/e/${slug}#galerie`);
+  return { success: true };
 }
 
-export async function removePhotoTag(mediaId: string, guestId: string) {
+export async function removePhotoTag(mediaId: string, guestId: string): Promise<PhotoTagResult> {
   const media = await prisma.media.findUnique({ where: { id: mediaId }, include: { event: true } });
-  if (!media || !media.event) throw new Error("Foto nicht gefunden.");
+  if (!media || !media.event) return { success: false, error: "Foto nicht gefunden." };
   const { slug } = media.event;
 
-  await prisma.photoTag.delete({ where: { mediaId_guestId: { mediaId, guestId } } });
+  try {
+    await prisma.photoTag.delete({ where: { mediaId_guestId: { mediaId, guestId } } });
+  } catch {
+    return { success: false, error: "Markierung konnte nicht entfernt werden." };
+  }
 
-  revalidatePath(`/e/${slug}`);
-  redirect(`/e/${slug}?tag=removed#galerie`);
+  revalidatePath(`/e/${slug}#galerie`);
+  return { success: true };
 }
 
 // Gaestelisten sind ueberschaubar (typischerweise unter 300 Personen) —
