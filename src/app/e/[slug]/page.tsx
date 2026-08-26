@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
+import { PhotoWall } from "@/components/gallery/PhotoWall";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -67,12 +68,38 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
   const [galleryItems, guestbookEntries] = await Promise.all([
     isModuleOn("gallery")
-      ? prisma.galleryItem.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 24 })
+      ? prisma.galleryItem.findMany({
+          where: { eventId: event.id, status: "APPROVED" },
+          include: { media: { include: { photoTags: { include: { guest: true } } } } },
+          orderBy: { createdAt: "desc" },
+          take: 24,
+        })
       : Promise.resolve([]),
     isModuleOn("guestbook")
       ? prisma.guestbookEntry.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 30 })
       : Promise.resolve([]),
   ]);
+
+  // Fuer PhotoWall/PhotoTagger auf ein schlankes Format reduziert, statt die
+  // volle Prisma-Struktur (media.photoTags[].guest) durchzureichen.
+  const galleryPhotos = galleryItems.map((item) => ({
+    id: item.id,
+    mediaId: item.mediaId,
+    url: item.media.url,
+    tags: item.media.photoTags.map((pt) => ({ id: pt.guest.id, firstName: pt.guest.firstName })),
+  }));
+
+  const taggedGuestCounts = new Map<string, { firstName: string; count: number }>();
+  for (const photo of galleryPhotos) {
+    for (const tag of photo.tags) {
+      const entry = taggedGuestCounts.get(tag.id);
+      if (entry) entry.count += 1;
+      else taggedGuestCounts.set(tag.id, { firstName: tag.firstName, count: 1 });
+    }
+  }
+  const taggedGuests = [...taggedGuestCounts.entries()]
+    .map(([id, v]) => ({ id, firstName: v.firstName, count: v.count }))
+    .sort((a, b) => a.firstName.localeCompare(b.firstName, "de"));
 
   const uploadErrorLabel: Record<string, string> = {
     "no-file": "Bitte eine Datei auswählen.",
@@ -223,13 +250,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             Teilt eure schönsten Momente
           </div>
 
-          {galleryItems.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6, marginBottom: 24 }}>
-              {galleryItems.map((item) => (
-                // eslint-disable-next-line @next/next/no-img-element -- guest uploads, unknown dimensions
-                <img key={item.id} src={item.media.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
-              ))}
-            </div>
+          {galleryPhotos.length > 0 && (
+            <PhotoWall eventId={event.id} photos={galleryPhotos} taggedGuests={taggedGuests} colors={colors} />
           )}
 
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px", textAlign: "center" }}>
