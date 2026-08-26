@@ -11,7 +11,7 @@ set -e
 # Beides ist idempotent (der Seed nutzt durchgaengig upsert()), daher
 # unbedenklich bei jedem Container-Start erneut auszufuehren — kein
 # manueller DB-Schritt noetig, weder beim ersten Deploy noch danach.
-npx prisma db push --accept-data-loss --skip-generate
+npx prisma db push --accept-data-loss
 npx prisma db seed
 
 exec npm run start
