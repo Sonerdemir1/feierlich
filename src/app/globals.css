@@ -312,8 +312,29 @@ nav {
   line-height: 1.65;
   color: var(--ink-soft);
 }
+.templates-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+.templates-jump a {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 15px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.templates-jump a:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
 .cat {
   margin-bottom: 46px;
+  scroll-margin-top: 24px;
 }
 .cat-head {
   display: flex;
@@ -616,20 +637,93 @@ nav {
   margin: 16px auto;
   transition: background 0.2s;
 }
-.customizer-card-date {
+.customizer-card-location-box {
   position: relative;
   z-index: 1;
+  border: 1px solid;
+  padding: 14px 12px;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+.customizer-card-date {
   font-size: 11.5px;
   letter-spacing: 0.04em;
   margin-bottom: 6px;
 }
 .customizer-card-location {
-  position: relative;
-  z-index: 1;
   font-size: 11px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  text-align: center;
+  justify-content: center;
+}
+.customizer-card-location-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.customizer-card-route-btn {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 1px solid;
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.customizer-card-route-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+.customizer-card-route-btn.is-solid {
+  border: 1px solid;
+}
+.customizer-card-map {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 110px;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+.customizer-card-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.customizer-card-weather {
+  position: relative;
+  z-index: 1;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.customizer-card-weather-temp {
+  font-size: 22px;
+  line-height: 1;
+  margin-top: 4px;
+}
+.customizer-card-weather-cond {
+  font-size: 10.5px;
+}
+.customizer-card-weather-range {
+  font-size: 9.5px;
+  opacity: 0.75;
+}
+.customizer-card-weather-hint {
+  font-size: 8.5px;
+  opacity: 0.6;
+  margin-top: 4px;
 }
 .customizer-card-countdown {
   position: relative;
@@ -676,16 +770,52 @@ nav {
   font-weight: 600;
   margin-bottom: 10px;
 }
-.customizer-card-rsvp > div:last-child {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
+.customizer-card-rsvp-field {
+  font-size: 10px;
+  padding: 7px 12px;
+  border: 1px solid;
+  margin-bottom: 10px;
+  text-align: center;
+  opacity: 0.85;
 }
-.customizer-card-rsvp span {
+.customizer-card-rsvp-pills {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.customizer-card-rsvp-pills span {
   font-size: 9.5px;
   font-weight: 600;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border: 1px solid;
+  border-radius: 999px;
+}
+.customizer-card-rsvp-count {
+  font-size: 10px;
+  margin-bottom: 12px;
+}
+.customizer-card-rsvp-count > span {
+  display: block;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+.customizer-card-rsvp-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.customizer-card-rsvp-dots span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid;
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .customizer-card-section {
   position: relative;
@@ -719,6 +849,19 @@ nav {
   height: 10px;
   border-radius: 50%;
   border: 1px solid;
+}
+.customizer-card-memory-pills {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.customizer-card-memory-pills span {
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border: 1px solid;
+  border-radius: 999px;
 }
 .customizer-card-gallery-grid {
   display: grid;

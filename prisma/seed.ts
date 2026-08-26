@@ -54,6 +54,7 @@ const eventTypes = [
 const modules = [
   { key: 'countdown', name: 'Countdown', category: 'Basis' },
   { key: 'location', name: 'Location & Google Maps', category: 'Basis' },
+  { key: 'weather', name: 'Wetter-Widget', category: 'Basis' },
   { key: 'agenda', name: 'Ablauf', category: 'Basis' },
   { key: 'dresscode', name: 'Dresscode', category: 'Basis' },
   { key: 'social-media', name: 'Social Media', category: 'Basis' },
@@ -93,7 +94,7 @@ const packages = [
     key: 'VIP', name: 'VIP', priceCents: 29900,
     description: 'Alle Funktionen, individuelles Design, Video- & Audio-Einladung, persönlicher Support',
     features: [
-      'countdown', 'location', 'agenda', 'dresscode', 'social-media', 'rsvp', 'guest-list',
+      'countdown', 'location', 'weather', 'agenda', 'dresscode', 'social-media', 'rsvp', 'guest-list',
       'seating', 'menu', 'wishlist', 'gallery', 'guestbook', 'music-requests',
       'thank-you-card', 'audio-invitation', 'video-invitation',
     ],
