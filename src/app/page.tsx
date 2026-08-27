@@ -5,6 +5,7 @@ import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/mar
 import { HeroRotator } from "@/components/marketing/HeroRotator";
 import { HeroStory } from "@/components/marketing/HeroStory";
 import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { categorySlug } from "@/lib/category-slug";
 
 // Ohne dies versucht `next build`, diese Seite bei jedem Deploy statisch
 // vorzurendern und braucht dafuer eine live erreichbare Datenbank zur
@@ -30,6 +31,9 @@ const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
   "altin-sedef": { src: "/images/templates/bosphorus-night.jpg", tint: "92,15,31" },
   "kina-kirmizi": { src: "/images/templates/iznik-floral.jpg", tint: "122,20,40" },
   "kraliyet-moru": { src: "/images/templates/iznik-floral.jpg", tint: "46,26,71" },
+  "safir-davet": { src: "/images/templates/iznik-floral.jpg", tint: "11,36,71" },
+  "ottoman-line": { src: "/images/templates/iznik-floral.jpg", tint: "27,58,62" },
+  "zuemruet": { src: "/images/templates/iznik-floral.jpg", tint: "15,61,46" },
 };
 
 function defaultEventLabelForCategory(category: string): string {
@@ -202,6 +206,14 @@ export default async function Home() {
           <h2>Für jede Stimmung die richtige</h2>
           <p>Bewusst kuratiert statt endlos – in Kategorien, damit ihr schnell findet, was zu euch passt.</p>
         </div>
+
+        <nav className="templates-jump" aria-label="Zu einer Design-Kategorie springen">
+          {galleryCategories.map((c) => (
+            <a key={c.category} href={`#${categorySlug(c.category)}`}>
+              {c.category}
+            </a>
+          ))}
+        </nav>
 
         <TemplateGallery categories={galleryCategories} />
       </section>

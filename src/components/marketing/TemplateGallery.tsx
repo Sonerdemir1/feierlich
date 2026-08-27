@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
+import { categorySlug } from "@/lib/category-slug";
 
 type Colors = { primary: string; accent: string; background: string };
 
@@ -86,6 +87,7 @@ type Draft = {
   showFloral: boolean;
   showOrnaments: boolean;
   showCountdown: boolean;
+  showWeather: boolean;
   showRsvp: boolean;
   showSeating: boolean;
   showGallery: boolean;
@@ -99,6 +101,7 @@ type Draft = {
 // gegriffen ist. Bei Aenderungen an den Paketen auch hier nachziehen.
 const FEATURE_TIER: Record<string, string> = {
   countdown: "Basic",
+  weather: "VIP",
   agenda: "Premium",
   rsvp: "Premium",
   seating: "Premium Plus",
@@ -162,6 +165,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showFloral: true,
     showOrnaments: true,
     showCountdown: true,
+    showWeather: true,
     showRsvp: true,
     showSeating: true,
     showGallery: true,
@@ -272,7 +276,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
   return (
     <>
       {categories.map(({ category, subtitle, items }) => (
-        <div className="cat" key={category}>
+        <div className="cat" id={categorySlug(category)} key={category}>
           <div className="cat-head">
             <h3>{category}</h3>
             <span className="cat-sub">{subtitle}</span>
@@ -408,15 +412,55 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                             )}
 
                             <div className="customizer-card-divider" style={{ background: draft.accent }} />
-                            <div className="customizer-card-date" style={{ color: draft.primary }}>
-                              {draft.dateText || "Datum & Uhrzeit"}
+
+                            <div className="customizer-card-location-box" style={{ borderColor: `${draft.accent}88` }}>
+                              <div className="customizer-card-date" style={{ color: draft.primary }}>
+                                {draft.dateText || "Datum & Uhrzeit"}
+                              </div>
+                              <div className="customizer-card-location" style={{ color: draft.primary }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
+                                  <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
+                                </svg>
+                                {draft.locationText || "Ort / Location eingeben"}
+                              </div>
+                              <div className="customizer-card-location-buttons">
+                                <a
+                                  className="customizer-card-route-btn"
+                                  style={{ borderColor: draft.accent, color: draft.primary }}
+                                  href={
+                                    draft.locationText
+                                      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(draft.locationText)}`
+                                      : undefined
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-disabled={!draft.locationText}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!draft.locationText) e.preventDefault();
+                                  }}
+                                >
+                                  Route
+                                </a>
+                                <span
+                                  className="customizer-card-route-btn is-solid"
+                                  style={{ background: draft.accent, borderColor: draft.accent, color: draft.background }}
+                                >
+                                  Kalender
+                                </span>
+                              </div>
                             </div>
-                            <div className="customizer-card-location" style={{ color: draft.primary }}>
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
-                                <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
-                              </svg>
-                              {draft.locationText || "Ort / Location eingeben"}
-                            </div>
+
+                            {draft.locationText && (
+                              <div className="customizer-card-map">
+                                <iframe
+                                  title="Kartenausschnitt"
+                                  src={`https://www.google.com/maps?q=${encodeURIComponent(draft.locationText)}&output=embed`}
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer-when-downgrade"
+                                />
+                              </div>
+                            )}
 
                             {draft.showCountdown && (
                               <div className="customizer-card-countdown">
@@ -433,25 +477,61 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               </div>
                             )}
 
-                            <div className="customizer-card-actions">
-                              <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-                                Google Maps
-                              </span>
-                              <span
-                                style={{ background: draft.accent, borderColor: draft.accent, color: draft.background }}
-                              >
-                                Kalender
-                              </span>
-                            </div>
+                            {draft.showWeather && (
+                              <div className="customizer-card-weather" style={{ borderColor: `${draft.accent}66`, color: draft.primary }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={draft.accent} strokeWidth="1.5">
+                                  <circle cx="12" cy="12" r="4.5" />
+                                  <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" />
+                                </svg>
+                                <div className="customizer-card-weather-temp" style={{ fontFamily: font.cssVar, color: draft.accent }}>
+                                  22°
+                                </div>
+                                <div className="customizer-card-weather-cond">Sonnig, leichter Wind</div>
+                                <div className="customizer-card-weather-range">Höchst 25° · Tiefst 16°</div>
+                                <div className="customizer-card-weather-hint">Voraussichtliches Wetter am Veranstaltungstag</div>
+                              </div>
+                            )}
 
                             {draft.showRsvp && (
                               <div className="customizer-card-rsvp" style={{ borderColor: `${draft.accent}66` }}>
                                 <div style={{ color: draft.primary }}>Kommt ihr?</div>
-                                <div>
+                                <div
+                                  className="customizer-card-rsvp-field"
+                                  style={{ borderColor: `${draft.accent}88`, color: draft.primary }}
+                                >
+                                  Euer Name …
+                                </div>
+                                <div className="customizer-card-rsvp-pills">
                                   <span style={{ background: draft.accent, color: draft.background }}>Zusagen</span>
+                                  <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                                    Vielleicht
+                                  </span>
                                   <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
                                     Absagen
                                   </span>
+                                </div>
+                                <div className="customizer-card-rsvp-count" style={{ color: draft.primary }}>
+                                  <span>Wie viele kommt ihr?</span>
+                                  <div className="customizer-card-rsvp-dots">
+                                    {[1, 2, 3, 4, 5].map((n) => (
+                                      <span
+                                        key={n}
+                                        style={
+                                          n === 2
+                                            ? { background: draft.accent, borderColor: draft.accent, color: draft.background }
+                                            : { borderColor: `${draft.accent}66`, color: draft.primary }
+                                        }
+                                      >
+                                        {n}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div
+                                  className="customizer-card-rsvp-field"
+                                  style={{ borderColor: `${draft.accent}88`, color: draft.primary }}
+                                >
+                                  Nachricht ans Brautpaar (optional) …
                                 </div>
                               </div>
                             )}
@@ -479,7 +559,12 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
 
                             {draft.showGallery && (
                               <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
-                                <div style={{ color: draft.primary }}>Foto- &amp; Videogalerie</div>
+                                <div style={{ color: draft.primary }}>Erinnerungen teilen</div>
+                                <div className="customizer-card-memory-pills">
+                                  <span style={{ background: draft.accent, color: draft.background }}>Foto</span>
+                                  <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Video</span>
+                                  <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Sprachnotiz</span>
+                                </div>
                                 <div className="customizer-card-gallery-grid">
                                   {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
                                     <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
@@ -556,7 +641,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                             onChange={(e) => updateDraft(item, { locationText: e.target.value })}
                           />
                           <span className="customizer-hint">
-                            Google-Maps-Autovervollständigung folgt hier in Kürze.
+                            Sobald ihr eine Adresse eingebt, erscheint direkt eine Kartenvorschau in der Karte.
                           </span>
                         </div>
 
@@ -743,6 +828,15 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               />
                               Countdown
                               <span className="customizer-tier-badge">ab {FEATURE_TIER.countdown}</span>
+                            </label>
+                            <label className="customizer-toggle">
+                              <input
+                                type="checkbox"
+                                checked={draft.showWeather}
+                                onChange={(e) => updateDraft(item, { showWeather: e.target.checked })}
+                              />
+                              Wetter-Widget
+                              <span className="customizer-tier-badge">ab {FEATURE_TIER.weather}</span>
                             </label>
                             <label className="customizer-toggle">
                               <input

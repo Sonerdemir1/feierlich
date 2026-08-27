@@ -350,18 +350,26 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "ottoman-line":
       return (
-        <div className="tpl-prev" style={{ background: "#1B3A3E" }}>
-          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="4" y="4" width="30" height="30" transform="rotate(15 19 19)" />
-            <rect x="4" y="4" width="30" height="30" transform="rotate(-15 19 19)" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(27,58,62,0.55) 0%, rgba(27,58,62,0.78) 55%, rgba(27,58,62,0.94) 100%), url(/images/templates/iznik-floral.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ position: "absolute", inset: 7, border: "1px solid #D4AF3799" }} />
+          <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="tr" />
+          <CornerMotif color="#D4AF37" corner="bl" />
+          <CornerMotif color="#D4AF37" corner="br" />
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
           </div>
-          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", bottom: 14, right: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="4" y="4" width="30" height="30" transform="rotate(15 19 19)" />
-            <rect x="4" y="4" width="30" height="30" transform="rotate(-15 19 19)" />
-          </svg>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8, zIndex: 1 }}>
+            DÜĞÜN
+          </div>
         </div>
       );
     case "nar-cicegi":
@@ -406,15 +414,26 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "safir-davet":
       return (
-        <div className="tpl-prev" style={{ background: "#0B2447" }}>
-          <svg width="160" height="160" viewBox="0 0 160 160" style={{ position: "absolute", inset: 0 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="14" y="14" width="132" height="132" />
-            <path d="M14 14 L34 34 M146 14 L126 34 M14 146 L34 126 M146 146 L126 126" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(11,36,71,0.55) 0%, rgba(11,36,71,0.78) 55%, rgba(11,36,71,0.94) 100%), url(/images/templates/iznik-floral.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ position: "absolute", top: 8, left: 8, right: 8, bottom: 8, border: "2px solid #D4AF37" }} />
+          <div style={{ position: "absolute", top: 12, left: 12, right: 12, bottom: 12, border: "1px solid #D4AF37" }} />
           <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="tr" />
+          <CornerMotif color="#D4AF37" corner="bl" />
           <CornerMotif color="#D4AF37" corner="br" />
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8, zIndex: 1 }}>
+            DÜĞÜN
           </div>
         </div>
       );
@@ -456,13 +475,25 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "zuemruet":
       return (
-        <div className="tpl-prev" style={{ background: "#0F3D2E" }}>
-          <div style={{ position: "absolute", inset: 9, border: "1px solid #D4AF3766" }} />
-          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="4" y="4" width="30" height="30" transform="rotate(45 19 19)" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(15,61,46,0.55) 0%, rgba(15,61,46,0.78) 55%, rgba(15,61,46,0.94) 100%), url(/images/templates/iznik-floral.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ position: "absolute", inset: 9, border: "1px solid #D4AF3799" }} />
+          <CornerMotif color="#D4AF37" corner="tl" />
+          <CornerMotif color="#D4AF37" corner="tr" />
+          <CornerMotif color="#D4AF37" corner="bl" />
+          <CornerMotif color="#D4AF37" corner="br" />
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF37", marginTop: 8, zIndex: 1 }}>
+            DÜĞÜN
           </div>
         </div>
       );
@@ -602,55 +633,109 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "konfetti":
       return (
-        <div className="tpl-prev" style={{ background: "#FFF4E3" }}>
+        <div className="tpl-prev" style={{ background: "linear-gradient(135deg, #FFD23F 0%, #FF6B5B 100%)" }}>
           {[
-            [16, 14],
-            [140, 20],
-            [26, 132],
-            [130, 128],
-            [70, 10],
-            [80, 140],
-          ].map(([cx, cy], i) => (
+            ["8%", "10%", "circle", "#4ECDC4", 12],
+            ["88%", "14%", "rect", "#3A2E4A", 10],
+            ["14%", "82%", "rect", "#FFFFFF", 9],
+            ["86%", "80%", "circle", "#3A2E4A", 11],
+            ["46%", "8%", "tri", "#FFFFFF", 12],
+            ["10%", "46%", "circle", "#3A2E4A", 8],
+            ["92%", "48%", "rect", "#4ECDC4", 8],
+            ["50%", "90%", "circle", "#FFFFFF", 10],
+            ["28%", "20%", "rect", "#3A2E4A", 7],
+            ["68%", "84%", "tri", "#4ECDC4", 10],
+          ].map(([left, top, shape, color, size], i) => (
             <div
               key={i}
               style={{
                 position: "absolute",
-                left: cx,
-                top: cy,
-                width: 6,
-                height: 6,
-                borderRadius: i % 2 ? 2 : "50%",
-                background: i % 3 === 0 ? "#F2A65A" : i % 3 === 1 ? "#3A2E4A" : "#8F9B6E",
+                left: left as string,
+                top: top as string,
+                width: size as number,
+                height: size as number,
+                borderRadius: shape === "circle" ? "50%" : shape === "rect" ? 2 : 0,
+                background: shape === "tri" ? "transparent" : (color as string),
+                borderLeft: shape === "tri" ? `${(size as number) / 2}px solid transparent` : undefined,
+                borderRight: shape === "tri" ? `${(size as number) / 2}px solid transparent` : undefined,
+                borderBottom: shape === "tri" ? `${size}px solid ${color}` : undefined,
+                transform: shape === "rect" ? `rotate(${i * 23}deg)` : undefined,
               }}
             />
           ))}
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#3A2E4A" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "#3A2E4A",
+              transform: "rotate(-3deg)",
+              textShadow: "2px 2px 0 rgba(255,255,255,0.6)",
+            }}
+          >
             Mia wird 5
           </div>
         </div>
       );
     case "zuckerwatte":
       return (
-        <div className="tpl-prev" style={{ background: "#FBEFF6" }}>
-          <svg width="60" height="70" viewBox="0 0 60 70" style={{ position: "absolute", top: 4, left: 10, opacity: 0.7 }} fill="none" stroke="#F2A6C9" strokeWidth="1.3">
-            <circle cx="14" cy="16" r="10" />
-            <circle cx="34" cy="10" r="8" />
-            <path d="M14 26 L14 50 M34 18 L34 44" />
+        <div className="tpl-prev" style={{ background: "linear-gradient(160deg, #FFD1E8 0%, #C9A6FF 100%)" }}>
+          <svg width="90" height="76" viewBox="0 0 90 76" style={{ marginBottom: 8 }}>
+            <circle cx="26" cy="26" r="17" fill="#FFB6D9" opacity="0.9" />
+            <circle cx="46" cy="16" r="15" fill="#FFFFFF" opacity="0.85" />
+            <circle cx="60" cy="28" r="16" fill="#FFB6D9" opacity="0.9" />
+            <circle cx="40" cy="32" r="14" fill="#FFFFFF" opacity="0.8" />
+            <path d="M45 40 L45 68" stroke="#B98BE0" strokeWidth="3" strokeLinecap="round" />
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#4A3350" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "#6B2E82",
+              transform: "rotate(2deg)",
+            }}
+          >
             Mia wird 5
           </div>
         </div>
       );
     case "pastellwiese":
       return (
-        <div className="tpl-prev" style={{ background: "#EAF6EE" }}>
-          <svg width="120" height="30" viewBox="0 0 120 30" style={{ position: "absolute", bottom: 10 }} fill="#6FB98F">
-            {[10, 30, 50, 70, 90, 110].map((x) => (
-              <circle key={x} cx={x} cy={15} r={4} />
+        <div className="tpl-prev" style={{ background: "linear-gradient(180deg, #BEE7F7 0%, #EAF6EE 62%)" }}>
+          <svg width="26" height="26" viewBox="0 0 26 26" style={{ position: "absolute", top: 12, right: 14 }}>
+            <circle cx="13" cy="13" r="7" fill="#FFD23F" />
+            {[0, 45, 90, 135].map((r) => (
+              <rect key={r} x="12" y="0" width="2" height="7" fill="#FFD23F" transform={`rotate(${r} 13 13)`} />
             ))}
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#33424A" }}>
+          <svg width="160" height="40" viewBox="0 0 160 40" style={{ position: "absolute", bottom: 0, left: 0 }}>
+            <rect x="0" y="28" width="160" height="12" fill="#7FC490" />
+            {[
+              [16, "#FF7A9C"],
+              [42, "#FFD23F"],
+              [70, "#FF9F5B"],
+              [98, "#FFFFFF"],
+              [126, "#FF7A9C"],
+              [148, "#FFD23F"],
+            ].map(([cx, color], i) => (
+              <g key={i} transform={`translate(${cx}, 22)`}>
+                {[0, 72, 144, 216, 288].map((r) => (
+                  <ellipse key={r} cx="0" cy="-5" rx="3" ry="5" fill={color as string} transform={`rotate(${r})`} />
+                ))}
+                <circle cx="0" cy="0" r="2.5" fill="#6B4A2E" />
+              </g>
+            ))}
+          </svg>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "#2E5B3F",
+              marginTop: -6,
+            }}
+          >
             Mia wird 5
           </div>
         </div>
