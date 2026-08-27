@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
 import { PhotoWall } from "@/components/gallery/PhotoWall";
+import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -58,6 +59,9 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
   const colors: TemplateColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const headingFont = templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)";
+  const envelopeImages: string[] | null = event.template.envelopeSequenceUrls
+    ? JSON.parse(event.template.envelopeSequenceUrls)
+    : null;
 
   const rsvpStatus = typeof sp.rsvp === "string" ? sp.rsvp : undefined;
   const seatResult = typeof sp.seat === "string" ? sp.seat : undefined;
@@ -117,18 +121,50 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       <section style={{ padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
-          {event.eventType.name}
-        </div>
-        <h1 style={{ fontFamily: headingFont, fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal", fontWeight: 600, fontSize: "clamp(34px, 6vw, 52px)", margin: 0 }}>
-          {event.title}
-        </h1>
-        {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12 }}>{event.subtitle}</p>}
-        <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
-        <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8 }}>
-          {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-          {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-        </div>
+        {envelopeImages ? (
+          <>
+            <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
+              {event.eventType.name}
+            </div>
+            <div style={{ maxWidth: 320, margin: "0 auto" }}>
+              <EnvelopeReveal images={envelopeImages}>
+                <div style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      fontFamily: headingFont,
+                      fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal",
+                      fontWeight: 600,
+                      fontSize: "clamp(24px, 5vw, 34px)",
+                      color: colors.primary,
+                    }}
+                  >
+                    {event.title}
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 11.5, letterSpacing: "0.06em", color: colors.primary, opacity: 0.8 }}>
+                    {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+                    {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+                  </div>
+                </div>
+              </EnvelopeReveal>
+            </div>
+            {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24 }}>{event.subtitle}</p>}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
+              {event.eventType.name}
+            </div>
+            <h1 style={{ fontFamily: headingFont, fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal", fontWeight: 600, fontSize: "clamp(34px, 6vw, 52px)", margin: 0 }}>
+              {event.title}
+            </h1>
+            {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12 }}>{event.subtitle}</p>}
+            <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
+            <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8 }}>
+              {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+              {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+            </div>
+          </>
+        )}
 
         {isModuleOn("countdown") && (
           <div style={{ marginTop: 32 }}>

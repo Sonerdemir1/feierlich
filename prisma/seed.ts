@@ -108,7 +108,15 @@ const packages = [
 // Templates: die zwoelf im Chat entworfenen "einladi"-Designs als
 // echte Datensaetze. `layoutKey` referenziert die spaetere React-
 // Template-Komponente.
-const templates = [
+const templates: Array<{
+  slug: string;
+  name: string;
+  category: string;
+  layoutKey: string;
+  colors: { primary: string; accent: string; background: string };
+  fonts: { display: string; body: string };
+  envelopeSequenceUrls?: string[];
+}> = [
   // Türkische Vorlagen stehen bewusst zuerst: Hauptzielgruppe ist Werbung
   // in tuerkischen Hochzeitssaelen. Nach Anlass unterkategorisiert (Düğün,
   // Kına Gecesi, Nişan, Sünnet), jeweils eine opulente ("kitschig", dicht
@@ -128,6 +136,19 @@ const templates = [
   { slug: 'zuemruet', name: 'Zümrüt', category: 'Düğün', layoutKey: 'zuemruet',
     colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#0F3D2E' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  // Testvorlage fuer die EnvelopeReveal-Umschlag-Animation (siehe
+  // src/components/marketing/EnvelopeReveal.tsx) — noch nicht in der
+  // echten Galerie, nur ueber src/app/test-envelope/page.tsx geladen.
+  { slug: 'hochzeit-elegant-gold', name: 'Hochzeit Elegant Gold', category: 'Düğün', layoutKey: 'hochzeit-elegant-gold',
+    colors: { primary: '#211C19', accent: '#B9975B', background: '#FAF6EF' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    envelopeSequenceUrls: [
+      '/images/templates/hochzeit-elegant-gold/01-envelope-closed.png',
+      '/images/templates/hochzeit-elegant-gold/02-seal-opened.png',
+      '/images/templates/hochzeit-elegant-gold/03-envelope-open.png',
+      '/images/templates/hochzeit-elegant-gold/04-card-emerging.png',
+      '/images/templates/hochzeit-elegant-gold/05-card-revealed.png',
+    ] },
   { slug: 'kina-kirmizi', name: 'Kına Kırmızı', category: 'Kına Gecesi', layoutKey: 'kina-kirmizi',
     colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#7A1428' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
@@ -281,16 +302,19 @@ async function main() {
   console.log(`Pakete: ${packages.length} geseedet`);
 
   for (const [i, t] of templates.entries()) {
+    const envelopeSequenceUrls = t.envelopeSequenceUrls ? JSON.stringify(t.envelopeSequenceUrls) : undefined;
     await prisma.template.upsert({
       where: { slug: t.slug },
       update: {
         name: t.name, category: t.category, layoutKey: t.layoutKey,
         colors: JSON.stringify(t.colors), fonts: JSON.stringify(t.fonts),
+        envelopeSequenceUrls,
         status: 'ACTIVE', sortOrder: i,
       },
       create: {
         slug: t.slug, name: t.name, category: t.category, layoutKey: t.layoutKey,
         colors: JSON.stringify(t.colors), fonts: JSON.stringify(t.fonts),
+        envelopeSequenceUrls,
         status: 'ACTIVE', sortOrder: i,
       },
     });

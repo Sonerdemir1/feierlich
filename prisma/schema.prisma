@@ -36,7 +36,7 @@ model User {
   orders        Order[]
   subscriptions Subscription[]
   notifications Notification[]
-  partner       Partner?  @relation(fields: [partnerId], references: [id])
+  partner       Partner?       @relation(fields: [partnerId], references: [id])
   partnerId     String?
   accounts      Account[]
   sessions      Session[]
@@ -86,16 +86,16 @@ model VerificationToken {
 // ---------------------------------------------------------------------
 
 model EventType {
-  id        String   @id @default(cuid())
-  key       String   @unique // z.B. "hochzeit", "geburtstag-30"
+  id        String  @id @default(cuid())
+  key       String  @unique // z.B. "hochzeit", "geburtstag-30"
   name      String
-  category  String   // z.B. "Hochzeit & Liebe", "Geburtstag", "Business"
+  category  String // z.B. "Hochzeit & Liebe", "Geburtstag", "Business"
   icon      String?
-  sortOrder Int      @default(0)
-  active    Boolean  @default(true)
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
 
-  events         Event[]
-  templateLinks  TemplateEventType[]
+  events        Event[]
+  templateLinks TemplateEventType[]
 }
 
 // ---------------------------------------------------------------------
@@ -112,22 +112,27 @@ enum TemplateStatus {
 }
 
 model Template {
-  id          String         @id @default(cuid())
-  slug        String         @unique
-  name        String
-  category    String         // z.B. "Zeitlos", "Botanisch", "Business"
-  description String?
-  previewUrl  String?
-  colors      String         // JSON-String: {"primary":"#...", "accent":"#..."}
-  fonts       String         // JSON-String: {"display":"...", "body":"..."}
-  layoutKey   String         // referenziert die React-Template-Komponente
-  priceCents  Int            @default(0)
-  status      TemplateStatus @default(DRAFT)
-  sortOrder   Int            @default(0)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                   String         @id @default(cuid())
+  slug                 String         @unique
+  name                 String
+  category             String // z.B. "Zeitlos", "Botanisch", "Business"
+  description          String?
+  previewUrl           String?
+  // Bild-Sequenz fuer die Umschlag-Reveal-Animation (EnvelopeReveal-
+  // Komponente) — JSON-Array von Bild-URLs in Abspiel-Reihenfolge, z.B.
+  // ["envelope-closed.png", ..., "card-final.png"]. Optional, da nicht
+  // jedes Template diese Optik nutzt.
+  envelopeSequenceUrls String?
+  colors               String // JSON-String: {"primary":"#...", "accent":"#..."}
+  fonts                String // JSON-String: {"display":"...", "body":"..."}
+  layoutKey            String // referenziert die React-Template-Komponente
+  priceCents           Int            @default(0)
+  status               TemplateStatus @default(DRAFT)
+  sortOrder            Int            @default(0)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
-  events        Event[]
+  events         Event[]
   eventTypeLinks TemplateEventType[]
   moduleDefaults TemplateModule[]
 }
@@ -152,21 +157,21 @@ model TemplateEventType {
 // ---------------------------------------------------------------------
 
 model Module {
-  id          String   @id @default(cuid())
-  key         String   @unique // z.B. "countdown", "rsvp", "seating"
+  id          String  @id @default(cuid())
+  key         String  @unique // z.B. "countdown", "rsvp", "seating"
   name        String
   description String?
-  category    String   // z.B. "Basis", "Gaeste", "Premium"
-  isPremium   Boolean  @default(false)
-  sortOrder   Int      @default(0)
+  category    String // z.B. "Basis", "Gaeste", "Premium"
+  isPremium   Boolean @default(false)
+  sortOrder   Int     @default(0)
 
   templateDefaults TemplateModule[]
   eventModules     EventModule[]
 }
 
 model TemplateModule {
-  templateId String
-  moduleId   String
+  templateId       String
+  moduleId         String
   enabledByDefault Boolean @default(true)
 
   template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
@@ -186,23 +191,23 @@ enum EventStatus {
 }
 
 model Event {
-  id          String      @id @default(cuid())
-  slug        String      @unique // .../e/<slug>
-  title       String      // z.B. "Anna & Lukas"
-  subtitle    String?
-  description String?
-  eventDate   DateTime
-  eventTime   String?
-  locationName String?
+  id              String      @id @default(cuid())
+  slug            String      @unique // .../e/<slug>
+  title           String // z.B. "Anna & Lukas"
+  subtitle        String?
+  description     String?
+  eventDate       DateTime
+  eventTime       String?
+  locationName    String?
   locationAddress String?
-  locationLat  Float?
-  locationLng  Float?
-  coverImageId String?
-  colorOverride String?   // JSON-String, ueberschreibt Template.colors wenn gesetzt
-  viewCount   Int         @default(0)
-  status      EventStatus @default(DRAFT)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  locationLat     Float?
+  locationLng     Float?
+  coverImageId    String?
+  colorOverride   String? // JSON-String, ueberschreibt Template.colors wenn gesetzt
+  viewCount       Int         @default(0)
+  status          EventStatus @default(DRAFT)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   owner       User      @relation(fields: [ownerId], references: [id])
   ownerId     String
@@ -213,26 +218,26 @@ model Event {
   coverImage  Media?    @relation("EventCoverImage", fields: [coverImageId], references: [id])
   order       Order?
 
-  modules         EventModule[]
-  guests          Guest[]
-  tables          Table[]
+  modules          EventModule[]
+  guests           Guest[]
+  tables           Table[]
   guestbookEntries GuestbookEntry[]
-  galleryItems    GalleryItem[]
-  menuItems       MenuItem[]
-  wishlistItems   WishlistItem[]
-  musicRequests   MusicRequest[]
-  qrCodes         QRCode[]
-  checkIns        CheckIn[]
-  media           Media[]         @relation("EventMedia")
+  galleryItems     GalleryItem[]
+  menuItems        MenuItem[]
+  wishlistItems    WishlistItem[]
+  musicRequests    MusicRequest[]
+  qrCodes          QRCode[]
+  checkIns         CheckIn[]
+  media            Media[]          @relation("EventMedia")
 }
 
 // pro Event an/aus geschaltete Module inkl. optionaler Konfiguration
 model EventModule {
-  id        String   @id @default(cuid())
-  eventId   String
-  moduleId  String
-  enabled   Boolean  @default(true)
-  config    String?  // JSON-String fuer modul-spezifische Einstellungen
+  id       String  @id @default(cuid())
+  eventId  String
+  moduleId String
+  enabled  Boolean @default(true)
+  config   String? // JSON-String fuer modul-spezifische Einstellungen
 
   event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   module Module @relation(fields: [moduleId], references: [id])
@@ -251,46 +256,46 @@ enum RsvpStatus {
 }
 
 model Guest {
-  id            String   @id @default(cuid())
-  eventId       String
-  firstName     String
-  lastName      String?
-  email         String?
-  phone         String?
-  groupLabel    String?  // z.B. Haushalt/Familie fuer gruppierte Einladungen
-  invitedCount  Int      @default(1)
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  eventId      String
+  firstName    String
+  lastName     String?
+  email        String?
+  phone        String?
+  groupLabel   String? // z.B. Haushalt/Familie fuer gruppierte Einladungen
+  invitedCount Int      @default(1)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  rsvp   RSVP?
-  seat   Seat?
-  checkIn CheckIn?
+  event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rsvp      RSVP?
+  seat      Seat?
+  checkIn   CheckIn?
   photoTags PhotoTag[]
 }
 
 model RSVP {
-  id                String     @id @default(cuid())
-  guestId           String     @unique
-  status            RsvpStatus @default(PENDING)
-  attendingCount    Int?
-  childrenCount     Int?
-  menuChoice        String?
-  specialRequests   String?
-  message           String?
-  respondedAt       DateTime?
+  id              String     @id @default(cuid())
+  guestId         String     @unique
+  status          RsvpStatus @default(PENDING)
+  attendingCount  Int?
+  childrenCount   Int?
+  menuChoice      String?
+  specialRequests String?
+  message         String?
+  respondedAt     DateTime?
 
   guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
 }
 
 model Table {
-  id        String  @id @default(cuid())
-  eventId   String
-  name      String  // z.B. "Tisch 1"
-  capacity  Int     @default(8)
-  posX      Float?
-  posY      Float?
+  id       String @id @default(cuid())
+  eventId  String
+  name     String // z.B. "Tisch 1"
+  capacity Int    @default(8)
+  posX     Float?
+  posY     Float?
 
   event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   seats Seat[]
@@ -328,16 +333,16 @@ enum MediaType {
 // zentrale Ablage fuer alle hochgeladenen Dateien (Datenschutz/Groesse/
 // Status an einer Stelle steuerbar statt verstreut).
 model Media {
-  id          String            @id @default(cuid())
-  eventId     String?
-  type        MediaType
-  url         String
+  id           String           @id @default(cuid())
+  eventId      String?
+  type         MediaType
+  url          String
   thumbnailUrl String?
-  mimeType    String
-  sizeBytes   Int
+  mimeType     String
+  sizeBytes    Int
   uploaderName String?
-  status      ModerationStatus  @default(PENDING)
-  createdAt   DateTime          @default(now())
+  status       ModerationStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
 
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
   eventCoverFor    Event[]          @relation("EventCoverImage")
@@ -467,10 +472,10 @@ model QRCode {
 }
 
 model CheckIn {
-  id           String   @id @default(cuid())
-  eventId      String
-  guestId      String   @unique
-  checkedInAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  eventId     String
+  guestId     String   @unique
+  checkedInAt DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   guest Guest @relation(fields: [guestId], references: [id], onDelete: Cascade)
@@ -498,7 +503,7 @@ model Partner {
   contactEmail   String?
   brandColor     String?
   brandLogoUrl   String?
-  commissionRate Float?      // z.B. 0.1 = 10%
+  commissionRate Float? // z.B. 0.1 = 10%
   createdAt      DateTime    @default(now())
 
   users  User[]
@@ -521,7 +526,7 @@ model Package {
   description String?
   priceCents  Int
   billingType BillingType @default(ONE_TIME)
-  features    String      // JSON-String: Liste freigeschalteter Module/Limits
+  features    String // JSON-String: Liste freigeschalteter Module/Limits
   active      Boolean     @default(true)
   sortOrder   Int         @default(0)
 
@@ -549,19 +554,19 @@ model Order {
   discountCode          String?
   createdAt             DateTime    @default(now())
 
-  user    User     @relation(fields: [userId], references: [id])
-  package Package  @relation(fields: [packageId], references: [id])
-  partner Partner? @relation(fields: [partnerId], references: [id])
-  event   Event?   @relation(fields: [eventId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  package  Package   @relation(fields: [packageId], references: [id])
+  partner  Partner?  @relation(fields: [partnerId], references: [id])
+  event    Event?    @relation(fields: [eventId], references: [id])
   payments Payment[]
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   userId               String
   packageId            String
-  status               String   @default("ACTIVE") // ACTIVE | CANCELLED | EXPIRED
-  startedAt            DateTime @default(now())
+  status               String    @default("ACTIVE") // ACTIVE | CANCELLED | EXPIRED
+  startedAt            DateTime  @default(now())
   endsAt               DateTime?
   stripeSubscriptionId String?
 
@@ -574,7 +579,7 @@ model Payment {
   orderId         String
   amountCents     Int
   currency        String    @default("EUR")
-  status          String    // PENDING | SUCCEEDED | FAILED | REFUNDED
+  status          String // PENDING | SUCCEEDED | FAILED | REFUNDED
   stripePaymentId String?
   paidAt          DateTime?
   createdAt       DateTime  @default(now())
