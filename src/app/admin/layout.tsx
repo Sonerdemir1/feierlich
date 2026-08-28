@@ -24,12 +24,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          rowGap: 12,
           padding: "20px 28px",
           borderBottom: "1px solid var(--line)",
           background: "#211C19",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 20, rowGap: 10 }}>
           <Link href="/admin" className="logo">
             <svg width="26" height="20" viewBox="0 0 28 22" fill="none" stroke="#B9975B" strokeWidth="1.4">
               <rect x="1" y="1" width="26" height="20" rx="1.5" />
@@ -37,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </svg>
             <span style={{ color: "#FAF6EF" }}>einladi · Admin</span>
           </Link>
-          <nav style={{ display: "flex", gap: 20 }}>
+          <nav style={{ display: "flex", flexWrap: "wrap", gap: 16, rowGap: 8 }}>
             {[
               ["/admin", "Übersicht"],
               ["/admin/customers", "Kunden"],

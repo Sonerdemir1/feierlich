@@ -24,9 +24,9 @@ export default async function EditGuestPage({ params }: PageProps<"/dashboard/ev
       </h1>
 
       <form action={updateGuest.bind(null, id, guestId)} style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 440 }}>
-        <div style={{ display: "flex", gap: 10 }}>
-          <input name="firstName" defaultValue={guest.firstName} placeholder="Vorname" required style={fieldStyle} />
-          <input name="lastName" defaultValue={guest.lastName ?? ""} placeholder="Nachname" style={fieldStyle} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <input name="firstName" defaultValue={guest.firstName} placeholder="Vorname" required style={{ ...fieldStyle, minWidth: 140 }} />
+          <input name="lastName" defaultValue={guest.lastName ?? ""} placeholder="Nachname" style={{ ...fieldStyle, minWidth: 140 }} />
         </div>
         <input name="email" type="email" defaultValue={guest.email ?? ""} placeholder="E-Mail" style={fieldStyle} />
         <input name="phone" defaultValue={guest.phone ?? ""} placeholder="Telefon" style={fieldStyle} />
@@ -36,7 +36,7 @@ export default async function EditGuestPage({ params }: PageProps<"/dashboard/ev
         </label>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5, color: "var(--ink-soft)" }}>
           RSVP-Status
-          <div style={{ display: "flex", gap: 14 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 14, rowGap: 8 }}>
             {(["PENDING", "YES", "NO"] as const).map((value) => (
               <label key={value} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink)", cursor: "pointer" }}>
                 <input type="radio" name="status" value={value} defaultChecked={(guest.rsvp?.status ?? "PENDING") === value} />

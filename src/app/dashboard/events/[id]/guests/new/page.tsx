@@ -21,9 +21,9 @@ export default async function NewGuestPage({ params }: PageProps<"/dashboard/eve
       </h1>
 
       <form action={addGuest.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 440 }}>
-        <div style={{ display: "flex", gap: 10 }}>
-          <input name="firstName" placeholder="Vorname" required style={fieldStyle} />
-          <input name="lastName" placeholder="Nachname (optional)" style={fieldStyle} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <input name="firstName" placeholder="Vorname" required style={{ ...fieldStyle, minWidth: 140 }} />
+          <input name="lastName" placeholder="Nachname (optional)" style={{ ...fieldStyle, minWidth: 140 }} />
         </div>
         <input name="email" type="email" placeholder="E-Mail (optional)" style={fieldStyle} />
         <input name="phone" placeholder="Telefon (optional)" style={fieldStyle} />
