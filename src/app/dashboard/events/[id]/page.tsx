@@ -3,8 +3,16 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { publicHost } from "@/lib/site";
-import { uploadCoverImage, removeCoverImageBackground, saveModules, publishEvent } from "../actions";
+import {
+  uploadCoverImage,
+  removeCoverImageBackground,
+  activateAiDesign,
+  generateAiDesignForCover,
+  saveModules,
+  publishEvent,
+} from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
+import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -25,6 +33,11 @@ const uploadErrorLabel: Record<string, string> = {
   "too-large": "Datei ist größer als 8 MB.",
   "no-cover-image": "Bitte zuerst ein Titelbild hochladen.",
   "bg-removal-failed": "Hintergrund-Freistellung ist fehlgeschlagen. Bitte später erneut versuchen.",
+  "ai-design-unavailable": "KI-Design ist gerade nicht verfügbar.",
+  "ai-design-no-prompt": "Bitte beschreibe, was angepasst werden soll.",
+  "ai-design-not-activated": "Bitte zuerst KI-Design aktivieren.",
+  "ai-design-quota": `Kontingent von ${AI_DESIGN_ATTEMPT_QUOTA} Versuchen aufgebraucht.`,
+  "ai-design-failed": "KI-Design ist fehlgeschlagen. Bitte später erneut versuchen.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -65,14 +78,20 @@ export default async function EventDetailPage({
   const yesCount = event.guests.filter((g) => g.rsvp?.status === "YES").length;
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook] = await Promise.all([
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount] = await Promise.all([
     prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.eventModule.findMany({ where: { eventId: id } }),
     prisma.galleryItem.count({ where: { eventId: id, status: "PENDING" } }),
     prisma.guestbookEntry.count({ where: { eventId: id, status: "PENDING" } }),
+    prisma.addOn.findUnique({ where: { key: AI_DESIGN_ADDON_KEY } }),
+    prisma.aiDesignAttempt.count({ where: { eventId: id } }),
   ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const pendingMemories = pendingGallery + pendingGuestbook;
+  const aiDesignActivated = aiDesignAddOn
+    ? Boolean(await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } }))
+    : false;
+  const aiDesignAttemptsLeft = Math.max(0, AI_DESIGN_ATTEMPT_QUOTA - aiDesignAttemptCount);
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
 
@@ -142,6 +161,47 @@ export default async function EventDetailPage({
               Hintergrund entfernen
             </button>
           </form>
+        )}
+
+        {event.coverImage && aiDesignConfigured && aiDesignAddOn && (
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>KI-Design</div>
+            {!aiDesignActivated ? (
+              <>
+                <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+                  Titelbild per KI-Prompt anpassen (z. B. Hintergrund, Lichtstimmung) —{" "}
+                  {(aiDesignAddOn.priceCents / 100).toFixed(2)} € für {AI_DESIGN_ATTEMPT_QUOTA} Versuche.
+                </p>
+                <form action={activateAiDesign.bind(null, event.id)}>
+                  <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                    KI-Design aktivieren
+                  </button>
+                </form>
+              </>
+            ) : aiDesignAttemptsLeft > 0 ? (
+              <form action={generateAiDesignForCover.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 420 }}>
+                <textarea
+                  name="prompt"
+                  placeholder="z. B. warmes Abendlicht, goldenes Bokeh im Hintergrund"
+                  required
+                  rows={2}
+                  style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, fontFamily: "inherit" }}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                    Generieren
+                  </button>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
+                    {aiDesignAttemptsLeft} von {AI_DESIGN_ATTEMPT_QUOTA} Versuchen übrig
+                  </span>
+                </div>
+              </form>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--ink-faint)" }}>
+                Kontingent von {AI_DESIGN_ATTEMPT_QUOTA} Versuchen aufgebraucht.
+              </p>
+            )}
+          </div>
         )}
       </div>
 

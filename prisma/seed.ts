@@ -117,6 +117,16 @@ const addOns = [
     description: 'Unbegrenzte Foto- & Video-Uploads von Gästen, inkl. Personen-Tagging — unabhängig vom gewählten Einladungs-Paket dazubuchbar.',
     moduleKeys: ['gallery'],
   },
+  // PLATZHALTER-Preis, anders als beim Foto/Video-Add-on NICHT aus
+  // Wettbewerber-Recherche abgeleitet (kein direktes Pendant gefunden),
+  // sondern grob auf Basis geschaetzter OpenAI-Kosten (GPT Image 2,
+  // ca. $0.05-0.25/Generierung je nach Qualitaet) fuer 10 Versuche plus
+  // Marge kalkuliert. Vor dem Live-Gang mit echten Nutzungsdaten pruefen.
+  {
+    key: 'ai-design', name: 'KI-Design', priceCents: 1490,
+    description: 'Titelbild per KI-Prompt anpassen (z.B. Hintergrund, Lichtstimmung) — 10 Versuche inklusive.',
+    moduleKeys: [],
+  },
 ];
 
 // Templates: die zwoelf im Chat entworfenen "einladi"-Designs als

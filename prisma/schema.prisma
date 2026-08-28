@@ -231,6 +231,7 @@ model Event {
   checkIns         CheckIn[]
   media            Media[]          @relation("EventMedia")
   addOns           EventAddOn[]
+  aiDesignAttempts AiDesignAttempt[]
 }
 
 // pro Event an/aus geschaltete Module inkl. optionaler Konfiguration
@@ -617,6 +618,20 @@ model EventAddOn {
   addOn AddOn @relation(fields: [addOnId], references: [id])
 
   @@unique([eventId, addOnId])
+}
+
+// Protokolliert jeden KI-Design-Versuch (Titelbild per Prompt anpassen,
+// AddOn "ai-design") — sowohl zur Kontingent-Zaehlung (Anzahl Zeilen pro
+// Event = verbrauchte Versuche) als auch zur Kostenkontrolle/Audit, da
+// jeder Versuch echte OpenAI-Kosten verursacht.
+model AiDesignAttempt {
+  id        String   @id @default(cuid())
+  eventId   String
+  prompt    String
+  resultUrl String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 enum OrderStatus {
