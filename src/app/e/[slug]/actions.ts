@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { validateImageFile, saveEventImage } from "@/lib/uploads";
+import { validateMediaFile, saveEventMedia, mediaKindFromMime } from "@/lib/uploads";
 
 export async function submitRsvp(eventId: string, slug: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -46,14 +46,14 @@ export async function findSeat(eventId: string, slug: string, formData: FormData
 
 export async function uploadGalleryPhoto(eventId: string, slug: string, formData: FormData) {
   const file = formData.get("file");
-  const error = validateImageFile(file);
+  const error = validateMediaFile(file);
   if (error) redirect(`/e/${slug}?galleryError=${error}#galerie`);
 
-  const { url, mimeType, sizeBytes } = await saveEventImage(eventId, file as File);
+  const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
   const uploaderName = String(formData.get("uploaderName") ?? "").trim().slice(0, 80) || null;
 
   const media = await prisma.media.create({
-    data: { eventId, type: "IMAGE", url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
+    data: { eventId, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
   });
   await prisma.galleryItem.create({ data: { eventId, mediaId: media.id, status: "PENDING" } });
 
@@ -123,11 +123,11 @@ export async function submitGuestbookEntry(eventId: string, slug: string, formDa
   const file = formData.get("file");
   let mediaId: string | undefined;
   if (file instanceof File && file.size > 0) {
-    const error = validateImageFile(file);
+    const error = validateMediaFile(file);
     if (error) redirect(`/e/${slug}?guestbookError=${error}#gaestebuch`);
-    const { url, mimeType, sizeBytes } = await saveEventImage(eventId, file);
+    const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file);
     const media = await prisma.media.create({
-      data: { eventId, type: "IMAGE", url, mimeType, sizeBytes, uploaderName: authorName, status: "PENDING" },
+      data: { eventId, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName: authorName, status: "PENDING" },
     });
     mediaId = media.id;
   }

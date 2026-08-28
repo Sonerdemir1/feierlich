@@ -57,8 +57,12 @@ export default async function MemoriesPage({ params }: PageProps<"/dashboard/eve
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
             {galleryItems.map((item) => (
               <div key={item.id} style={{ border: "1px solid var(--line)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions */}
-                <img src={item.media.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                {item.media.type === "VIDEO" ? (
+                  <video src={item.media.url} controls style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
+                  <img src={item.media.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                )}
                 <div style={{ padding: "8px 10px" }}>
                   <div style={{ fontSize: 11, color: statusColor[item.status], fontWeight: 600, marginBottom: 6 }}>{statusLabel[item.status]}</div>
                   <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginBottom: 8 }}>{item.media.uploaderName ?? "Anonym"}</div>
@@ -85,7 +89,10 @@ export default async function MemoriesPage({ params }: PageProps<"/dashboard/eve
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
                   {entry.message && <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{entry.message}</div>}
-                  {entry.media && (
+                  {entry.media && entry.media.type === "VIDEO" && (
+                    <video src={entry.media.url} controls style={{ width: 160, marginTop: 8, display: "block" }} />
+                  )}
+                  {entry.media && entry.media.type !== "VIDEO" && (
                     // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
                     <img src={entry.media.url} alt="" style={{ width: 100, marginTop: 8, display: "block" }} />
                   )}

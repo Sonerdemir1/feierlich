@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PhotoTagger } from "./PhotoTagger";
 
-type Photo = { id: string; mediaId: string; url: string; tags: { id: string; firstName: string }[] };
+type Photo = { id: string; mediaId: string; url: string; type: string; tags: { id: string; firstName: string }[] };
 type TaggedGuest = { id: string; firstName: string; count: number };
 type Colors = { primary: string; accent: string; background: string };
 
@@ -74,7 +74,8 @@ export function PhotoWall({
             key={photo.id}
             eventId={eventId}
             mediaId={photo.mediaId}
-            imageUrl={photo.url}
+            mediaUrl={photo.url}
+            mediaType={photo.type === "VIDEO" ? "VIDEO" : "IMAGE"}
             initialTags={photo.tags}
           />
         ))}

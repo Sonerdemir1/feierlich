@@ -10,14 +10,16 @@ type TaggedGuest = { id: string; firstName: string };
 export function PhotoTagger({
   eventId,
   mediaId,
-  imageUrl,
-  imageAlt = "",
+  mediaUrl,
+  mediaType = "IMAGE",
+  mediaAlt = "",
   initialTags = [],
 }: {
   eventId: string;
   mediaId: string;
-  imageUrl: string;
-  imageAlt?: string;
+  mediaUrl: string;
+  mediaType?: "IMAGE" | "VIDEO";
+  mediaAlt?: string;
   initialTags?: TaggedGuest[];
 }) {
   const [open, setOpen] = useState(false);
@@ -105,12 +107,20 @@ export function PhotoTagger({
   return (
     <div style={{ width: "100%" }}>
       <div style={{ position: "relative" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions */}
-        <img
-          src={imageUrl}
-          alt={imageAlt}
-          style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }}
-        />
+        {mediaType === "VIDEO" ? (
+          <video
+            src={mediaUrl}
+            controls
+            style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }}
+          />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
+          <img
+            src={mediaUrl}
+            alt={mediaAlt}
+            style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }}
+          />
+        )}
 
         <button
           type="button"

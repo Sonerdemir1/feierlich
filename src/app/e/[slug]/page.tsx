@@ -90,6 +90,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     id: item.id,
     mediaId: item.mediaId,
     url: item.media.url,
+    type: item.media.type,
     tags: item.media.photoTags.map((pt) => ({ id: pt.guest.id, firstName: pt.guest.firstName })),
   }));
 
@@ -107,10 +108,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
   const uploadErrorLabel: Record<string, string> = {
     "no-file": "Bitte eine Datei auswählen.",
-    "bad-type": "Nur JPG, PNG, WEBP oder GIF sind erlaubt.",
-    "too-large": "Datei ist größer als 8 MB.",
+    "bad-type": "Nur JPG, PNG, WEBP, GIF, MP4, MOV oder WEBM sind erlaubt.",
+    "too-large": "Datei ist zu groß (max. 8 MB für Fotos, 100 MB für Videos).",
     "no-name": "Bitte gib deinen Namen an.",
   };
+  const mediaAccept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm";
 
   return (
     <main style={{ background: colors.background, minHeight: "100vh", color: colors.primary, fontFamily: "var(--font-body)" }}>
@@ -292,7 +294,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px", textAlign: "center" }}>
             {galleryStatus === "success" ? (
-              <p style={{ fontSize: 13.5 }}>Danke! Euer Foto wird nach kurzer Prüfung sichtbar.</p>
+              <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
             ) : (
               <form action={uploadGalleryPhoto.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {galleryError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[galleryError]}</p>}
@@ -302,9 +304,9 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   placeholder="Euer Name (optional)"
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
                 />
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required style={{ fontSize: 13 }} />
+                <input type="file" name="file" accept={mediaAccept} required style={{ fontSize: 13 }} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Foto hochladen
+                  Foto/Video hochladen
                 </button>
               </form>
             )}
@@ -324,7 +326,10 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 <div key={entry.id} style={{ border: `1px solid ${colors.accent}33`, padding: "14px 16px" }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
                   {entry.message && <div style={{ fontSize: 13, marginTop: 4, opacity: 0.85 }}>{entry.message}</div>}
-                  {entry.media && (
+                  {entry.media && entry.media.type === "VIDEO" && (
+                    <video src={entry.media.url} controls style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
+                  )}
+                  {entry.media && entry.media.type !== "VIDEO" && (
                     // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
                     <img src={entry.media.url} alt="" style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
                   )}
@@ -352,7 +357,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   rows={3}
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
                 />
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ fontSize: 12.5 }} />
+                <input type="file" name="file" accept={mediaAccept} style={{ fontSize: 12.5 }} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   Nachricht senden
                 </button>
