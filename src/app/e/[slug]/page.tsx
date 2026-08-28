@@ -63,6 +63,14 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     ? JSON.parse(event.template.envelopeSequenceUrls)
     : null;
 
+  // Kommt von einem Tisch-QR-Code (/dashboard/events/[id]/qr/table/[tableId])
+  // — eventId-Check verhindert, dass eine fremde tableId aus einem anderen
+  // Event hier greift.
+  const tischParam = typeof sp.tisch === "string" ? sp.tisch : undefined;
+  const uploadTable = tischParam
+    ? await prisma.table.findFirst({ where: { id: tischParam, eventId: event.id } })
+    : null;
+
   const rsvpStatus = typeof sp.rsvp === "string" ? sp.rsvp : undefined;
   const seatResult = typeof sp.seat === "string" ? sp.seat : undefined;
   const galleryStatus = typeof sp.gallery === "string" ? sp.gallery : undefined;
@@ -298,6 +306,12 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             ) : (
               <form action={uploadGalleryPhoto.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {galleryError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[galleryError]}</p>}
+                {uploadTable && (
+                  <p style={{ fontSize: 12, color: colors.accent, fontWeight: 600 }}>
+                    Ihr ladet hoch für: {uploadTable.name}
+                  </p>
+                )}
+                <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
                 <input
                   type="text"
                   name="uploaderName"

@@ -58,6 +58,12 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
               <span style={{ color: "var(--ink-faint)", fontSize: 11.5 }}>
                 {t.seats.length}/{t.capacity}
               </span>
+              <a
+                href={`/dashboard/events/${id}/qr/table/${t.id}?format=png&download=1`}
+                style={{ fontSize: 11, color: "var(--terracotta-dark)" }}
+              >
+                QR-Code
+              </a>
               <form action={deleteTable.bind(null, id, t.id)}>
                 <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                   Entfernen

@@ -52,8 +52,15 @@ export async function uploadGalleryPhoto(eventId: string, slug: string, formData
   const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
   const uploaderName = String(formData.get("uploaderName") ?? "").trim().slice(0, 80) || null;
 
+  // tableId kommt aus einem versteckten Formularfeld — im Browser
+  // manipulierbar, daher hier erneut gegen das eigene Event geprueft statt
+  // blind uebernommen (sonst liesse sich fremden Events eine tableId
+  // unterschieben).
+  const tableIdRaw = String(formData.get("tableId") ?? "").trim();
+  const table = tableIdRaw ? await prisma.table.findFirst({ where: { id: tableIdRaw, eventId } }) : null;
+
   const media = await prisma.media.create({
-    data: { eventId, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
+    data: { eventId, tableId: table?.id, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
   });
   await prisma.galleryItem.create({ data: { eventId, mediaId: media.id, status: "PENDING" } });
 

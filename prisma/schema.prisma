@@ -300,6 +300,7 @@ model Table {
 
   event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   seats Seat[]
+  media Media[]
 }
 
 model Seat {
@@ -336,6 +337,10 @@ enum MediaType {
 model Media {
   id           String           @id @default(cuid())
   eventId      String?
+  // Gesetzt, wenn der Upload ueber einen Tisch-spezifischen QR-Code kam
+  // (siehe /dashboard/events/[id]/qr/table/[tableId]) — ermoeglicht spaeter
+  // "Fotos von Tisch X"-Filter, unabhaengig vom Sitzplan-Feature selbst.
+  tableId      String?
   type         MediaType
   url          String
   thumbnailUrl String?
@@ -346,6 +351,7 @@ model Media {
   createdAt    DateTime         @default(now())
 
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
+  table            Table?           @relation(fields: [tableId], references: [id], onDelete: SetNull)
   eventCoverFor    Event[]          @relation("EventCoverImage")
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
