@@ -227,6 +227,7 @@ model Event {
   wishlistItems    WishlistItem[]
   musicRequests    MusicRequest[]
   qrCodes          QRCode[]
+  printOrders      PrintOrder[]
   checkIns         CheckIn[]
   media            Media[]          @relation("EventMedia")
   addOns           EventAddOn[]
@@ -298,9 +299,10 @@ model Table {
   posX     Float?
   posY     Float?
 
-  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  seats Seat[]
-  media Media[]
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  seats       Seat[]
+  media       Media[]
+  printOrders PrintOrder[]
 }
 
 model Seat {
@@ -476,6 +478,44 @@ model QRCode {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, type])
+}
+
+enum PrintSize {
+  A6
+  A5
+}
+
+enum PrintOrderStatus {
+  PENDING
+  PAID
+  PRINTING
+  SHIPPED
+  CANCELLED
+}
+
+// Physischer Druck-&-Versand-Auftrag fuer eine QR-Design-Karte (Tisch-QR
+// oder allgemeiner Event-QR) — komplett eigenstaendig, nicht ueber das
+// bestehende Order-Modell abgewickelt (gleiche Begruendung wie bei
+// EventAddOn: Order/Event sind 1:1 verknuepft, ein zweites, paralleles
+// Bezahl-Modell vermeidet das Risiko, diese Eindeutigkeit aufzuweichen).
+model PrintOrder {
+  id                    String           @id @default(cuid())
+  eventId               String
+  tableId               String? // gesetzt, wenn es ein Tisch-QR ist; leer = allgemeiner Event-QR
+  size                  PrintSize
+  quantity              Int              @default(1)
+  priceCents            Int
+  shippingName          String
+  shippingStreet        String
+  shippingZip           String
+  shippingCity          String
+  shippingCountry       String           @default("DE")
+  status                PrintOrderStatus @default(PENDING)
+  stripePaymentIntentId String?
+  createdAt             DateTime         @default(now())
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  table Table? @relation(fields: [tableId], references: [id], onDelete: SetNull)
 }
 
 model CheckIn {
