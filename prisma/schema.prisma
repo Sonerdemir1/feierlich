@@ -229,6 +229,7 @@ model Event {
   qrCodes          QRCode[]
   checkIns         CheckIn[]
   media            Media[]          @relation("EventMedia")
+  addOns           EventAddOn[]
 }
 
 // pro Event an/aus geschaltete Module inkl. optionaler Konfiguration
@@ -532,6 +533,44 @@ model Package {
 
   orders        Order[]
   subscriptions Subscription[]
+}
+
+// Eigenstaendig kaufbare Zusatzprodukte, losgeloest von den Einladungs-
+// Paketen oben (z.B. "Foto & Video-Sammlung") — ein Event kann eins oder
+// mehrere davon zusaetzlich zu seinem Package kaufen, unabhaengig davon,
+// welches Package es hat. Bewusst NICHT ueber das bestehende Order-Modell
+// abgewickelt: Order/Event sind aktuell 1:1 verknuepft und das wird an
+// mehreren Stellen (Checkout, Stripe-Webhook, Billing-Seite) vorausgesetzt
+// — ein eigenes, paralleles Bezahl-Modell vermeidet das Risiko, diese
+// bestehenden Ablaeufe beim Aufweichen der 1:1-Beziehung zu brechen.
+model AddOn {
+  id          String      @id @default(cuid())
+  key         String      @unique // z.B. "photo-video-collection"
+  name        String
+  description String?
+  priceCents  Int
+  billingType BillingType @default(ONE_TIME)
+  moduleKeys  String // JSON-Array von Module.key, die dieses Add-on freischaltet, z.B. ["gallery"]
+  active      Boolean     @default(true)
+  sortOrder   Int         @default(0)
+
+  eventAddOns EventAddOn[]
+}
+
+model EventAddOn {
+  id                    String      @id @default(cuid())
+  eventId               String
+  addOnId               String
+  amountCents           Int
+  currency              String      @default("EUR")
+  status                OrderStatus @default(PENDING)
+  stripePaymentIntentId String?
+  createdAt             DateTime    @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  addOn AddOn @relation(fields: [addOnId], references: [id])
+
+  @@unique([eventId, addOnId])
 }
 
 enum OrderStatus {

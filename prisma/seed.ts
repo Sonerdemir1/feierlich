@@ -105,6 +105,20 @@ const packages = [
   },
 ];
 
+// Eigenstaendig kaufbare Zusatzprodukte, unabhaengig vom Einladungs-Package
+// (siehe EventAddOn in schema.prisma). Preis an vier deutschen Wettbewerbern
+// (WeddySnap, qrFotos, FridaySnap, MyMillionSnaps — alle 20-50€ Einmal-
+// zahlung fuer unbegrenzte Foto/Video-Sammlung) orientiert; leicht darueber,
+// weil wir zusaetzlich manuelles Personen-Tagging bieten, das keiner davon
+// hat.
+const addOns = [
+  {
+    key: 'photo-video-collection', name: 'Foto & Video Sammlung', priceCents: 4900,
+    description: 'Unbegrenzte Foto- & Video-Uploads von Gästen, inkl. Personen-Tagging — unabhängig vom gewählten Einladungs-Paket dazubuchbar.',
+    moduleKeys: ['gallery'],
+  },
+];
+
 // Templates: die zwoelf im Chat entworfenen "einladi"-Designs als
 // echte Datensaetze. `layoutKey` referenziert die spaetere React-
 // Template-Komponente.
@@ -300,6 +314,21 @@ async function main() {
     });
   }
   console.log(`Pakete: ${packages.length} geseedet`);
+
+  for (const [i, a] of addOns.entries()) {
+    await prisma.addOn.upsert({
+      where: { key: a.key },
+      update: {
+        name: a.name, description: a.description, priceCents: a.priceCents,
+        moduleKeys: JSON.stringify(a.moduleKeys), sortOrder: i,
+      },
+      create: {
+        key: a.key, name: a.name, description: a.description, priceCents: a.priceCents,
+        moduleKeys: JSON.stringify(a.moduleKeys), sortOrder: i,
+      },
+    });
+  }
+  console.log(`Add-ons: ${addOns.length} geseedet`);
 
   for (const [i, t] of templates.entries()) {
     const envelopeSequenceUrls = t.envelopeSequenceUrls ? JSON.stringify(t.envelopeSequenceUrls) : undefined;
