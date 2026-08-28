@@ -80,13 +80,15 @@ export default async function EventDetailPage({
   const yesCount = event.guests.filter((g) => g.rsvp?.status === "YES").length;
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount] = await Promise.all([
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns] = await Promise.all([
     prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.eventModule.findMany({ where: { eventId: id } }),
     prisma.galleryItem.count({ where: { eventId: id, status: "PENDING" } }),
     prisma.guestbookEntry.count({ where: { eventId: id, status: "PENDING" } }),
     prisma.addOn.findUnique({ where: { key: AI_DESIGN_ADDON_KEY } }),
     prisma.aiDesignAttempt.count({ where: { eventId: id } }),
+    prisma.addOn.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.eventAddOn.findMany({ where: { eventId: id } }),
   ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const pendingMemories = pendingGallery + pendingGuestbook;
@@ -95,6 +97,13 @@ export default async function EventDetailPage({
     : null;
   const aiDesignActivated = aiDesignEventAddOn?.status === "PAID";
   const aiDesignAttemptsLeft = Math.max(0, AI_DESIGN_ATTEMPT_QUOTA - aiDesignAttemptCount);
+
+  // KI-Design hat oben (im Titelbild-Bereich) eine eigene, spezialisierte
+  // Oberflaeche inkl. Kontingent-Anzeige — hier nur die uebrigen AddOns
+  // generisch auflisten, damit sie nicht doppelt (und mit widerspruechlichem
+  // Status) auftauchen.
+  const eventAddOnByAddOnId = new Map(eventAddOns.map((ea) => [ea.addOnId, ea]));
+  const otherAddOns = allAddOns.filter((a) => a.key !== AI_DESIGN_ADDON_KEY);
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
 
@@ -247,6 +256,58 @@ export default async function EventDetailPage({
           </button>
         </form>
       </div>
+
+      {/* Zusatzpakete */}
+      {otherAddOns.length > 0 && (
+        <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Zusatzpakete</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+            Unabhängig vom gewählten Einladungs-Paket dazubuchbar.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {otherAddOns.map((addOn) => {
+              const eventAddOn = eventAddOnByAddOnId.get(addOn.id);
+              const isPaid = eventAddOn?.status === "PAID";
+              return (
+                <div
+                  key={addOn.id}
+                  style={{
+                    border: "1px solid var(--line)",
+                    background: "var(--ivory-2)",
+                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+                      {addOn.name} · {(addOn.priceCents / 100).toFixed(2)} €
+                    </div>
+                    {addOn.description && (
+                      <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2, maxWidth: 480 }}>
+                        {addOn.description}
+                      </div>
+                    )}
+                  </div>
+                  {isPaid ? (
+                    <span style={{ fontSize: 11, color: "var(--sage)", fontWeight: 700 }}>Aktiv</span>
+                  ) : (
+                    <form action={startAddOnCheckout.bind(null, event.id)}>
+                      <input type="hidden" name="addOnKey" value={addOn.key} />
+                      <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                        Kaufen
+                      </button>
+                    </form>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* QR-Codes */}
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
