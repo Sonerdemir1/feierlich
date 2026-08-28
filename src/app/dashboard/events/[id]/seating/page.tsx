@@ -74,7 +74,9 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
                 padding: "10px 14px",
                 display: "flex",
                 alignItems: "center",
+                flexWrap: "wrap",
                 gap: 10,
+                rowGap: 8,
                 fontSize: 13,
               }}
             >
@@ -103,7 +105,7 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
             </div>
           ))}
         </div>
-        <form action={createTable.bind(null, id)} style={{ display: "flex", gap: 10 }}>
+        <form action={createTable.bind(null, id)} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
           <input name="name" placeholder="z. B. Tisch 5" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: 1, maxWidth: 220 }} />
           <input name="capacity" type="number" min={1} defaultValue={8} style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 90 }} />
           <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5 }}>
@@ -119,14 +121,14 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
           Wir drucken euer QR-Design und schicken es an eure Adresse. Der Auftrag geht als Anfrage raus — wir melden uns zur Bestätigung und Zahlung.
         </div>
         <form action={createPrintOrder.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            <select name="tableId" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: 1 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+            <select name="tableId" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }}>
               <option value="">Allgemeine Einladungsseite</option>
               {tables.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-            <select name="size" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: 1 }}>
+            <select name="size" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }}>
               {(Object.keys(PRINT_SIZE_MM) as Array<keyof typeof PRINT_SIZE_MM>).map((size) => (
                 <option key={size} value={size}>
                   {PRINT_SIZE_MM[size].label} — {(PRINT_PRICE_CENTS[size] / 100).toFixed(2)} € /Stück
@@ -135,13 +137,13 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
             </select>
             <input name="quantity" type="number" min={1} max={500} defaultValue={1} style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 80 }} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <input name="shippingName" placeholder="Name" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: 1 }} />
-            <input name="shippingStreet" placeholder="Straße & Hausnummer" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: 1 }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+            <input name="shippingName" placeholder="Name" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
+            <input name="shippingStreet" placeholder="Straße & Hausnummer" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
             <input name="shippingZip" placeholder="PLZ" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 100 }} />
-            <input name="shippingCity" placeholder="Ort" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: 1 }} />
+            <input name="shippingCity" placeholder="Ort" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
           </div>
           <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5, alignSelf: "flex-start" }}>
             Druckauftrag anfragen

@@ -24,6 +24,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          rowGap: 10,
           padding: "20px 28px",
           borderBottom: "1px solid var(--line)",
         }}
@@ -35,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </svg>
           <span>einladi</span>
         </a>
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 14, rowGap: 8 }}>
           {session.user.role === "ADMIN" && (
             <a href="/admin" style={{ fontSize: 13, color: "var(--terracotta-dark)", fontWeight: 600 }}>
               Admin-Bereich

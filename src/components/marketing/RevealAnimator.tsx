@@ -20,7 +20,14 @@ export function RevealAnimator() {
           }
         });
       },
-      { threshold: 0.1 }
+      // threshold statt eines Bruchteils: bei sehr hohen Sections (z.B. die
+      // Vorlagen-Galerie im gestapelten Mobil-Layout, oft > 9000px) waere
+      // ein Anteils-Schwellwert wie 0.1 auf schmalen/kurzen Viewports nie
+      // erreichbar (Viewport-Hoehe < 10% der Element-Hoehe) — die Section
+      // bliebe dauerhaft unsichtbar. rootMargin sorgt stattdessen dafuer,
+      // dass die Animation kurz bevor das Element den Viewport erreicht
+      // auslöst, unabhaengig von dessen Gesamthoehe.
+      { threshold: 0, rootMargin: "0px 0px -10% 0px" }
     );
     reveals.forEach((el) => io.observe(el));
     return () => io.disconnect();
