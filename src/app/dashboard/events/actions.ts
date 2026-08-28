@@ -3,9 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateImageFile, saveEventImage } from "@/lib/uploads";
+import { putObject, readObject } from "@/lib/storage";
+import { removeImageBackground } from "@/lib/background-removal";
 
 const REFERRAL_COOKIE = "ref_partner";
 
@@ -98,6 +101,34 @@ export async function uploadCoverImage(eventId: string, formData: FormData) {
   // Galerie-Actions).
   const media = await prisma.media.create({
     data: { eventId, type: "IMAGE", url, mimeType, sizeBytes, status: "APPROVED" },
+  });
+  await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+// Erzeugt aus dem aktuellen Titelbild eine freigestellte Version (remove.bg)
+// und setzt sie als neues Titelbild. Das Original bleibt als eigener
+// Media-Eintrag erhalten (nicht ueberschrieben) — falls das Ergebnis nicht
+// gefaellt, laesst sich einfach ein neues Bild hochladen.
+export async function removeCoverImageBackground(eventId: string) {
+  await requireOwnedEvent(eventId);
+
+  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { coverImage: true } });
+  if (!event?.coverImage) redirect(`/dashboard/events/${eventId}?error=no-cover-image`);
+
+  let freistehend: Buffer;
+  try {
+    const source = await readObject(event.coverImage.url);
+    freistehend = await removeImageBackground(source, event.coverImage.mimeType);
+  } catch {
+    redirect(`/dashboard/events/${eventId}?error=bg-removal-failed`);
+  }
+
+  const url = await putObject(`events/${eventId}/${randomUUID()}.png`, freistehend, "image/png");
+  const media = await prisma.media.create({
+    data: { eventId, type: "IMAGE", url, mimeType: "image/png", sizeBytes: freistehend.length, status: "APPROVED" },
   });
   await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
 

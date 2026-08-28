@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { publicHost } from "@/lib/site";
-import { uploadCoverImage, saveModules, publishEvent } from "../actions";
+import { uploadCoverImage, removeCoverImageBackground, saveModules, publishEvent } from "../actions";
+import { backgroundRemovalConfigured } from "@/lib/background-removal";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -22,6 +23,8 @@ const uploadErrorLabel: Record<string, string> = {
   "no-file": "Bitte eine Datei auswählen.",
   "bad-type": "Nur JPG, PNG, WEBP oder GIF sind erlaubt.",
   "too-large": "Datei ist größer als 8 MB.",
+  "no-cover-image": "Bitte zuerst ein Titelbild hochladen.",
+  "bg-removal-failed": "Hintergrund-Freistellung ist fehlgeschlagen. Bitte später erneut versuchen.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -133,6 +136,13 @@ export default async function EventDetailPage({
             {event.coverImage ? "Bild ersetzen" : "Bild hochladen"}
           </button>
         </form>
+        {event.coverImage && backgroundRemovalConfigured && (
+          <form action={removeCoverImageBackground.bind(null, event.id)} style={{ marginTop: 10 }}>
+            <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+              Hintergrund entfernen
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Module */}
