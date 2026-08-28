@@ -404,6 +404,22 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           </div>
         </div>
       );
+    case "hochzeit-elegant-gold":
+      return (
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage: "url(/images/templates/hochzeit-elegant-gold/05-card-revealed.png)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#211C19" }}>
+            Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#B9975B", marginTop: 8 }}>DÜĞÜN</div>
+        </div>
+      );
     case "safir-davet":
       return (
         <div className="tpl-prev" style={{ background: "#0B2447" }}>

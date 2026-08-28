@@ -160,9 +160,10 @@ const templates: Array<{
   { slug: 'zuemruet', name: 'Zümrüt', category: 'Düğün', layoutKey: 'zuemruet',
     colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#0F3D2E' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
-  // Testvorlage fuer die EnvelopeReveal-Umschlag-Animation (siehe
-  // src/components/marketing/EnvelopeReveal.tsx) — noch nicht in der
-  // echten Galerie, nur ueber src/app/test-envelope/page.tsx geladen.
+  // Erstes Template mit der EnvelopeReveal-Umschlag-Animation (siehe
+  // src/components/marketing/EnvelopeReveal.tsx) — live sowohl in der
+  // Galerie/Vorlagenauswahl (TemplatePreview.tsx) als auch auf der
+  // echten Event-Seite (/e/[slug]).
   { slug: 'hochzeit-elegant-gold', name: 'Hochzeit Elegant Gold', category: 'Düğün', layoutKey: 'hochzeit-elegant-gold',
     colors: { primary: '#211C19', accent: '#B9975B', background: '#FAF6EF' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
