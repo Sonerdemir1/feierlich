@@ -21,11 +21,12 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
   const qrEmailStatus = typeof sp.qrEmail === "string" ? sp.qrEmail : undefined;
-  const printStatus = typeof sp.print === "string" ? sp.print : undefined;
   const printErrorKey = typeof sp.printError === "string" ? sp.printError : undefined;
   const printErrorLabel: Record<string, string> = {
     "missing-address": "Bitte alle Adressfelder ausfüllen.",
     "table-not-found": "Tisch nicht gefunden.",
+    "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
+    cancelled: "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
   };
 
   return (
@@ -48,11 +49,6 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
       {qrEmailStatus === "success" && (
         <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
           QR-Design wurde an eure hinterlegte E-Mail-Adresse geschickt.
-        </div>
-      )}
-      {printStatus === "success" && (
-        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
-          Druckauftrag angelegt — wir melden uns zur Bestätigung und Zahlung.
         </div>
       )}
       {printErrorKey && (

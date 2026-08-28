@@ -1,11 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { buildQrDesignSvg, PRINT_PRICE_CENTS, type PrintSize } from "@/lib/qr-design";
+import { stripe } from "@/lib/stripe";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -84,12 +84,18 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
   redirect(`${redirectBase}?qrEmail=success`);
 }
 
-// Legt einen Druck-&-Versand-Auftrag an (Status PENDING — Bezahlung/
-// Abwicklung laeuft manuell ausserhalb der App, kein Stripe-Checkout hier)
-// und benachrichtigt den Betreiber per E-Mail, damit der Auftrag bearbeitet
-// werden kann.
+// Legt einen Druck-&-Versand-Auftrag an (Status PENDING) und schickt den
+// Kunden zu Stripe. Der Betreiber wird erst benachrichtigt, sobald die
+// Zahlung tatsaechlich eingegangen ist (siehe markPrintOrderPaid in
+// checkout-fulfillment.ts, aufgerufen von Webhook + Success-Seite) — nicht
+// schon beim Anlegen, sonst wuerde jeder abgebrochene Checkout eine
+// "neuer Auftrag"-Mail ausloesen.
 export async function createPrintOrder(eventId: string, formData: FormData) {
-  const { event, session } = await requireOwnedEvent(eventId);
+  const { event } = await requireOwnedEvent(eventId);
+
+  const redirectBase = `/dashboard/events/${eventId}/seating`;
+  if (!stripe) redirect(`${redirectBase}?printError=stripe-not-configured`);
+
   const size: PrintSize = String(formData.get("size") ?? "A6") === "A5" ? "A5" : "A6";
   const quantity = Math.max(1, Math.min(500, Number(formData.get("quantity") ?? 1) || 1));
   const target = targetFromForm(formData);
@@ -99,7 +105,6 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
   const shippingZip = String(formData.get("shippingZip") ?? "").trim().slice(0, 20);
   const shippingCity = String(formData.get("shippingCity") ?? "").trim().slice(0, 120);
 
-  const redirectBase = `/dashboard/events/${eventId}/seating`;
   if (!shippingName || !shippingStreet || !shippingZip || !shippingCity) {
     redirect(`${redirectBase}?printError=missing-address`);
   }
@@ -111,7 +116,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
 
   const priceCents = PRINT_PRICE_CENTS[size] * quantity;
 
-  await prisma.printOrder.create({
+  const printOrder = await prisma.printOrder.create({
     data: {
       eventId,
       tableId: target.kind === "TABLE" ? target.tableId : null,
@@ -125,22 +130,32 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
     },
   });
 
-  const notifyEmail = process.env.PRINT_ORDER_NOTIFY_EMAIL;
-  if (notifyEmail) {
-    await sendEmail({
-      to: notifyEmail,
-      subject: `Neuer Druckauftrag — ${event.title}`,
-      html: `<p>Neuer Druckauftrag von <strong>${session.user!.email}</strong>:</p>
-<ul>
-  <li>Event: ${event.title} (${event.slug})</li>
-  <li>Ziel: ${target.kind === "TABLE" ? `Tisch (${target.tableId})` : target.kind}</li>
-  <li>Größe: ${size} × ${quantity}</li>
-  <li>Preis: ${(priceCents / 100).toFixed(2)} € (Platzhalter-Preis, noch nicht bezahlt)</li>
-  <li>Versand an: ${shippingName}, ${shippingStreet}, ${shippingZip} ${shippingCity}</li>
-</ul>`,
-    });
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  const checkoutSession = await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: "eur",
+          product_data: {
+            name: `einladi – Druckauftrag ${size} × ${quantity}`,
+            description: `Event: ${event.title}`,
+          },
+          unit_amount: priceCents,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: { kind: "printOrder", printOrderId: printOrder.id, eventId },
+    success_url: `${origin}/dashboard/events/${eventId}/billing/success?session_id={CHECKOUT_SESSION_ID}&kind=printOrder&return=seating`,
+    cancel_url: `${origin}${redirectBase}?printError=cancelled`,
+  });
+
+  if (!checkoutSession.url) {
+    throw new Error("Stripe hat keine Checkout-URL zurückgegeben.");
   }
 
-  revalidatePath(redirectBase);
-  redirect(`${redirectBase}?print=success`);
+  redirect(checkoutSession.url);
 }

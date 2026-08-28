@@ -10,6 +10,7 @@ import { validateImageFile, saveEventImage } from "@/lib/uploads";
 import { putObject, readObject } from "@/lib/storage";
 import { removeImageBackground } from "@/lib/background-removal";
 import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
+import { stripe } from "@/lib/stripe";
 
 const REFERRAL_COOKIE = "ref_partner";
 
@@ -137,24 +138,53 @@ export async function removeCoverImageBackground(eventId: string) {
   redirect(`/dashboard/events/${eventId}`);
 }
 
-// Legt einen EventAddOn-Datensatz fuer "ai-design" an (Status PENDING —
-// Zahlungsabwicklung laeuft vorerst manuell, gleiches Muster wie bei
-// PrintOrder), sofern noch keiner existiert. Erst danach ist das
-// Kontingent fuer generateAiDesignForCover() nutzbar.
-export async function activateAiDesign(eventId: string) {
-  await requireOwnedEvent(eventId);
+// Generischer Stripe-Checkout fuer ein beliebiges AddOn (aktuell "ai-design",
+// aber genauso fuer z.B. "photo-video-collection" nutzbar) — legt/aktualisiert
+// den EventAddOn-Datensatz als PENDING und schickt den Kunden zu Stripe.
+// Das Kontingent fuer generateAiDesignForCover() greift erst, sobald der
+// Webhook/die Success-Seite den Status auf PAID setzt.
+export async function startAddOnCheckout(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
 
-  const addOn = await prisma.addOn.findUnique({ where: { key: AI_DESIGN_ADDON_KEY } });
-  if (!addOn) redirect(`/dashboard/events/${eventId}?error=ai-design-unavailable`);
+  if (!stripe) redirect(`/dashboard/events/${eventId}?error=stripe-not-configured`);
 
-  await prisma.eventAddOn.upsert({
+  const addOnKey = String(formData.get("addOnKey") ?? "");
+  const addOn = await prisma.addOn.findUnique({ where: { key: addOnKey } });
+  if (!addOn || !addOn.active) redirect(`/dashboard/events/${eventId}?error=ai-design-unavailable`);
+
+  const eventAddOn = await prisma.eventAddOn.upsert({
     where: { eventId_addOnId: { eventId, addOnId: addOn.id } },
     update: {},
     create: { eventId, addOnId: addOn.id, amountCents: addOn.priceCents },
   });
 
-  revalidatePath(`/dashboard/events/${eventId}`);
-  redirect(`/dashboard/events/${eventId}`);
+  if (eventAddOn.status === "PAID") redirect(`/dashboard/events/${eventId}`);
+
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  const checkoutSession = await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: eventAddOn.currency.toLowerCase(),
+          product_data: { name: `einladi – ${addOn.name}`, description: `Event: ${event.title}` },
+          unit_amount: eventAddOn.amountCents,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: { kind: "eventAddOn", eventAddOnId: eventAddOn.id, eventId },
+    success_url: `${origin}/dashboard/events/${eventId}/billing/success?session_id={CHECKOUT_SESSION_ID}&kind=eventAddOn`,
+    cancel_url: `${origin}/dashboard/events/${eventId}?error=addon-cancelled`,
+  });
+
+  if (!checkoutSession.url) {
+    throw new Error("Stripe hat keine Checkout-URL zurückgegeben.");
+  }
+
+  redirect(checkoutSession.url);
 }
 
 // Bearbeitet das aktuelle Titelbild per KI-Prompt (gpt-image-2, Bild-zu-
@@ -173,7 +203,7 @@ export async function generateAiDesignForCover(eventId: string, formData: FormDa
   const eventAddOn = addOn
     ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId, addOnId: addOn.id } } })
     : null;
-  if (!eventAddOn) redirect(`/dashboard/events/${eventId}?error=ai-design-not-activated`);
+  if (!eventAddOn || eventAddOn.status !== "PAID") redirect(`/dashboard/events/${eventId}?error=ai-design-not-activated`);
 
   const attemptCount = await prisma.aiDesignAttempt.count({ where: { eventId } });
   if (attemptCount >= AI_DESIGN_ATTEMPT_QUOTA) redirect(`/dashboard/events/${eventId}?error=ai-design-quota`);

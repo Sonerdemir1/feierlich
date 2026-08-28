@@ -6,7 +6,7 @@ import { publicHost } from "@/lib/site";
 import {
   uploadCoverImage,
   removeCoverImageBackground,
-  activateAiDesign,
+  startAddOnCheckout,
   generateAiDesignForCover,
   saveModules,
   publishEvent,
@@ -38,6 +38,8 @@ const uploadErrorLabel: Record<string, string> = {
   "ai-design-not-activated": "Bitte zuerst KI-Design aktivieren.",
   "ai-design-quota": `Kontingent von ${AI_DESIGN_ATTEMPT_QUOTA} Versuchen aufgebraucht.`,
   "ai-design-failed": "KI-Design ist fehlgeschlagen. Bitte später erneut versuchen.",
+  "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
+  "addon-cancelled": "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -88,9 +90,10 @@ export default async function EventDetailPage({
   ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const pendingMemories = pendingGallery + pendingGuestbook;
-  const aiDesignActivated = aiDesignAddOn
-    ? Boolean(await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } }))
-    : false;
+  const aiDesignEventAddOn = aiDesignAddOn
+    ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } })
+    : null;
+  const aiDesignActivated = aiDesignEventAddOn?.status === "PAID";
   const aiDesignAttemptsLeft = Math.max(0, AI_DESIGN_ATTEMPT_QUOTA - aiDesignAttemptCount);
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
@@ -172,7 +175,8 @@ export default async function EventDetailPage({
                   Titelbild per KI-Prompt anpassen (z. B. Hintergrund, Lichtstimmung) —{" "}
                   {(aiDesignAddOn.priceCents / 100).toFixed(2)} € für {AI_DESIGN_ATTEMPT_QUOTA} Versuche.
                 </p>
-                <form action={activateAiDesign.bind(null, event.id)}>
+                <form action={startAddOnCheckout.bind(null, event.id)}>
+                  <input type="hidden" name="addOnKey" value={AI_DESIGN_ADDON_KEY} />
                   <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
                     KI-Design aktivieren
                   </button>
