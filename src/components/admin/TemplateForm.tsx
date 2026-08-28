@@ -17,9 +17,9 @@ export function TemplateForm({ action, defaults, submitLabel }: { action: (formD
 
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 520 }}>
-      <div style={{ display: "flex", gap: 10 }}>
-        <input name="name" placeholder="Name" defaultValue={defaults?.name} required style={{ ...field, flex: 1 }} />
-        <input name="category" placeholder="Kategorie" defaultValue={defaults?.category} required style={{ ...field, flex: 1 }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+        <input name="name" placeholder="Name" defaultValue={defaults?.name} required style={{ ...field, flex: "1 1 140px", minWidth: 0 }} />
+        <input name="category" placeholder="Kategorie" defaultValue={defaults?.category} required style={{ ...field, flex: "1 1 140px", minWidth: 0 }} />
       </div>
       <input name="layoutKey" placeholder="Layout-Schlüssel (z. B. minimal-ivory)" defaultValue={defaults?.layoutKey} required style={field} />
       <p style={{ fontSize: 11.5, color: "var(--ink-faint)", margin: "-8px 0 0" }}>
@@ -30,16 +30,16 @@ export function TemplateForm({ action, defaults, submitLabel }: { action: (formD
 
       <div>
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Farben</div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <label style={{ flex: 1, fontSize: 11.5, color: "var(--ink-soft)" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <label style={{ flex: "1 1 110px", minWidth: 0, fontSize: 11.5, color: "var(--ink-soft)" }}>
             Primär
             <input name="colorPrimary" type="text" defaultValue={colors.primary} style={{ ...field, width: "100%", marginTop: 4 }} />
           </label>
-          <label style={{ flex: 1, fontSize: 11.5, color: "var(--ink-soft)" }}>
+          <label style={{ flex: "1 1 110px", minWidth: 0, fontSize: 11.5, color: "var(--ink-soft)" }}>
             Akzent
             <input name="colorAccent" type="text" defaultValue={colors.accent} style={{ ...field, width: "100%", marginTop: 4 }} />
           </label>
-          <label style={{ flex: 1, fontSize: 11.5, color: "var(--ink-soft)" }}>
+          <label style={{ flex: "1 1 110px", minWidth: 0, fontSize: 11.5, color: "var(--ink-soft)" }}>
             Hintergrund
             <input name="colorBackground" type="text" defaultValue={colors.background} style={{ ...field, width: "100%", marginTop: 4 }} />
           </label>
@@ -48,9 +48,9 @@ export function TemplateForm({ action, defaults, submitLabel }: { action: (formD
 
       <div>
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Schriften</div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <input name="fontDisplay" placeholder="Überschrift" defaultValue={fonts.display} style={{ ...field, flex: 1 }} />
-          <input name="fontBody" placeholder="Fließtext" defaultValue={fonts.body} style={{ ...field, flex: 1 }} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <input name="fontDisplay" placeholder="Überschrift" defaultValue={fonts.display} style={{ ...field, flex: "1 1 140px", minWidth: 0 }} />
+          <input name="fontBody" placeholder="Fließtext" defaultValue={fonts.body} style={{ ...field, flex: "1 1 140px", minWidth: 0 }} />
         </div>
       </div>
 
@@ -61,7 +61,7 @@ export function TemplateForm({ action, defaults, submitLabel }: { action: (formD
 
       <div>
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Status</div>
-        <div style={{ display: "flex", gap: 14 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, rowGap: 8 }}>
           {(["ACTIVE", "DRAFT", "ARCHIVED"] as const).map((value) => (
             <label key={value} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
               <input type="radio" name="status" value={value} defaultChecked={(defaults?.status ?? "DRAFT") === value} />

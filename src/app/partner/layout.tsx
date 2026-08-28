@@ -23,6 +23,8 @@ export default async function PartnerLayout({ children }: { children: React.Reac
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          rowGap: 10,
           padding: "20px 28px",
           borderBottom: "1px solid var(--line)",
         }}
@@ -34,7 +36,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
           </svg>
           <span>einladi · Partner</span>
         </a>
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 14, rowGap: 8 }}>
           <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{session.user.email}</span>
           <form action={logout}>
             <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>

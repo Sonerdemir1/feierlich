@@ -49,12 +49,12 @@ export function PartnerForm({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
-        <label style={{ flex: 1, fontSize: 11.5, color: "var(--ink-soft)" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+        <label style={{ flex: "1 1 110px", minWidth: 0, fontSize: 11.5, color: "var(--ink-soft)" }}>
           Markenfarbe
           <input name="brandColor" type="text" placeholder="#211C19" defaultValue={defaults?.brandColor ?? ""} style={{ ...field, width: "100%", marginTop: 4 }} />
         </label>
-        <label style={{ flex: 1, fontSize: 11.5, color: "var(--ink-soft)" }}>
+        <label style={{ flex: "1 1 110px", minWidth: 0, fontSize: 11.5, color: "var(--ink-soft)" }}>
           Provision (%)
           <input
             name="commissionRate"
