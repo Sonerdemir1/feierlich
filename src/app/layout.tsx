@@ -26,7 +26,7 @@ const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight
 
 const title = "einladi – Digital Event Studio";
 const description =
-  "Digitale Einladungen und komplette Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.";
+  "Fotos, Videos & Gästebuch digital sammeln — plus digitale Einladungen und Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
