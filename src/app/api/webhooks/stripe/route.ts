@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
 
 // Zweiter, robusterer Bestaetigungspfad neben der Success-Seite: greift auch
 // dann, wenn der Kunde den Tab schliesst, bevor Stripe zurueck-redirected.
@@ -29,32 +30,46 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const checkoutSession = event.data.object as Stripe.Checkout.Session;
-    const orderId = checkoutSession.metadata?.orderId;
 
-    if (orderId && checkoutSession.payment_status === "paid") {
-      const order = await prisma.order.findUnique({ where: { id: orderId } });
-      if (order && order.status !== "PAID") {
-        const paymentIntentId =
-          typeof checkoutSession.payment_intent === "string"
-            ? checkoutSession.payment_intent
-            : checkoutSession.payment_intent?.id;
+    if (checkoutSession.payment_status === "paid") {
+      const paymentIntentId =
+        typeof checkoutSession.payment_intent === "string"
+          ? checkoutSession.payment_intent
+          : checkoutSession.payment_intent?.id;
 
-        await prisma.$transaction([
-          prisma.order.update({
-            where: { id: order.id },
-            data: { status: "PAID", stripePaymentIntentId: paymentIntentId ?? null },
-          }),
-          prisma.payment.create({
-            data: {
-              orderId: order.id,
-              amountCents: order.amountCents,
-              currency: order.currency,
-              status: "SUCCEEDED",
-              stripePaymentId: paymentIntentId ?? checkoutSession.id,
-              paidAt: new Date(),
-            },
-          }),
-        ]);
+      // `kind` unterscheidet, welches Modell diese Checkout-Session erfuellt
+      // — fehlt er (aeltere/Order-Sessions), ist "order" der Default.
+      const kind = checkoutSession.metadata?.kind ?? "order";
+
+      if (kind === "order") {
+        const orderId = checkoutSession.metadata?.orderId;
+        if (orderId) {
+          const order = await prisma.order.findUnique({ where: { id: orderId } });
+          if (order && order.status !== "PAID") {
+            await prisma.$transaction([
+              prisma.order.update({
+                where: { id: order.id },
+                data: { status: "PAID", stripePaymentIntentId: paymentIntentId ?? null },
+              }),
+              prisma.payment.create({
+                data: {
+                  orderId: order.id,
+                  amountCents: order.amountCents,
+                  currency: order.currency,
+                  status: "SUCCEEDED",
+                  stripePaymentId: paymentIntentId ?? checkoutSession.id,
+                  paidAt: new Date(),
+                },
+              }),
+            ]);
+          }
+        }
+      } else if (kind === "eventAddOn") {
+        const eventAddOnId = checkoutSession.metadata?.eventAddOnId;
+        if (eventAddOnId) await markEventAddOnPaid(eventAddOnId, paymentIntentId ?? null);
+      } else if (kind === "printOrder") {
+        const printOrderId = checkoutSession.metadata?.printOrderId;
+        if (printOrderId) await markPrintOrderPaid(printOrderId, paymentIntentId ?? null);
       }
     }
   }

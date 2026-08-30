@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { validateImageFile, saveEventImage } from "@/lib/uploads";
+import { validateMediaFile, saveEventMedia, mediaKindFromMime } from "@/lib/uploads";
 
 export async function submitRsvp(eventId: string, slug: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -46,19 +46,80 @@ export async function findSeat(eventId: string, slug: string, formData: FormData
 
 export async function uploadGalleryPhoto(eventId: string, slug: string, formData: FormData) {
   const file = formData.get("file");
-  const error = validateImageFile(file);
+  const error = validateMediaFile(file);
   if (error) redirect(`/e/${slug}?galleryError=${error}#galerie`);
 
-  const { url, mimeType, sizeBytes } = await saveEventImage(eventId, file as File);
+  const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
   const uploaderName = String(formData.get("uploaderName") ?? "").trim().slice(0, 80) || null;
 
+  // tableId kommt aus einem versteckten Formularfeld — im Browser
+  // manipulierbar, daher hier erneut gegen das eigene Event geprueft statt
+  // blind uebernommen (sonst liesse sich fremden Events eine tableId
+  // unterschieben).
+  const tableIdRaw = String(formData.get("tableId") ?? "").trim();
+  const table = tableIdRaw ? await prisma.table.findFirst({ where: { id: tableIdRaw, eventId } }) : null;
+
   const media = await prisma.media.create({
-    data: { eventId, type: "IMAGE", url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
+    data: { eventId, tableId: table?.id, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
   });
   await prisma.galleryItem.create({ data: { eventId, mediaId: media.id, status: "PENDING" } });
 
   revalidatePath(`/e/${slug}`);
   redirect(`/e/${slug}?gallery=success#galerie`);
+}
+
+// Anders als die Actions oben: werden aus einer interaktiven Client-
+// Komponente (PhotoTagger) per useTransition aufgerufen, nicht aus einem
+// <form action={...}> ohne JS. Ein redirect() wuerde dort das optimistische
+// Update im Client-State durch einen vollen Reload wieder ueberschreiben —
+// daher hier bewusst ein einfaches Ergebnisobjekt statt redirect()/throw().
+export type PhotoTagResult = { success: true } | { success: false; error: string };
+
+export async function addPhotoTag(mediaId: string, guestId: string): Promise<PhotoTagResult> {
+  const media = await prisma.media.findUnique({ where: { id: mediaId }, include: { event: true } });
+  if (!media || !media.event) return { success: false, error: "Foto nicht gefunden." };
+  const { slug } = media.event;
+
+  const guest = await prisma.guest.findUnique({ where: { id: guestId } });
+  if (!guest || guest.eventId !== media.eventId) {
+    return { success: false, error: "Gast gehört nicht zu diesem Event." };
+  }
+
+  try {
+    await prisma.photoTag.create({ data: { mediaId, guestId } });
+  } catch {
+    return { success: false, error: "Markierung konnte nicht gespeichert werden." };
+  }
+
+  revalidatePath(`/e/${slug}#galerie`);
+  return { success: true };
+}
+
+export async function removePhotoTag(mediaId: string, guestId: string): Promise<PhotoTagResult> {
+  const media = await prisma.media.findUnique({ where: { id: mediaId }, include: { event: true } });
+  if (!media || !media.event) return { success: false, error: "Foto nicht gefunden." };
+  const { slug } = media.event;
+
+  try {
+    await prisma.photoTag.delete({ where: { mediaId_guestId: { mediaId, guestId } } });
+  } catch {
+    return { success: false, error: "Markierung konnte nicht entfernt werden." };
+  }
+
+  revalidatePath(`/e/${slug}#galerie`);
+  return { success: true };
+}
+
+// Gaestelisten sind ueberschaubar (typischerweise unter 300 Personen) —
+// eine einfache sortierte Liste reicht, das Filtern nach Tipp-Eingabe
+// passiert clientseitig in der Tagging-Komponente statt per serverseitiger
+// Suche mit Debounce.
+export async function getEventGuestsForTagging(eventId: string) {
+  return prisma.guest.findMany({
+    where: { eventId },
+    select: { id: true, firstName: true, groupLabel: true },
+    orderBy: { firstName: "asc" },
+  });
 }
 
 export async function submitGuestbookEntry(eventId: string, slug: string, formData: FormData) {
@@ -69,11 +130,11 @@ export async function submitGuestbookEntry(eventId: string, slug: string, formDa
   const file = formData.get("file");
   let mediaId: string | undefined;
   if (file instanceof File && file.size > 0) {
-    const error = validateImageFile(file);
+    const error = validateMediaFile(file);
     if (error) redirect(`/e/${slug}?guestbookError=${error}#gaestebuch`);
-    const { url, mimeType, sizeBytes } = await saveEventImage(eventId, file);
+    const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file);
     const media = await prisma.media.create({
-      data: { eventId, type: "IMAGE", url, mimeType, sizeBytes, uploaderName: authorName, status: "PENDING" },
+      data: { eventId, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName: authorName, status: "PENDING" },
     });
     mediaId = media.id;
   }

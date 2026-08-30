@@ -24,9 +24,9 @@ export default async function AdminEventTypesPage() {
 
       <div style={{ border: "1px solid var(--line)", padding: "18px 20px", marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 12 }}>Neuer Eventtyp</div>
-        <form action={createEventType} style={{ display: "flex", gap: 10 }}>
-          <input name="name" placeholder="z. B. Polterabend" required style={{ ...field, flex: 1 }} />
-          <input name="category" placeholder="Kategorie" required style={{ ...field, flex: 1 }} />
+        <form action={createEventType} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <input name="name" placeholder="z. B. Polterabend" required style={{ ...field, flex: "1 1 140px", minWidth: 0 }} />
+          <input name="category" placeholder="Kategorie" required style={{ ...field, flex: "1 1 140px", minWidth: 0 }} />
           <button type="submit" className="btn btn-primary" style={{ padding: "0 20px", fontSize: 12.5 }}>
             Hinzufügen
           </button>

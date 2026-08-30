@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
@@ -43,4 +43,18 @@ export async function putObject(key: string, bytes: Buffer, mimeType: string): P
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(process.cwd(), "public", "uploads", key), bytes);
   return `/uploads/${key}`;
+}
+
+// Liest die Bytes einer zuvor per putObject() gespeicherten Datei wieder
+// ein, anhand ihrer gespeicherten `url` (nicht des `key`s, da nur die URL
+// in der DB vorliegt). Lokal: direkter Dateisystem-Zugriff (die URL ist
+// ein relativer /uploads/...-Pfad). R2: HTTP-Fetch, da R2_PUBLIC_URL
+// bereits eine vollstaendige, oeffentlich erreichbare Adresse ist.
+export async function readObject(url: string): Promise<Buffer> {
+  if (url.startsWith("/uploads/")) {
+    return readFile(path.join(process.cwd(), "public", url));
+  }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Datei konnte nicht gelesen werden (${response.status}): ${url}`);
+  return Buffer.from(await response.arrayBuffer());
 }

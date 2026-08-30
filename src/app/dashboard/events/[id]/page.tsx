@@ -3,7 +3,16 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { publicHost } from "@/lib/site";
-import { uploadCoverImage, saveModules, publishEvent } from "../actions";
+import {
+  uploadCoverImage,
+  removeCoverImageBackground,
+  startAddOnCheckout,
+  generateAiDesignForCover,
+  saveModules,
+  publishEvent,
+} from "../actions";
+import { backgroundRemovalConfigured } from "@/lib/background-removal";
+import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -22,6 +31,15 @@ const uploadErrorLabel: Record<string, string> = {
   "no-file": "Bitte eine Datei auswählen.",
   "bad-type": "Nur JPG, PNG, WEBP oder GIF sind erlaubt.",
   "too-large": "Datei ist größer als 8 MB.",
+  "no-cover-image": "Bitte zuerst ein Titelbild hochladen.",
+  "bg-removal-failed": "Hintergrund-Freistellung ist fehlgeschlagen. Bitte später erneut versuchen.",
+  "ai-design-unavailable": "KI-Design ist gerade nicht verfügbar.",
+  "ai-design-no-prompt": "Bitte beschreibe, was angepasst werden soll.",
+  "ai-design-not-activated": "Bitte zuerst KI-Design aktivieren.",
+  "ai-design-quota": `Kontingent von ${AI_DESIGN_ATTEMPT_QUOTA} Versuchen aufgebraucht.`,
+  "ai-design-failed": "KI-Design ist fehlgeschlagen. Bitte später erneut versuchen.",
+  "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
+  "addon-cancelled": "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -62,14 +80,30 @@ export default async function EventDetailPage({
   const yesCount = event.guests.filter((g) => g.rsvp?.status === "YES").length;
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook] = await Promise.all([
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns] = await Promise.all([
     prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.eventModule.findMany({ where: { eventId: id } }),
     prisma.galleryItem.count({ where: { eventId: id, status: "PENDING" } }),
     prisma.guestbookEntry.count({ where: { eventId: id, status: "PENDING" } }),
+    prisma.addOn.findUnique({ where: { key: AI_DESIGN_ADDON_KEY } }),
+    prisma.aiDesignAttempt.count({ where: { eventId: id } }),
+    prisma.addOn.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.eventAddOn.findMany({ where: { eventId: id } }),
   ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const pendingMemories = pendingGallery + pendingGuestbook;
+  const aiDesignEventAddOn = aiDesignAddOn
+    ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } })
+    : null;
+  const aiDesignActivated = aiDesignEventAddOn?.status === "PAID";
+  const aiDesignAttemptsLeft = Math.max(0, AI_DESIGN_ATTEMPT_QUOTA - aiDesignAttemptCount);
+
+  // KI-Design hat oben (im Titelbild-Bereich) eine eigene, spezialisierte
+  // Oberflaeche inkl. Kontingent-Anzeige — hier nur die uebrigen AddOns
+  // generisch auflisten, damit sie nicht doppelt (und mit widerspruechlichem
+  // Status) auftauchen.
+  const eventAddOnByAddOnId = new Map(eventAddOns.map((ea) => [ea.addOnId, ea]));
+  const otherAddOns = allAddOns.filter((a) => a.key !== AI_DESIGN_ADDON_KEY);
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
 
@@ -133,6 +167,55 @@ export default async function EventDetailPage({
             {event.coverImage ? "Bild ersetzen" : "Bild hochladen"}
           </button>
         </form>
+        {event.coverImage && backgroundRemovalConfigured && (
+          <form action={removeCoverImageBackground.bind(null, event.id)} style={{ marginTop: 10 }}>
+            <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+              Hintergrund entfernen
+            </button>
+          </form>
+        )}
+
+        {event.coverImage && aiDesignConfigured && aiDesignAddOn && (
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>KI-Design</div>
+            {!aiDesignActivated ? (
+              <>
+                <p style={{ fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+                  Titelbild per KI-Prompt anpassen (z. B. Hintergrund, Lichtstimmung) —{" "}
+                  {(aiDesignAddOn.priceCents / 100).toFixed(2)} € für {AI_DESIGN_ATTEMPT_QUOTA} Versuche.
+                </p>
+                <form action={startAddOnCheckout.bind(null, event.id)}>
+                  <input type="hidden" name="addOnKey" value={AI_DESIGN_ADDON_KEY} />
+                  <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                    KI-Design aktivieren
+                  </button>
+                </form>
+              </>
+            ) : aiDesignAttemptsLeft > 0 ? (
+              <form action={generateAiDesignForCover.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 420 }}>
+                <textarea
+                  name="prompt"
+                  placeholder="z. B. warmes Abendlicht, goldenes Bokeh im Hintergrund"
+                  required
+                  rows={2}
+                  style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, fontFamily: "inherit" }}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                    Generieren
+                  </button>
+                  <span style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
+                    {aiDesignAttemptsLeft} von {AI_DESIGN_ATTEMPT_QUOTA} Versuchen übrig
+                  </span>
+                </div>
+              </form>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--ink-faint)" }}>
+                Kontingent von {AI_DESIGN_ATTEMPT_QUOTA} Versuchen aufgebraucht.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Module */}
@@ -173,6 +256,58 @@ export default async function EventDetailPage({
           </button>
         </form>
       </div>
+
+      {/* Zusatzpakete */}
+      {otherAddOns.length > 0 && (
+        <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Zusatzpakete</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+            Unabhängig vom gewählten Einladungs-Paket dazubuchbar.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {otherAddOns.map((addOn) => {
+              const eventAddOn = eventAddOnByAddOnId.get(addOn.id);
+              const isPaid = eventAddOn?.status === "PAID";
+              return (
+                <div
+                  key={addOn.id}
+                  style={{
+                    border: "1px solid var(--line)",
+                    background: "var(--ivory-2)",
+                    padding: "14px 16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 12,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+                      {addOn.name} · {(addOn.priceCents / 100).toFixed(2)} €
+                    </div>
+                    {addOn.description && (
+                      <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 2, maxWidth: 480 }}>
+                        {addOn.description}
+                      </div>
+                    )}
+                  </div>
+                  {isPaid ? (
+                    <span style={{ fontSize: 11, color: "var(--sage)", fontWeight: 700 }}>Aktiv</span>
+                  ) : (
+                    <form action={startAddOnCheckout.bind(null, event.id)}>
+                      <input type="hidden" name="addOnKey" value={addOn.key} />
+                      <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                        Kaufen
+                      </button>
+                    </form>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* QR-Codes */}
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>

@@ -105,10 +105,42 @@ const packages = [
   },
 ];
 
+// Eigenstaendig kaufbare Zusatzprodukte, unabhaengig vom Einladungs-Package
+// (siehe EventAddOn in schema.prisma). Preis an vier deutschen Wettbewerbern
+// (WeddySnap, qrFotos, FridaySnap, MyMillionSnaps — alle 20-50€ Einmal-
+// zahlung fuer unbegrenzte Foto/Video-Sammlung) orientiert; leicht darueber,
+// weil wir zusaetzlich manuelles Personen-Tagging bieten, das keiner davon
+// hat.
+const addOns = [
+  {
+    key: 'photo-video-collection', name: 'Foto & Video Sammlung', priceCents: 4900,
+    description: 'Unbegrenzte Foto- & Video-Uploads von Gästen, inkl. Personen-Tagging — unabhängig vom gewählten Einladungs-Paket dazubuchbar.',
+    moduleKeys: ['gallery'],
+  },
+  // PLATZHALTER-Preis, anders als beim Foto/Video-Add-on NICHT aus
+  // Wettbewerber-Recherche abgeleitet (kein direktes Pendant gefunden),
+  // sondern grob auf Basis geschaetzter OpenAI-Kosten (GPT Image 2,
+  // ca. $0.05-0.25/Generierung je nach Qualitaet) fuer 10 Versuche plus
+  // Marge kalkuliert. Vor dem Live-Gang mit echten Nutzungsdaten pruefen.
+  {
+    key: 'ai-design', name: 'KI-Design', priceCents: 1490,
+    description: 'Titelbild per KI-Prompt anpassen (z.B. Hintergrund, Lichtstimmung) — 10 Versuche inklusive.',
+    moduleKeys: [],
+  },
+];
+
 // Templates: die zwoelf im Chat entworfenen "einladi"-Designs als
 // echte Datensaetze. `layoutKey` referenziert die spaetere React-
 // Template-Komponente.
-const templates = [
+const templates: Array<{
+  slug: string;
+  name: string;
+  category: string;
+  layoutKey: string;
+  colors: { primary: string; accent: string; background: string };
+  fonts: { display: string; body: string };
+  envelopeSequenceUrls?: string[];
+}> = [
   // Türkische Vorlagen stehen bewusst zuerst: Hauptzielgruppe ist Werbung
   // in tuerkischen Hochzeitssaelen. Nach Anlass unterkategorisiert (Düğün,
   // Kına Gecesi, Nişan, Sünnet), jeweils eine opulente ("kitschig", dicht
@@ -128,6 +160,20 @@ const templates = [
   { slug: 'zuemruet', name: 'Zümrüt', category: 'Düğün', layoutKey: 'zuemruet',
     colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#0F3D2E' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  // Erstes Template mit der EnvelopeReveal-Umschlag-Animation (siehe
+  // src/components/marketing/EnvelopeReveal.tsx) — live sowohl in der
+  // Galerie/Vorlagenauswahl (TemplatePreview.tsx) als auch auf der
+  // echten Event-Seite (/e/[slug]).
+  { slug: 'hochzeit-elegant-gold', name: 'Hochzeit Elegant Gold', category: 'Düğün', layoutKey: 'hochzeit-elegant-gold',
+    colors: { primary: '#211C19', accent: '#B9975B', background: '#FAF6EF' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    envelopeSequenceUrls: [
+      '/images/templates/hochzeit-elegant-gold/01-envelope-closed.png',
+      '/images/templates/hochzeit-elegant-gold/02-seal-opened.png',
+      '/images/templates/hochzeit-elegant-gold/03-envelope-open.png',
+      '/images/templates/hochzeit-elegant-gold/04-card-emerging.png',
+      '/images/templates/hochzeit-elegant-gold/05-card-revealed.png',
+    ] },
   { slug: 'kina-kirmizi', name: 'Kına Kırmızı', category: 'Kına Gecesi', layoutKey: 'kina-kirmizi',
     colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#7A1428' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
@@ -280,17 +326,35 @@ async function main() {
   }
   console.log(`Pakete: ${packages.length} geseedet`);
 
+  for (const [i, a] of addOns.entries()) {
+    await prisma.addOn.upsert({
+      where: { key: a.key },
+      update: {
+        name: a.name, description: a.description, priceCents: a.priceCents,
+        moduleKeys: JSON.stringify(a.moduleKeys), sortOrder: i,
+      },
+      create: {
+        key: a.key, name: a.name, description: a.description, priceCents: a.priceCents,
+        moduleKeys: JSON.stringify(a.moduleKeys), sortOrder: i,
+      },
+    });
+  }
+  console.log(`Add-ons: ${addOns.length} geseedet`);
+
   for (const [i, t] of templates.entries()) {
+    const envelopeSequenceUrls = t.envelopeSequenceUrls ? JSON.stringify(t.envelopeSequenceUrls) : undefined;
     await prisma.template.upsert({
       where: { slug: t.slug },
       update: {
         name: t.name, category: t.category, layoutKey: t.layoutKey,
         colors: JSON.stringify(t.colors), fonts: JSON.stringify(t.fonts),
+        envelopeSequenceUrls,
         status: 'ACTIVE', sortOrder: i,
       },
       create: {
         slug: t.slug, name: t.name, category: t.category, layoutKey: t.layoutKey,
         colors: JSON.stringify(t.colors), fonts: JSON.stringify(t.fonts),
+        envelopeSequenceUrls,
         status: 'ACTIVE', sortOrder: i,
       },
     });

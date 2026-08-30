@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
-import { HeroRotator } from "@/components/marketing/HeroRotator";
 import { HeroStory } from "@/components/marketing/HeroStory";
 import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
 
@@ -65,10 +64,11 @@ function Logo({ dark = false }: { dark?: boolean }) {
 }
 
 export default async function Home() {
-  const [templates, packages, modules] = await Promise.all([
+  const [templates, packages, modules, photoVideoAddOn] = await Promise.all([
     prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } }),
     prisma.package.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.module.findMany(),
+    prisma.addOn.findUnique({ where: { key: "photo-video-collection" } }),
   ]);
 
   const moduleNameByKey = new Map(modules.map((m) => [m.key, m.name]));
@@ -115,36 +115,40 @@ export default async function Home() {
       <nav>
         <Logo />
         <div className="nav-links">
+          <a href="#erinnerungen">Fotos &amp; Gästebuch</a>
           <a href="#vorlagen">Vorlagen</a>
-          <a href="#editor">Editor</a>
           <a href="#preise">Preise</a>
           <a href="/dashboard">Anmelden</a>
         </div>
         <a href="/dashboard" className="btn btn-primary">
-          Event gestalten
+          Fotos &amp; Videos sammeln
         </a>
       </nav>
 
       <section className="hero reveal">
         <div className="hero-grid">
           <div className="hero-copy">
-            <div className="eyebrow">Digitale Einladungen &amp; Event-Webseiten</div>
-            <h1>Dein Event. Deine Geschichte. Digital.</h1>
+            <div className="eyebrow">Fotos, Videos &amp; Gästebuch — digital gesammelt</div>
+            <h1>Eure Erinnerungen. Nicht verstreut auf fremden Handys.</h1>
             <p className="hero-sub">
-              Digitale Einladungen und komplette Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und
-              Business-Events – Design, Gästeliste und Erinnerungen an einem Ort.
+              Jedes Gästefoto, jedes Video, jede Nachricht landet an einem Ort — sofort sichtbar, für immer
+              gesichert. Dazu, wenn ihr wollt: eine passende digitale Einladung im selben Design.
             </p>
             <div className="hero-cta">
-              <a href="#vorlagen" className="btn btn-primary">
-                Event gestalten
+              <a href="#preise" className="btn btn-primary">
+                Fotos &amp; Videos sammeln
               </a>
-              <a href="#wie" className="btn btn-ghost">
-                Wie funktioniert&apos;s?
+              <a href="#vorlagen" className="btn btn-ghost">
+                Auch Einladung gestalten
               </a>
             </div>
           </div>
           <div className="hero-visual">
-            <HeroRotator />
+            <div className="phone-frame">
+              <div className="phone-inner">
+                <GalleryPreview />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -192,6 +196,42 @@ export default async function Home() {
             <div className="how-num">03</div>
             <h3>Veröffentlichen &amp; teilen</h3>
             <p>Ein Link für eure Gäste, ein passender QR-Code für den Tisch – im selben Design.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="feature reveal" id="erinnerungen">
+        <div className="feature-copy">
+          <div className="eyebrow">Fotos, Videos &amp; Gästebuch</div>
+          <h2>Alles, was eure Gäste festhalten — an einem Ort</h2>
+          <p className="feature-desc">
+            Gästefotos laufen automatisch in einer gemeinsamen Wand zusammen, dazu ein Video-Gästebuch für
+            persönliche Botschaften. Ihr entscheidet vor der Veröffentlichung, was sichtbar wird.
+          </p>
+          <div className="feature-points">
+            <div>
+              <Check />
+              Foto- &amp; Videowand ohne App-Zwang, direkt über den Browser
+            </div>
+            <div>
+              <Check />
+              Video-Gästebuch, bis 60 Sekunden
+            </div>
+            <div>
+              <Check />
+              Eigener QR-Code je Tisch — Uploads direkt vom Platz
+            </div>
+            <div>
+              <Check />
+              Personen-Tagging, damit jeder seine eigenen Fotos wiederfindet
+            </div>
+          </div>
+        </div>
+        <div className="frame-wrap">
+          <div className="phone-frame">
+            <div className="phone-inner">
+              <GalleryPreview />
+            </div>
           </div>
         </div>
       </section>
@@ -296,38 +336,44 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="feature reveal">
-        <div className="feature-copy">
-          <div className="eyebrow">Erinnerungen</div>
-          <h2>Live vom Event</h2>
-          <p className="feature-desc">
-            Gästefotos laufen in einer Wand zusammen, dazu ein Video-Gästebuch – alles vor der Veröffentlichung von
-            euch freigegeben.
-          </p>
-          <div className="feature-points">
-            <div>
-              <Check />
-              Foto- &amp; Videowand ohne App-Zwang
-            </div>
-            <div>
-              <Check />
-              Video-Gästebuch, bis 60 Sekunden
-            </div>
-          </div>
-        </div>
-        <div className="frame-wrap">
-          <div className="phone-frame">
-            <div className="phone-inner">
-              <GalleryPreview />
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="pricing reveal" id="preise">
         <div className="pricing-head">
           <div className="eyebrow">Preise</div>
-          <h2>Für jeden Anlass die passende Stufe</h2>
+          <h2>Nur Erinnerungen sammeln — oder die ganze Einladung</h2>
+        </div>
+
+        {photoVideoAddOn && (
+          <div style={{ maxWidth: 420, margin: "0 auto 44px" }}>
+            <div className="price-card highlight">
+              <div className="price-badge">EIGENSTÄNDIG BUCHBAR</div>
+              <h3 style={{ marginTop: 6 }}>{photoVideoAddOn.name}</h3>
+              <div className="tag">Ganz ohne Einladung buchbar — nur Fotos, Videos &amp; Gästebuch</div>
+              <div className="amount">{eur.format(photoVideoAddOn.priceCents / 100)}</div>
+              <ul>
+                <li>
+                  <Check />
+                  Unbegrenzte Foto- &amp; Video-Uploads
+                </li>
+                <li>
+                  <Check />
+                  Video-Gästebuch inklusive
+                </li>
+                <li>
+                  <Check />
+                  Personen-Tagging
+                </li>
+                <li>
+                  <Check />
+                  Unabhängig vom gewählten Paket, auch ohne Einladung
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        <div className="pricing-head" style={{ marginTop: 12 }}>
+          <div className="eyebrow">Oder: die ganze Einladung</div>
+          <h2 style={{ fontSize: "clamp(20px, 2.4vw, 26px)" }}>Für jeden Anlass die passende Stufe</h2>
         </div>
         <div className="price-grid">
           {packages.map((pkg) => {
@@ -356,7 +402,8 @@ export default async function Home() {
       <footer>
         <Logo />
         <p>
-          Digitale Einladungen und Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.
+          Fotos, Videos &amp; Gästebuch digital sammeln — plus digitale Einladungen und Event-Webseiten für
+          Hochzeiten, Geburtstage, Familienfeiern und Business-Events.
           <br />
           [KONTAKT E-MAIL] · © 2026 einladi
         </p>

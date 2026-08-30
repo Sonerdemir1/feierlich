@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
+import { PhotoWall } from "@/components/gallery/PhotoWall";
+import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -57,6 +59,17 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
   const colors: TemplateColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const headingFont = templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)";
+  const envelopeImages: string[] | null = event.template.envelopeSequenceUrls
+    ? JSON.parse(event.template.envelopeSequenceUrls)
+    : null;
+
+  // Kommt von einem Tisch-QR-Code (/dashboard/events/[id]/qr/table/[tableId])
+  // — eventId-Check verhindert, dass eine fremde tableId aus einem anderen
+  // Event hier greift.
+  const tischParam = typeof sp.tisch === "string" ? sp.tisch : undefined;
+  const uploadTable = tischParam
+    ? await prisma.table.findFirst({ where: { id: tischParam, eventId: event.id } })
+    : null;
 
   const rsvpStatus = typeof sp.rsvp === "string" ? sp.rsvp : undefined;
   const seatResult = typeof sp.seat === "string" ? sp.seat : undefined;
@@ -67,19 +80,47 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
   const [galleryItems, guestbookEntries] = await Promise.all([
     isModuleOn("gallery")
-      ? prisma.galleryItem.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 24 })
+      ? prisma.galleryItem.findMany({
+          where: { eventId: event.id, status: "APPROVED" },
+          include: { media: { include: { photoTags: { include: { guest: true } } } } },
+          orderBy: { createdAt: "desc" },
+          take: 24,
+        })
       : Promise.resolve([]),
     isModuleOn("guestbook")
       ? prisma.guestbookEntry.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 30 })
       : Promise.resolve([]),
   ]);
 
+  // Fuer PhotoWall/PhotoTagger auf ein schlankes Format reduziert, statt die
+  // volle Prisma-Struktur (media.photoTags[].guest) durchzureichen.
+  const galleryPhotos = galleryItems.map((item) => ({
+    id: item.id,
+    mediaId: item.mediaId,
+    url: item.media.url,
+    type: item.media.type,
+    tags: item.media.photoTags.map((pt) => ({ id: pt.guest.id, firstName: pt.guest.firstName })),
+  }));
+
+  const taggedGuestCounts = new Map<string, { firstName: string; count: number }>();
+  for (const photo of galleryPhotos) {
+    for (const tag of photo.tags) {
+      const entry = taggedGuestCounts.get(tag.id);
+      if (entry) entry.count += 1;
+      else taggedGuestCounts.set(tag.id, { firstName: tag.firstName, count: 1 });
+    }
+  }
+  const taggedGuests = [...taggedGuestCounts.entries()]
+    .map(([id, v]) => ({ id, firstName: v.firstName, count: v.count }))
+    .sort((a, b) => a.firstName.localeCompare(b.firstName, "de"));
+
   const uploadErrorLabel: Record<string, string> = {
     "no-file": "Bitte eine Datei auswählen.",
-    "bad-type": "Nur JPG, PNG, WEBP oder GIF sind erlaubt.",
-    "too-large": "Datei ist größer als 8 MB.",
+    "bad-type": "Nur JPG, PNG, WEBP, GIF, MP4, MOV oder WEBM sind erlaubt.",
+    "too-large": "Datei ist zu groß (max. 8 MB für Fotos, 100 MB für Videos).",
     "no-name": "Bitte gib deinen Namen an.",
   };
+  const mediaAccept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm";
 
   return (
     <main style={{ background: colors.background, minHeight: "100vh", color: colors.primary, fontFamily: "var(--font-body)" }}>
@@ -90,18 +131,50 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       <section style={{ padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
-          {event.eventType.name}
-        </div>
-        <h1 style={{ fontFamily: headingFont, fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal", fontWeight: 600, fontSize: "clamp(34px, 6vw, 52px)", margin: 0 }}>
-          {event.title}
-        </h1>
-        {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12 }}>{event.subtitle}</p>}
-        <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
-        <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8 }}>
-          {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-          {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-        </div>
+        {envelopeImages ? (
+          <>
+            <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
+              {event.eventType.name}
+            </div>
+            <div style={{ maxWidth: 320, margin: "0 auto" }}>
+              <EnvelopeReveal images={envelopeImages}>
+                <div style={{ textAlign: "center" }}>
+                  <div
+                    style={{
+                      fontFamily: headingFont,
+                      fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal",
+                      fontWeight: 600,
+                      fontSize: "clamp(24px, 5vw, 34px)",
+                      color: colors.primary,
+                    }}
+                  >
+                    {event.title}
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 11.5, letterSpacing: "0.06em", color: colors.primary, opacity: 0.8 }}>
+                    {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+                    {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+                  </div>
+                </div>
+              </EnvelopeReveal>
+            </div>
+            {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24 }}>{event.subtitle}</p>}
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
+              {event.eventType.name}
+            </div>
+            <h1 style={{ fontFamily: headingFont, fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal", fontWeight: 600, fontSize: "clamp(34px, 6vw, 52px)", margin: 0 }}>
+              {event.title}
+            </h1>
+            {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12 }}>{event.subtitle}</p>}
+            <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
+            <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8 }}>
+              {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+              {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+            </div>
+          </>
+        )}
 
         {isModuleOn("countdown") && (
           <div style={{ marginTop: 32 }}>
@@ -223,30 +296,31 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             Teilt eure schönsten Momente
           </div>
 
-          {galleryItems.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6, marginBottom: 24 }}>
-              {galleryItems.map((item) => (
-                // eslint-disable-next-line @next/next/no-img-element -- guest uploads, unknown dimensions
-                <img key={item.id} src={item.media.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
-              ))}
-            </div>
+          {galleryPhotos.length > 0 && (
+            <PhotoWall eventId={event.id} photos={galleryPhotos} taggedGuests={taggedGuests} colors={colors} />
           )}
 
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px", textAlign: "center" }}>
             {galleryStatus === "success" ? (
-              <p style={{ fontSize: 13.5 }}>Danke! Euer Foto wird nach kurzer Prüfung sichtbar.</p>
+              <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
             ) : (
               <form action={uploadGalleryPhoto.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {galleryError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[galleryError]}</p>}
+                {uploadTable && (
+                  <p style={{ fontSize: 12, color: colors.accent, fontWeight: 600 }}>
+                    Ihr ladet hoch für: {uploadTable.name}
+                  </p>
+                )}
+                <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
                 <input
                   type="text"
                   name="uploaderName"
                   placeholder="Euer Name (optional)"
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
                 />
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required style={{ fontSize: 13 }} />
+                <input type="file" name="file" accept={mediaAccept} required style={{ fontSize: 13 }} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Foto hochladen
+                  Foto/Video hochladen
                 </button>
               </form>
             )}
@@ -266,7 +340,10 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 <div key={entry.id} style={{ border: `1px solid ${colors.accent}33`, padding: "14px 16px" }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
                   {entry.message && <div style={{ fontSize: 13, marginTop: 4, opacity: 0.85 }}>{entry.message}</div>}
-                  {entry.media && (
+                  {entry.media && entry.media.type === "VIDEO" && (
+                    <video src={entry.media.url} controls style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
+                  )}
+                  {entry.media && entry.media.type !== "VIDEO" && (
                     // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
                     <img src={entry.media.url} alt="" style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
                   )}
@@ -294,7 +371,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   rows={3}
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
                 />
-                <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ fontSize: 12.5 }} />
+                <input type="file" name="file" accept={mediaAccept} style={{ fontSize: 12.5 }} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   Nachricht senden
                 </button>

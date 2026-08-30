@@ -52,8 +52,8 @@ export default async function EditPartnerPage({ params }: PageProps<"/admin/part
         ) : (
           <p style={{ fontSize: 12.5, color: "var(--ink-faint)", marginBottom: 16 }}>Noch kein Konto verknüpft.</p>
         )}
-        <form action={linkPartnerAccount.bind(null, partner.id)} style={{ display: "flex", gap: 10 }}>
-          <input name="email" type="email" placeholder="E-Mail des Partner-Kontakts" required style={{ ...field, flex: 1 }} />
+        <form action={linkPartnerAccount.bind(null, partner.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <input name="email" type="email" placeholder="E-Mail des Partner-Kontakts" required style={{ ...field, flex: "1 1 200px", minWidth: 0 }} />
           <button type="submit" className="btn btn-ghost" style={{ padding: "0 18px", fontSize: 12.5 }}>
             Verknüpfen
           </button>
