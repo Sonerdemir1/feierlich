@@ -230,18 +230,41 @@ export async function generateAiDesignForCover(eventId: string, formData: FormDa
   redirect(`/dashboard/events/${eventId}`);
 }
 
+// Module, die per AddOn.moduleKeys an ein kostenpflichtiges Zusatzpaket
+// gebunden sind, duerfen nur aktiviert werden, wenn dieses AddOn fuer das
+// Event bezahlt ist — sonst liesse sich z.B. "Foto & Video Sammlung"
+// (49 EUR) einfach per Haekchen gratis freischalten. Client-seitig blendet
+// page.tsx solche Module fuer nicht zahlende Events aus, aber das reicht
+// nicht: ohne diese serverseitige Pruefung koennte man das Haekchen per
+// manuell nachgebautem POST trotzdem durchschmuggeln.
+export async function gatedModuleKeys(eventId: string): Promise<Set<string>> {
+  const [activeAddOns, paidEventAddOns] = await Promise.all([
+    prisma.addOn.findMany({ where: { active: true } }),
+    prisma.eventAddOn.findMany({ where: { eventId, status: "PAID" } }),
+  ]);
+  const paidAddOnIds = new Set(paidEventAddOns.map((ea) => ea.addOnId));
+
+  const gated = new Set<string>();
+  for (const addOn of activeAddOns) {
+    if (paidAddOnIds.has(addOn.id)) continue;
+    const keys: string[] = JSON.parse(addOn.moduleKeys || "[]");
+    keys.forEach((k) => gated.add(k));
+  }
+  return gated;
+}
+
 export async function saveModules(eventId: string, formData: FormData) {
   await requireOwnedEvent(eventId);
 
-  const modules = await prisma.module.findMany();
+  const [modules, gated] = await Promise.all([prisma.module.findMany(), gatedModuleKeys(eventId)]);
   const selectedKeys = new Set(formData.getAll("modules").map(String));
 
   await prisma.$transaction(
     modules.map((m) =>
       prisma.eventModule.upsert({
         where: { eventId_moduleId: { eventId, moduleId: m.id } },
-        update: { enabled: selectedKeys.has(m.key) },
-        create: { eventId, moduleId: m.id, enabled: selectedKeys.has(m.key) },
+        update: { enabled: !gated.has(m.key) && selectedKeys.has(m.key) },
+        create: { eventId, moduleId: m.id, enabled: !gated.has(m.key) && selectedKeys.has(m.key) },
       })
     )
   );

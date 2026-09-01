@@ -10,6 +10,7 @@ import {
   generateAiDesignForCover,
   saveModules,
   publishEvent,
+  gatedModuleKeys,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -92,6 +93,14 @@ export default async function EventDetailPage({
     prisma.eventAddOn.findMany({ where: { eventId: id } }),
   ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
+  const gatedKeys = await gatedModuleKeys(id);
+  // Fuer die Anzeige: zu welchem (noch nicht bezahlten) AddOn gehoert ein
+  // gesperrtes Modul, damit direkt ein "Kaufen"-Link daneben stehen kann.
+  const addOnByModuleKey = new Map<string, (typeof allAddOns)[number]>();
+  for (const addOn of allAddOns) {
+    const keys: string[] = JSON.parse(addOn.moduleKeys || "[]");
+    keys.forEach((k) => addOnByModuleKey.set(k, addOn));
+  }
   const pendingMemories = pendingGallery + pendingGuestbook;
   const aiDesignEventAddOn = aiDesignAddOn
     ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } })
@@ -234,7 +243,9 @@ export default async function EventDetailPage({
         <form action={saveModules.bind(null, event.id)}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8, marginBottom: 18 }}>
             {allModules.map((m) => {
-              const checked = enabledByModuleId.get(m.id) ?? true;
+              const isGated = gatedKeys.has(m.key);
+              const checked = !isGated && (enabledByModuleId.get(m.id) ?? true);
+              const gatingAddOn = isGated ? addOnByModuleKey.get(m.key) : undefined;
               return (
                 <label
                   key={m.id}
@@ -243,16 +254,22 @@ export default async function EventDetailPage({
                     alignItems: "center",
                     gap: 9,
                     fontSize: 13,
-                    color: "var(--ink-soft)",
+                    color: isGated ? "var(--ink-faint)" : "var(--ink-soft)",
                     padding: "8px 10px",
                     border: "1px solid var(--line)",
                     background: "var(--ivory-2)",
                   }}
                 >
-                  <input type="checkbox" name="modules" value={m.key} defaultChecked={checked} />
+                  <input type="checkbox" name="modules" value={m.key} defaultChecked={checked} disabled={isGated} />
                   {m.name}
-                  {m.isPremium && (
-                    <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--gold)", fontWeight: 600 }}>PREMIUM</span>
+                  {isGated && gatingAddOn ? (
+                    <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--terracotta-dark)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                      Zusatzpaket · {(gatingAddOn.priceCents / 100).toFixed(2)} €
+                    </span>
+                  ) : (
+                    m.isPremium && (
+                      <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--gold)", fontWeight: 600 }}>PREMIUM</span>
+                    )
                   )}
                 </label>
               );
