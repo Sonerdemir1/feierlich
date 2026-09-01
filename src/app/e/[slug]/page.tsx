@@ -7,6 +7,7 @@ import { PhotoWall } from "@/components/gallery/PhotoWall";
 import { GuestbookEntryCard } from "@/components/guestbook/GuestbookEntryCard";
 import { GuestNameField } from "@/components/public/GuestNameField";
 import { FileField } from "@/components/public/FileField";
+import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
@@ -207,6 +208,30 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             </div>
             <div style={{ fontFamily: headingFont, fontSize: 19 }}>{event.locationName}</div>
             {event.locationAddress && <div style={{ fontSize: 13, opacity: 0.75, marginTop: 6 }}>{event.locationAddress}</div>}
+            {(() => {
+              const mapQuery = encodeURIComponent([event.locationName, event.locationAddress].filter(Boolean).join(", "));
+              return (
+                <>
+                  {GOOGLE_MAPS_API_KEY && (
+                    <iframe
+                      title="Karte"
+                      src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${mapQuery}`}
+                      style={{ width: "100%", height: 220, border: "none", marginTop: 16 }}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  )}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "inline-block", marginTop: 12, fontSize: 12.5, color: colors.accent }}
+                  >
+                    In Google Maps öffnen →
+                  </a>
+                </>
+              );
+            })()}
           </div>
         </section>
       )}

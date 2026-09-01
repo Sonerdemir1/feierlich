@@ -42,6 +42,7 @@ const uploadErrorLabel: Record<string, string> = {
   "ai-design-failed": "KI-Design ist fehlgeschlagen. Bitte später erneut versuchen.",
   "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
   "addon-cancelled": "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
+  "payment-required": "Bitte zuerst das Einladungs-Paket bezahlen, bevor das Event veröffentlicht werden kann.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -102,6 +103,7 @@ export default async function EventDetailPage({
     keys.forEach((k) => addOnByModuleKey.set(k, addOn));
   }
   const pendingMemories = pendingGallery + pendingGuestbook;
+  const canPublish = session!.user.role === "ADMIN" || event.order?.status === "PAID";
   const aiDesignEventAddOn = aiDesignAddOn
     ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } })
     : null;
@@ -372,15 +374,25 @@ export default async function EventDetailPage({
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Veröffentlichen</div>
           <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
-            {event.status === "PUBLISHED" ? "Dieses Event ist veröffentlicht." : "Noch nicht veröffentlicht — nur du siehst es."}
+            {event.status === "PUBLISHED"
+              ? "Dieses Event ist veröffentlicht."
+              : canPublish
+                ? "Noch nicht veröffentlicht — nur du siehst es."
+                : "Das Einladungs-Paket ist noch nicht bezahlt — erst danach lässt sich das Event veröffentlichen."}
           </div>
         </div>
         {event.status !== "PUBLISHED" && (
-          <form action={publishEvent.bind(null, event.id)}>
-            <button type="submit" className="btn btn-primary">
-              Event veröffentlichen
-            </button>
-          </form>
+          canPublish ? (
+            <form action={publishEvent.bind(null, event.id)}>
+              <button type="submit" className="btn btn-primary">
+                Event veröffentlichen
+              </button>
+            </form>
+          ) : (
+            <Link href={`/dashboard/events/${event.id}/billing`} className="btn btn-primary">
+              Zur Zahlung
+            </Link>
+          )
         )}
       </div>
 

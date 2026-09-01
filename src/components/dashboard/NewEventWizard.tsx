@@ -4,6 +4,8 @@ import { useState } from "react";
 import { EventTypePicker } from "./EventTypePicker";
 import { TemplatePicker } from "./TemplatePicker";
 import { createEvent } from "@/app/dashboard/events/actions";
+import { PlaceAutocompleteInput } from "./PlaceAutocompleteInput";
+import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 
 type EventTypeOption = { id: string; name: string; category: string };
 type TemplateOption = { id: string; name: string; category: string; layoutKey: string };
@@ -100,11 +102,21 @@ export function NewEventWizard({
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
             Adresse (optional)
-            <input
-              type="text"
-              name="locationAddress"
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-            />
+            {GOOGLE_MAPS_API_KEY ? (
+              <PlaceAutocompleteInput
+                apiKey={GOOGLE_MAPS_API_KEY}
+                name="locationAddress"
+                latName="locationLat"
+                lngName="locationLng"
+                placeholder="Adresse eingeben und Vorschlag auswählen"
+              />
+            ) : (
+              <input
+                type="text"
+                name="locationAddress"
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+              />
+            )}
           </label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
             Beschreibung (optional)

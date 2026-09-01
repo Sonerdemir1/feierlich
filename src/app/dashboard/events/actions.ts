@@ -63,6 +63,8 @@ export async function createEvent(formData: FormData) {
   const eventTime = String(formData.get("eventTime") ?? "").trim() || null;
   const locationName = String(formData.get("locationName") ?? "").trim() || null;
   const locationAddress = String(formData.get("locationAddress") ?? "").trim() || null;
+  const locationLat = Number(formData.get("locationLat") ?? "") || null;
+  const locationLng = Number(formData.get("locationLng") ?? "") || null;
   const description = String(formData.get("description") ?? "").trim() || null;
 
   if (!title || !eventTypeId || !templateId || !eventDate) {
@@ -81,6 +83,8 @@ export async function createEvent(formData: FormData) {
       eventTime,
       locationName,
       locationAddress,
+      locationLat,
+      locationLng,
       description,
       ownerId: session.user.id,
     },
@@ -288,10 +292,22 @@ export async function saveDesign(eventId: string, formData: FormData) {
 }
 
 export async function publishEvent(eventId: string) {
-  const { event } = await requireOwnedEvent(eventId);
+  const { session, event } = await requireOwnedEvent(eventId);
   if (event.status === "PUBLISHED") {
     redirect(`/dashboard/events/${eventId}`);
   }
+
+  // Veroeffentlichen macht die Seite oeffentlich erreichbar/teilbar — das
+  // darf ohne bezahltes Einladungs-Paket nicht moeglich sein, sonst
+  // umgeht man den kompletten Kauf-Flow. ADMIN-Accounts (eigenes Test-
+  // Konto) sind ausgenommen, um frei durchtesten zu koennen.
+  if (session.user.role !== "ADMIN") {
+    const order = await prisma.order.findUnique({ where: { eventId } });
+    if (!order || order.status !== "PAID") {
+      redirect(`/dashboard/events/${eventId}?error=payment-required`);
+    }
+  }
+
   await prisma.event.update({ where: { id: eventId }, data: { status: "PUBLISHED" } });
   revalidatePath(`/dashboard/events/${eventId}`);
   redirect(`/dashboard/events/${eventId}`);
