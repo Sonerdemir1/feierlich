@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
 import { PhotoWall } from "@/components/gallery/PhotoWall";
+import { GuestbookEntryCard } from "@/components/guestbook/GuestbookEntryCard";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
@@ -337,17 +338,15 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           {guestbookEntries.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
               {guestbookEntries.map((entry) => (
-                <div key={entry.id} style={{ border: `1px solid ${colors.accent}33`, padding: "14px 16px" }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
-                  {entry.message && <div style={{ fontSize: 13, marginTop: 4, opacity: 0.85 }}>{entry.message}</div>}
-                  {entry.media && entry.media.type === "VIDEO" && (
-                    <video src={entry.media.url} controls style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
-                  )}
-                  {entry.media && entry.media.type !== "VIDEO" && (
-                    // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
-                    <img src={entry.media.url} alt="" style={{ width: "100%", maxWidth: 200, marginTop: 8, display: "block" }} />
-                  )}
-                </div>
+                <GuestbookEntryCard
+                  key={entry.id}
+                  authorName={entry.authorName}
+                  message={entry.message}
+                  translatedMessage={entry.translatedMessage}
+                  mediaUrl={entry.media?.url ?? null}
+                  mediaType={entry.media?.type ?? null}
+                  colors={colors}
+                />
               ))}
             </div>
           )}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { validateMediaFile, saveEventMedia, mediaKindFromMime } from "@/lib/uploads";
+import { aiTranslateConfigured, detectAndTranslate } from "@/lib/ai-translate";
 
 export async function submitRsvp(eventId: string, slug: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -139,8 +140,24 @@ export async function submitGuestbookEntry(eventId: string, slug: string, formDa
     mediaId = media.id;
   }
 
+  // Best-effort: Sprache erkennen + ins Deutsche uebersetzen, damit alle
+  // Familienmitglieder (tuerkisch-/kurdisch-/deutschsprachig) mitlesen
+  // koennen. Scheitert die Uebersetzung (oder ist kein Key konfiguriert),
+  // wird die Einreichung trotzdem ganz normal gespeichert — nie blockieren.
+  let detectedLanguage: string | null = null;
+  let translatedMessage: string | null = null;
+  if (message && aiTranslateConfigured) {
+    try {
+      const translation = await detectAndTranslate(message);
+      detectedLanguage = translation.detectedLanguage;
+      translatedMessage = translation.translatedText;
+    } catch {
+      // stumm ignorieren — Original-Nachricht wird trotzdem gespeichert
+    }
+  }
+
   await prisma.guestbookEntry.create({
-    data: { eventId, authorName, message, mediaId, status: "PENDING" },
+    data: { eventId, authorName, message, mediaId, detectedLanguage, translatedMessage, status: "PENDING" },
   });
 
   revalidatePath(`/e/${slug}`);

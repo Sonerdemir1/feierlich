@@ -89,6 +89,11 @@ export default async function MemoriesPage({ params }: PageProps<"/dashboard/eve
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
                   {entry.message && <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{entry.message}</div>}
+                  {entry.translatedMessage && (
+                    <div style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 4, fontStyle: "italic" }}>
+                      Deutsch ({entry.detectedLanguage}): {entry.translatedMessage}
+                    </div>
+                  )}
                   {entry.media && entry.media.type === "VIDEO" && (
                     <video src={entry.media.url} controls style={{ width: 160, marginTop: 8, display: "block" }} />
                   )}
