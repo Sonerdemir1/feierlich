@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { Countdown } from "@/components/public/Countdown";
 import { PhotoWall } from "@/components/gallery/PhotoWall";
 import { GuestbookEntryCard } from "@/components/guestbook/GuestbookEntryCard";
+import { GuestNameField } from "@/components/public/GuestNameField";
+import { FileField } from "@/components/public/FileField";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
@@ -221,8 +223,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 {rsvpStatus === "error" && (
                   <p style={{ fontSize: 12.5, color: "#C9605C" }}>Bitte gib deinen Namen an.</p>
                 )}
-                <input
-                  type="text"
+                <GuestNameField
                   name="name"
                   placeholder="Euer Name"
                   required
@@ -271,8 +272,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8 }}>Finde deinen Sitzplatz</div>
             <p style={{ fontSize: 12.5, opacity: 0.75, marginBottom: 18 }}>Gib deinen Namen ein.</p>
             <form action={findSeat.bind(null, event.id, event.slug)} style={{ display: "flex", gap: 8 }}>
-              <input
-                type="text"
+              <GuestNameField
                 name="seatName"
                 placeholder="Euer Name"
                 required
@@ -313,13 +313,12 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   </p>
                 )}
                 <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
-                <input
-                  type="text"
+                <GuestNameField
                   name="uploaderName"
                   placeholder="Euer Name (optional)"
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
                 />
-                <input type="file" name="file" accept={mediaAccept} required style={{ fontSize: 13 }} />
+                <FileField name="file" accept={mediaAccept} required label="Foto oder Video auswählen" colors={colors} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   Foto/Video hochladen
                 </button>
@@ -357,8 +356,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             ) : (
               <form action={submitGuestbookEntry.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {guestbookError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[guestbookError]}</p>}
-                <input
-                  type="text"
+                <GuestNameField
                   name="authorName"
                   placeholder="Euer Name"
                   required
@@ -370,7 +368,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   rows={3}
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
                 />
-                <input type="file" name="file" accept={mediaAccept} style={{ fontSize: 12.5 }} />
+                <FileField name="file" accept={mediaAccept} label="Foto oder Video anhängen (optional)" colors={colors} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   Nachricht senden
                 </button>
