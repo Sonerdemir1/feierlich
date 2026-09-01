@@ -218,20 +218,22 @@ model Event {
   coverImage  Media?    @relation("EventCoverImage", fields: [coverImageId], references: [id])
   order       Order?
 
-  modules          EventModule[]
-  guests           Guest[]
-  tables           Table[]
-  guestbookEntries GuestbookEntry[]
-  galleryItems     GalleryItem[]
-  menuItems        MenuItem[]
-  wishlistItems    WishlistItem[]
-  musicRequests    MusicRequest[]
-  qrCodes          QRCode[]
-  printOrders      PrintOrder[]
-  checkIns         CheckIn[]
-  media            Media[]          @relation("EventMedia")
-  addOns           EventAddOn[]
-  aiDesignAttempts AiDesignAttempt[]
+  modules           EventModule[]
+  guests            Guest[]
+  tables            Table[]
+  guestbookEntries  GuestbookEntry[]
+  galleryItems      GalleryItem[]
+  menuItems         MenuItem[]
+  wishlistItems     WishlistItem[]
+  musicRequests     MusicRequest[]
+  qrCodes           QRCode[]
+  printOrders       PrintOrder[]
+  checkIns          CheckIn[]
+  media             Media[]            @relation("EventMedia")
+  addOns            EventAddOn[]
+  aiDesignAttempts  AiDesignAttempt[]
+  aiTextAttempts    AiTextAttempt[]
+  seatingSuggestion SeatingSuggestion?
 }
 
 // pro Event an/aus geschaltete Module inkl. optionaler Konfiguration
@@ -318,6 +320,21 @@ model Seat {
   @@unique([tableId, seatNumber])
 }
 
+// Haelt genau einen (den zuletzt generierten) KI-Sitzplan-Vorschlag pro
+// Event vor, bis er uebernommen oder verworfen wird — dataJson enthaelt
+// bereits serverseitig validierte { tableId, guestIds[] }[]-Zuordnungen.
+// Bei applySeatingSuggestion() wird trotzdem erneut gegen den aktuellen
+// DB-Stand geprueft (Kapazitaet/Zuordnung koennte sich zwischenzeitlich
+// geaendert haben).
+model SeatingSuggestion {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  dataJson  String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
 // ---------------------------------------------------------------------
 // Gaestebuch, Galerie, Medien (Foto/Video/Audio)
 // ---------------------------------------------------------------------
@@ -362,13 +379,19 @@ model Media {
 }
 
 model GuestbookEntry {
-  id         String           @id @default(cuid())
-  eventId    String
-  authorName String
-  message    String?
-  mediaId    String?
-  status     ModerationStatus @default(PENDING)
-  createdAt  DateTime         @default(now())
+  id                String           @id @default(cuid())
+  eventId           String
+  authorName        String
+  message           String?
+  // Bei Einreichung per KI erkannte Sprache der Nachricht (z.B. "tr", "ku",
+  // "de") und, falls nicht bereits Deutsch, eine KI-Uebersetzung ins
+  // Deutsche — beides best-effort, bleibt bei Fehlern/ohne konfigurierten
+  // Key einfach null, blockiert die Einreichung nie.
+  detectedLanguage  String?
+  translatedMessage String?
+  mediaId           String?
+  status            ModerationStatus @default(PENDING)
+  createdAt         DateTime         @default(now())
 
   event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   media Media? @relation(fields: [mediaId], references: [id])
@@ -630,6 +653,22 @@ model AiDesignAttempt {
   prompt    String
   resultUrl String
   createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// Ein Versuch mit dem Text-Assistenten (Einladungstext-Generator) —
+// dataJson haelt die generierten { welcomeText, description }, damit die
+// Seite nach dem Redirect den zuletzt generierten Vorschlag erneut
+// anzeigen kann, ohne ihn ueber die URL mitzufuehren. Zaehlt zugleich als
+// Kontingent (AI_TEXT_ATTEMPT_QUOTA), analog zu AiDesignAttempt.
+model AiTextAttempt {
+  id          String   @id @default(cuid())
+  eventId     String
+  prompt      String
+  welcomeText String
+  description String
+  createdAt   DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
