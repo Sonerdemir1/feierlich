@@ -247,7 +247,7 @@ export async function saveModules(eventId: string, formData: FormData) {
   );
 
   revalidatePath(`/dashboard/events/${eventId}`);
-  redirect(`/dashboard/events/${eventId}`);
+  redirect(`/dashboard/events/${eventId}?modulesSaved=1`);
 }
 
 export async function saveDesign(eventId: string, formData: FormData) {

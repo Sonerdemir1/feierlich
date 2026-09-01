@@ -107,6 +107,7 @@ export default async function EventDetailPage({
   const otherAddOns = allAddOns.filter((a) => a.key !== AI_DESIGN_ADDON_KEY);
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
+  const modulesSaved = sp.modulesSaved === "1";
 
   return (
     <div>
@@ -124,6 +125,11 @@ export default async function EventDetailPage({
       {errorKey && (
         <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
           {uploadErrorLabel[errorKey] ?? "Da ist etwas schiefgelaufen."}
+        </div>
+      )}
+      {modulesSaved && (
+        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Module gespeichert.
         </div>
       )}
 
