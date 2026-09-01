@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { createTable, deleteTable, assignGuestToTable } from "./actions";
+import { createTable, deleteTable, assignGuestToTable, suggestSeating, applySeatingSuggestion, discardSeatingSuggestion } from "./actions";
 import { emailQrDesign, createPrintOrder } from "../qr/actions";
 import { PRINT_SIZE_MM, PRINT_PRICE_CENTS } from "@/lib/qr-design";
+import { aiSeatingConfigured, type SeatingAssignment } from "@/lib/ai-seating";
 
 export default async function SeatingPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/seating">) {
   const { id } = await params;
@@ -14,10 +15,15 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
   const event = await prisma.event.findUnique({ where: { id } });
   if (!event || event.ownerId !== session!.user.id) notFound();
 
-  const [tables, guests] = await Promise.all([
+  const [tables, guests, seatingSuggestion] = await Promise.all([
     prisma.table.findMany({ where: { eventId: id }, include: { seats: true }, orderBy: { name: "asc" } }),
     prisma.guest.findMany({ where: { eventId: id }, include: { seat: { include: { table: true } } }, orderBy: { firstName: "asc" } }),
+    aiSeatingConfigured ? prisma.seatingSuggestion.findUnique({ where: { eventId: id } }) : Promise.resolve(null),
   ]);
+
+  const guestNameById = new Map(guests.map((g) => [g.id, `${g.firstName} ${g.lastName ?? ""}`.trim()]));
+  const tableNameById = new Map(tables.map((t) => [t.id, t.name]));
+  const suggestionAssignment: SeatingAssignment[] = seatingSuggestion ? JSON.parse(seatingSuggestion.dataJson) : [];
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
   const qrEmailStatus = typeof sp.qrEmail === "string" ? sp.qrEmail : undefined;
@@ -27,6 +33,14 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
     "table-not-found": "Tisch nicht gefunden.",
     "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
     cancelled: "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
+  };
+  const generalErrorLabel: Record<string, string> = {
+    full: "Dieser Tisch ist bereits voll.",
+    "seating-ai-no-guests": "Alle Gäste sind bereits zugeordnet.",
+    "seating-ai-no-tables": "Bitte zuerst mindestens einen Tisch anlegen.",
+    "seating-ai-failed": "Der Sitzplan-Assistent ist gerade nicht verfügbar. Bitte später erneut versuchen.",
+    "seating-ai-invalid": "Der KI-Vorschlag war ungültig. Bitte erneut versuchen.",
+    "seating-ai-expired": "Der Vorschlag ist nicht mehr aktuell (es hat sich zwischenzeitlich etwas geändert). Bitte neu vorschlagen lassen.",
   };
 
   return (
@@ -41,9 +55,9 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
         {tables.length} Tische · {guests.filter((g) => g.seat).length} von {guests.length} Gästen zugewiesen
       </p>
 
-      {errorKey === "full" && (
+      {errorKey && generalErrorLabel[errorKey] && (
         <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
-          Dieser Tisch ist bereits voll.
+          {generalErrorLabel[errorKey]}
         </div>
       )}
       {qrEmailStatus === "success" && (
@@ -146,6 +160,47 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
           </button>
         </form>
       </div>
+
+      {/* KI-Sitzplan-Vorschlag */}
+      {aiSeatingConfigured && (
+        <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 28 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>KI-Sitzplan-Vorschlag</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+            Schlägt für alle noch nicht zugeordneten Gäste eine Tischordnung vor — hält Gruppen (Familie/Haushalt) nach Möglichkeit zusammen.
+          </div>
+
+          {suggestionAssignment.length === 0 ? (
+            <form action={suggestSeating.bind(null, id)}>
+              <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                KI-Sitzplan vorschlagen
+              </button>
+            </form>
+          ) : (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {suggestionAssignment.map((entry) => (
+                  <div key={entry.tableId} style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                    <span style={{ fontWeight: 600, color: "var(--ink)" }}>{tableNameById.get(entry.tableId) ?? entry.tableId}:</span>{" "}
+                    {entry.guestIds.map((gId) => guestNameById.get(gId) ?? gId).join(", ")}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <form action={applySeatingSuggestion.bind(null, id)}>
+                  <button type="submit" className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                    Übernehmen
+                  </button>
+                </form>
+                <form action={discardSeatingSuggestion.bind(null, id)}>
+                  <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                    Verwerfen
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Gaeste-Zuordnung */}
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px" }}>
