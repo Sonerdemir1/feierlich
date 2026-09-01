@@ -22,7 +22,7 @@ export async function detectAndTranslate(text: string): Promise<TranslationResul
     method: "POST",
     headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gpt-5-mini",
+      model: "gpt-5.4-mini",
       response_format: { type: "json_object" },
       messages: [
         {
