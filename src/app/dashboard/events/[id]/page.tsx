@@ -13,6 +13,7 @@ import {
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
+import { aiTextConfigured } from "@/lib/ai-text";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -361,6 +362,25 @@ export default async function EventDetailPage({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        {aiTextConfigured && (
+          <Link
+            href={`/dashboard/events/${event.id}/text`}
+            style={{
+              border: "1px solid var(--line)",
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>Text-Assistent (KI)</span>
+            <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+          </Link>
+        )}
         <Link
           href={`/dashboard/events/${event.id}/guests`}
           style={{
