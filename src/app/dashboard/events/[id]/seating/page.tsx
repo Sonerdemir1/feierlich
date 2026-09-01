@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createTable, deleteTable, assignGuestToTable, suggestSeating, applySeatingSuggestion, discardSeatingSuggestion } from "./actions";
 import { emailQrDesign, createPrintOrder } from "../qr/actions";
-import { PRINT_SIZE_MM, PRINT_PRICE_CENTS } from "@/lib/qr-design";
+import { PRINT_SIZE_MM, PRINT_PRICE_CENTS, PRINT_QUANTITY_TIERS } from "@/lib/qr-design";
 import { aiSeatingConfigured, type SeatingAssignment } from "@/lib/ai-seating";
 
 export default async function SeatingPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/seating">) {
@@ -127,8 +127,11 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
       {/* Karten drucken lassen */}
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Karten drucken lassen</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
           Wir drucken euer QR-Design und schicken es an eure Adresse. Der Auftrag geht als Anfrage raus — wir melden uns zur Bestätigung und Zahlung.
+        </div>
+        <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Mengenrabatt: {PRINT_QUANTITY_TIERS.slice().reverse().map((t) => t.label).join(" · ")}
         </div>
         <form action={createPrintOrder.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>

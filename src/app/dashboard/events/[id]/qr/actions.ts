@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
-import { buildQrDesignSvg, PRINT_PRICE_CENTS, type PrintSize } from "@/lib/qr-design";
+import { buildQrDesignSvg, printOrderPriceCents, type PrintSize } from "@/lib/qr-design";
 import { stripe } from "@/lib/stripe";
 
 async function requireOwnedEvent(eventId: string) {
@@ -114,7 +114,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
     if (!table) redirect(`${redirectBase}?printError=table-not-found`);
   }
 
-  const priceCents = PRINT_PRICE_CENTS[size] * quantity;
+  const priceCents = printOrderPriceCents(size, quantity);
 
   const printOrder = await prisma.printOrder.create({
     data: {

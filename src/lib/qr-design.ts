@@ -20,6 +20,29 @@ export const PRINT_PRICE_CENTS: Record<PrintSize, number> = {
   A5: 390,
 };
 
+// Mengenrabatt-Stufen (Rabatt auf den Stueckpreis oben), Schwellwerte
+// PLATZHALTER — vor dem Live-Gang mit echten Druck-/Portokosten pruefen.
+// Absteigend sortiert, damit priceTierForQuantity() beim ersten Treffer
+// (quantity >= threshold) abbrechen kann.
+export const PRINT_QUANTITY_TIERS: Array<{ minQuantity: number; discount: number; label: string }> = [
+  { minQuantity: 100, discount: 0.3, label: "ab 100 Stück: −30 %" },
+  { minQuantity: 50, discount: 0.2, label: "ab 50 Stück: −20 %" },
+  { minQuantity: 25, discount: 0.1, label: "ab 25 Stück: −10 %" },
+  { minQuantity: 1, discount: 0, label: "1–24 Stück: regulärer Preis" },
+];
+
+function priceTierForQuantity(quantity: number) {
+  return PRINT_QUANTITY_TIERS.find((tier) => quantity >= tier.minQuantity)!;
+}
+
+// Gesamtpreis inkl. Mengenrabatt, auf volle Cent gerundet — einzige Stelle,
+// die den tatsaechlich zu berechnenden Preis kennt, damit UI-Anzeige und
+// Stripe-Checkout nie auseinanderlaufen.
+export function printOrderPriceCents(size: PrintSize, quantity: number): number {
+  const tier = priceTierForQuantity(quantity);
+  return Math.round(PRINT_PRICE_CENTS[size] * quantity * (1 - tier.discount));
+}
+
 function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
