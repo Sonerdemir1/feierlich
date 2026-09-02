@@ -34,6 +34,7 @@ import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { LivePreviewFrame } from "@/components/dashboard/LivePreviewFrame";
 import { EinladiKiChat } from "@/components/dashboard/EinladiKiChat";
 import { einladiKiConfigured } from "@/lib/einladi-ki";
+import { SocialGraphicPreview } from "@/components/dashboard/SocialGraphicPreview";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -843,6 +844,15 @@ export default async function EventDetailPage({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Social-Grafik */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Social-Grafik</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Teilbares Bild mit euren Event-Daten und QR-Code zur Einladung — für Instagram Story oder als Beitrag.
+        </div>
+        <SocialGraphicPreview eventId={event.id} />
       </div>
 
       {/* Veroeffentlichen */}
