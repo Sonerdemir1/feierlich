@@ -397,6 +397,23 @@ export default async function EventDetailPage({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        <Link
+          href={`/dashboard/events/${event.id}/design`}
+          style={{
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            padding: "16px 18px",
+            fontSize: 13,
+            color: "var(--ink)",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Design &amp; Vorschau</span>
+          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+        </Link>
         {aiTextConfigured && (
           <Link
             href={`/dashboard/events/${event.id}/text`}

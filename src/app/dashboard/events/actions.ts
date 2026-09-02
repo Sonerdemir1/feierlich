@@ -303,17 +303,32 @@ export async function saveModules(eventId: string, formData: FormData) {
 }
 
 export async function saveDesign(eventId: string, formData: FormData) {
-  await requireOwnedEvent(eventId);
+  const { event } = await requireOwnedEvent(eventId);
 
-  const colorOverride = JSON.stringify({
-    primary: String(formData.get("primary") ?? ""),
-    accent: String(formData.get("accent") ?? ""),
-    background: String(formData.get("background") ?? ""),
-  });
+  // Nur nicht-leere Felder aufnehmen — beim Lesen wird ueber die Template-
+  // Standardfarben gemergt ({ ...templateColors, ...override }), ein
+  // leerer String wuerde die Template-Farbe sonst kaputt auf "" setzen
+  // statt sie einfach unveraendert zu lassen.
+  const override: Record<string, string> = {};
+  for (const key of ["primary", "accent", "background"] as const) {
+    const value = String(formData.get(key) ?? "").trim();
+    if (value) override[key] = value;
+  }
 
-  await prisma.event.update({ where: { id: eventId }, data: { colorOverride } });
+  await prisma.event.update({ where: { id: eventId }, data: { colorOverride: JSON.stringify(override) } });
   revalidatePath(`/dashboard/events/${eventId}`);
-  redirect(`/dashboard/events/${eventId}`);
+  revalidatePath(`/dashboard/events/${eventId}/design`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}/design`);
+}
+
+export async function resetDesign(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { colorOverride: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/dashboard/events/${eventId}/design`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}/design`);
 }
 
 export async function publishEvent(eventId: string) {
