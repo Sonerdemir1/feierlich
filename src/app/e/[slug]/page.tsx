@@ -16,6 +16,7 @@ import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
+import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -105,6 +106,15 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // Datum vorbei ist.
   const isPastEvent = isPast(event.eventDate);
   const thankYouMessage = String(moduleConfig("thank-you-card").message ?? "").trim();
+
+  // Nur abfragen, wenn ueberhaupt eine Location mit Koordinaten hinterlegt
+  // ist — sonst unnoetiger Netzwerk-Request bei jedem Seitenaufruf.
+  // getEventWeather liefert selbst null zurueck, solange das Datum zu weit
+  // in der Zukunft liegt (echte Vorhersagen gibt es nur fuer ~16 Tage).
+  const weather =
+    isModuleOn("weather") && event.locationLat != null && event.locationLng != null
+      ? await getEventWeather(event.locationLat, event.locationLng, event.eventDate)
+      : null;
 
   const templateColors: TemplateColors = JSON.parse(event.template.colors);
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
@@ -448,6 +458,21 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 </>
               );
             })()}
+          </div>
+        </section>
+      )}
+
+      {weather && (
+        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 26px", textAlign: "center" }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 10 }}>
+              Wetter am {new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "long" }).format(event.eventDate)}
+            </div>
+            <div style={{ fontSize: 34, lineHeight: 1 }}>{weatherCodeInfo(weather.code).emoji}</div>
+            <div style={{ fontFamily: headingFont, fontSize: 17, marginTop: 8 }}>{weatherCodeInfo(weather.code).label}</div>
+            <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>
+              {weather.tempMaxC}° / {weather.tempMinC}°
+            </div>
           </div>
         </section>
       )}

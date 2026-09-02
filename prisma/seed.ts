@@ -54,6 +54,7 @@ const eventTypes = [
 const modules = [
   { key: 'countdown', name: 'Countdown', category: 'Basis', description: 'Countdown-Timer bis zum Event auf der Einladungsseite.' },
   { key: 'location', name: 'Location & Google Maps', category: 'Basis', description: 'Adresse mit Karte und Wegbeschreibung für die Gäste.' },
+  { key: 'weather', name: 'Wettervorhersage', category: 'Basis', description: 'Zeigt die Wettervorhersage für den Eventtag, sobald sie verfügbar ist (ca. 14 Tage vorher) — braucht eine hinterlegte Location.' },
   { key: 'agenda', name: 'Ablauf', category: 'Basis', description: 'Zeitlicher Ablaufplan des Events (z. B. Sektempfang, Trauung, Feier).' },
   { key: 'dresscode', name: 'Dresscode', category: 'Basis', description: 'Hinweis zum gewünschten Dresscode für die Gäste.' },
   { key: 'social-media', name: 'Social Media', category: 'Basis', description: 'Hashtag-/Social-Media-Hinweis für Gäste-Posts.' },
@@ -82,18 +83,18 @@ const packages = [
   {
     key: 'PREMIUM', name: 'Premium', priceCents: 9900,
     description: 'Digitale Einladung, Eventseite, RSVP, QR-Code',
-    features: ['countdown', 'location', 'agenda', 'rsvp'],
+    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp'],
   },
   {
     key: 'PREMIUM_PLUS', name: 'Premium Plus', priceCents: 14900,
     description: 'Eventseite, RSVP, Gästeliste, Sitzplan, QR-Codes, Gästebuch, Galerie',
-    features: ['countdown', 'location', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery'],
+    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery'],
   },
   {
     key: 'VIP', name: 'VIP', priceCents: 29900,
     description: 'Alle Funktionen, individuelles Design, Video- & Audio-Einladung, persönlicher Support',
     features: [
-      'countdown', 'location', 'agenda', 'dresscode', 'social-media', 'rsvp', 'guest-list',
+      'countdown', 'location', 'weather', 'agenda', 'dresscode', 'social-media', 'rsvp', 'guest-list',
       'seating', 'menu', 'wishlist', 'gallery', 'guestbook', 'music-requests',
       'thank-you-card', 'audio-invitation', 'video-invitation',
     ],
@@ -101,7 +102,7 @@ const packages = [
   {
     key: 'BUSINESS', name: 'Business', priceCents: 49900,
     description: 'Individuelle Business-Event-Funktionen inkl. Check-in',
-    features: ['countdown', 'location', 'agenda', 'guest-list', 'social-media', 'check-in'],
+    features: ['countdown', 'location', 'weather', 'agenda', 'guest-list', 'social-media', 'check-in'],
   },
 ];
 
