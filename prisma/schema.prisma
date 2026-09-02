@@ -355,20 +355,26 @@ enum MediaType {
 // zentrale Ablage fuer alle hochgeladenen Dateien (Datenschutz/Groesse/
 // Status an einer Stelle steuerbar statt verstreut).
 model Media {
-  id           String           @id @default(cuid())
-  eventId      String?
+  id              String           @id @default(cuid())
+  eventId         String?
   // Gesetzt, wenn der Upload ueber einen Tisch-spezifischen QR-Code kam
   // (siehe /dashboard/events/[id]/qr/table/[tableId]) — ermoeglicht spaeter
   // "Fotos von Tisch X"-Filter, unabhaengig vom Sitzplan-Feature selbst.
-  tableId      String?
-  type         MediaType
-  url          String
-  thumbnailUrl String?
-  mimeType     String
-  sizeBytes    Int
-  uploaderName String?
-  status       ModerationStatus @default(PENDING)
-  createdAt    DateTime         @default(now())
+  tableId         String?
+  type            MediaType
+  url             String
+  thumbnailUrl    String?
+  mimeType        String
+  sizeBytes       Int
+  uploaderName    String?
+  status          ModerationStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  // Von analyzeGalleryPhotos() gesetzt (KI-Foto-Kuration) — "empfehlung" |
+  // "unscharf" | "duplikat" | "ok", plus kurze Begruendung. Bleibt null,
+  // bis der Betreiber die Analyse aktiv anstoesst (kein Auto-Scan bei
+  // jedem Upload, aus Kostengruenden).
+  aiVerdict       String?
+  aiVerdictReason String?
 
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
   table            Table?           @relation(fields: [tableId], references: [id], onDelete: SetNull)

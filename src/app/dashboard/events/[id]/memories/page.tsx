@@ -2,10 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { moderateGalleryItem, moderateGuestbookEntry } from "./actions";
+import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos } from "./actions";
+import { aiPhotoCurationConfigured } from "@/lib/ai-photo-curation";
 
 const statusLabel: Record<string, string> = { PENDING: "Wartet auf Freigabe", APPROVED: "Freigegeben", HIDDEN: "Ausgeblendet", DELETED: "Gelöscht" };
 const statusColor: Record<string, string> = { PENDING: "#B9975B", APPROVED: "#5B7A4E", HIDDEN: "#8A7F6E", DELETED: "#B2543A" };
+
+const verdictLabel: Record<string, string> = { empfehlung: "Empfehlung", unscharf: "Unscharf", duplikat: "Duplikat", ok: "In Ordnung" };
+const verdictColor: Record<string, string> = { empfehlung: "#5B7A4E", unscharf: "#B2543A", duplikat: "#8A7F6E", ok: "#B9975B" };
+const verdictRank: Record<string, number> = { empfehlung: 0, ok: 1, unscharf: 2, duplikat: 3 };
 
 function ModerationButtons({ approve, hide, del }: { approve: () => Promise<void>; hide: () => Promise<void>; del: () => Promise<void> }) {
   return (
@@ -29,16 +34,33 @@ function ModerationButtons({ approve, hide, del }: { approve: () => Promise<void
   );
 }
 
-export default async function MemoriesPage({ params }: PageProps<"/dashboard/events/[id]/memories">) {
+export default async function MemoriesPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/memories">) {
   const { id } = await params;
+  const sp = await searchParams;
   const session = await auth();
   const event = await prisma.event.findUnique({ where: { id } });
   if (!event || event.ownerId !== session!.user.id) notFound();
 
-  const [galleryItems, guestbookEntries] = await Promise.all([
+  const [galleryItemsRaw, guestbookEntries] = await Promise.all([
     prisma.galleryItem.findMany({ where: { eventId: id, status: { not: "DELETED" } }, include: { media: true }, orderBy: { createdAt: "desc" } }),
     prisma.guestbookEntry.findMany({ where: { eventId: id, status: { not: "DELETED" } }, include: { media: true }, orderBy: { createdAt: "desc" } }),
   ]);
+
+  // PENDING-Fotos mit KI-Empfehlung nach oben, unter sich nach Verdict
+  // sortiert — der Rest (bereits moderiert) bleibt danach chronologisch.
+  const galleryItems = [...galleryItemsRaw].sort((a, b) => {
+    const aPending = a.status === "PENDING" ? 0 : 1;
+    const bPending = b.status === "PENDING" ? 0 : 1;
+    if (aPending !== bPending) return aPending - bPending;
+    if (aPending === 0) {
+      const aRank = verdictRank[a.media.aiVerdict ?? ""] ?? 1;
+      const bRank = verdictRank[b.media.aiVerdict ?? ""] ?? 1;
+      if (aRank !== bRank) return aRank - bRank;
+    }
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+  const pendingPhotoCount = galleryItemsRaw.filter((item) => item.status === "PENDING" && item.media.type === "IMAGE").length;
+  const curationError = sp.error === "photo-curation-failed";
 
   return (
     <div>
@@ -50,7 +72,21 @@ export default async function MemoriesPage({ params }: PageProps<"/dashboard/eve
       </h1>
 
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 24 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 16 }}>Galerie ({galleryItems.length})</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Galerie ({galleryItems.length})</div>
+          {aiPhotoCurationConfigured && pendingPhotoCount > 0 && (
+            <form action={analyzeGalleryPhotos.bind(null, id)}>
+              <button type="submit" className="btn btn-ghost" style={{ padding: "7px 14px", fontSize: 11.5 }}>
+                KI-Fotos sortieren
+              </button>
+            </form>
+          )}
+        </div>
+        {curationError && (
+          <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "10px 14px", fontSize: 12.5, marginBottom: 16 }}>
+            Die Foto-Analyse ist gerade nicht verfügbar. Bitte später erneut versuchen.
+          </div>
+        )}
         {galleryItems.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>Noch keine Fotos hochgeladen.</p>
         ) : (
@@ -65,6 +101,14 @@ export default async function MemoriesPage({ params }: PageProps<"/dashboard/eve
                 )}
                 <div style={{ padding: "8px 10px" }}>
                   <div style={{ fontSize: 11, color: statusColor[item.status], fontWeight: 600, marginBottom: 6 }}>{statusLabel[item.status]}</div>
+                  {item.media.aiVerdict && (
+                    <div
+                      title={item.media.aiVerdictReason ?? undefined}
+                      style={{ display: "inline-block", fontSize: 10, color: verdictColor[item.media.aiVerdict], fontWeight: 600, border: `1px solid ${verdictColor[item.media.aiVerdict]}55`, padding: "2px 7px", marginBottom: 6 }}
+                    >
+                      {verdictLabel[item.media.aiVerdict] ?? item.media.aiVerdict}
+                    </div>
+                  )}
                   <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginBottom: 8 }}>{item.media.uploaderName ?? "Anonym"}</div>
                   <ModerationButtons
                     approve={moderateGalleryItem.bind(null, id, item.id, "APPROVED")}
