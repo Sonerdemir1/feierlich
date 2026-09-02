@@ -124,12 +124,8 @@ export default async function Home() {
                 ? { backgroundImage: `url(${cardImage})` }
                 : { background: "var(--ivory-2)" };
             return (
-              <a
-                key={category}
-                href={`#cat-${categorySlug(category)}`}
-                className="cat-nav-tile"
-                style={tileBg}
-              >
+              <a key={category} href={`#cat-${categorySlug(category)}`} className="cat-nav-tile">
+                <span className="cat-nav-bg" style={tileBg} />
                 <span>{categoryLabel(category, locale)}</span>
               </a>
             );

@@ -25,7 +25,7 @@ export function TemplateGallery({ categories, locale }: { categories: GalleryCat
 
       {categories.map(({ category, subtitle, items }) => (
         <div className="cat" key={category} id={`cat-${categorySlug(category)}`}>
-          <div className="cat-head">
+          <div className="cat-head reveal">
             <h3>{categoryLabel(category, locale)}</h3>
             <span className="cat-sub">{subtitle}</span>
           </div>

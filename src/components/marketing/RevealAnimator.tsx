@@ -2,35 +2,51 @@
 
 import { useEffect } from "react";
 
-// Faded scroll-in for elements marked with the `.reveal` class. No-op
-// (renders nothing) — it just attaches the observer once on mount.
+// Faded scroll-in fuer Elemente mit der `.reveal`-Klasse. No-op (rendert
+// nichts) — haengt beim Mount nur den Sichtbarkeits-Check an.
 export function RevealAnimator() {
   useEffect(() => {
-    const reveals = document.querySelectorAll(".reveal");
-    if (!("IntersectionObserver" in window)) {
-      reveals.forEach((el) => el.classList.add("in"));
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("in");
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      // threshold statt eines Bruchteils: bei sehr hohen Sections (z.B. die
-      // Vorlagen-Galerie im gestapelten Mobil-Layout, oft > 9000px) waere
-      // ein Anteils-Schwellwert wie 0.1 auf schmalen/kurzen Viewports nie
-      // erreichbar (Viewport-Hoehe < 10% der Element-Hoehe) — die Section
-      // bliebe dauerhaft unsichtbar. rootMargin sorgt stattdessen dafuer,
-      // dass die Animation kurz bevor das Element den Viewport erreicht
-      // auslöst, unabhaengig von dessen Gesamthoehe.
-      { threshold: 0, rootMargin: "0px 0px -10% 0px" }
-    );
-    reveals.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    let pending = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    if (pending.length === 0) return;
+
+    const check = () => {
+      const threshold = window.innerHeight * 1.1;
+      // rect.top < threshold erfasst sowohl "kommt gerade von unten rein"
+      // als auch "ein grosser Scroll-Sprung (Anker-Klick auf #preise o.ae.)
+      // ist bereits darueber hinweggegangen". Ein reiner IntersectionObserver
+      // verpasst den zweiten Fall: bei einem Sprung entsteht nie ein
+      // Zwischenzustand mit tatsaechlicher Ueberschneidung, das Element
+      // bliebe sonst dauerhaft bei opacity:0 haengen (live getestet).
+      pending = pending.filter((el) => {
+        if (el.getBoundingClientRect().top < threshold) {
+          el.classList.add("in");
+          return false;
+        }
+        return true;
+      });
+      if (pending.length === 0) {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      }
+    };
+
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        check();
+        ticking = false;
+      });
+    };
+
+    check();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   return null;

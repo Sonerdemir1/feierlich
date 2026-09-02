@@ -55,6 +55,17 @@ a {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Ohne dies springt ein Klick auf einen Nav-Anker (#preise, #vorlagen, ...)
+     die Seite instant weiter — Sections dazwischen werden dabei komplett
+     uebersprungen, ohne dass der IntersectionObserver in RevealAnimator.tsx
+     sie je als sichtbar registriert (kein Zwischen-Frame mit Ueberschneidung),
+     sie blieben dauerhaft bei opacity:0 haengen. Smooth-Scroll erzeugt
+     genug Zwischenschritte, damit jede .reveal-Section auf dem Weg dorthin
+     regulaer ausgeloest wird. */
+  html {
+    scroll-behavior: smooth;
+  }
+
   .reveal {
     opacity: 0;
     transform: translateY(16px);
@@ -80,6 +91,63 @@ a {
       transform: none;
     }
   }
+
+  /* Gestaffeltes Nachziehen einzelner Kinder innerhalb eines bereits
+     sichtbaren .reveal-Blocks — die Haken-Liste/Schritte/Karten kommen
+     nacheinander statt alle gleichzeitig mit der Section herein. */
+  .feature-points > div {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.in .feature-points > div {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal.in .feature-points > div:nth-child(1) { transition-delay: 0.15s; }
+  .reveal.in .feature-points > div:nth-child(2) { transition-delay: 0.27s; }
+  .reveal.in .feature-points > div:nth-child(3) { transition-delay: 0.39s; }
+  .reveal.in .feature-points > div:nth-child(4) { transition-delay: 0.51s; }
+  .reveal.in .feature-points > div:nth-child(5) { transition-delay: 0.63s; }
+
+  .how-grid > div,
+  .price-grid > div {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .reveal.in .how-grid > div,
+  .reveal.in .price-grid > div {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal.in .how-grid > div:nth-child(1),
+  .reveal.in .price-grid > div:nth-child(1) { transition-delay: 0.1s; }
+  .reveal.in .how-grid > div:nth-child(2),
+  .reveal.in .price-grid > div:nth-child(2) { transition-delay: 0.22s; }
+  .reveal.in .how-grid > div:nth-child(3),
+  .reveal.in .price-grid > div:nth-child(3) { transition-delay: 0.34s; }
+  .reveal.in .price-grid > div:nth-child(4) { transition-delay: 0.46s; }
+
+  .cat-nav-grid > a {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .reveal.in .cat-nav-grid > a {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal.in .cat-nav-grid > a:nth-child(1) { transition-delay: 0.04s; }
+  .reveal.in .cat-nav-grid > a:nth-child(2) { transition-delay: 0.09s; }
+  .reveal.in .cat-nav-grid > a:nth-child(3) { transition-delay: 0.14s; }
+  .reveal.in .cat-nav-grid > a:nth-child(4) { transition-delay: 0.19s; }
+  .reveal.in .cat-nav-grid > a:nth-child(5) { transition-delay: 0.24s; }
+  .reveal.in .cat-nav-grid > a:nth-child(6) { transition-delay: 0.29s; }
+  .reveal.in .cat-nav-grid > a:nth-child(7) { transition-delay: 0.34s; }
+  .reveal.in .cat-nav-grid > a:nth-child(8) { transition-delay: 0.39s; }
+  .reveal.in .cat-nav-grid > a:nth-child(9) { transition-delay: 0.44s; }
+  .reveal.in .cat-nav-grid > a:nth-child(10) { transition-delay: 0.49s; }
 }
 
 /* logo */
@@ -88,6 +156,12 @@ a {
   align-items: center;
   gap: 10px;
   text-decoration: none;
+}
+.logo svg {
+  transition: transform 0.35s ease;
+}
+.logo:hover svg {
+  transform: rotate(-8deg) scale(1.1);
 }
 .logo span {
   font-family: var(--font-display);
@@ -112,9 +186,26 @@ nav {
   gap: 32px;
 }
 .nav-links a {
+  position: relative;
   font-size: 13.5px;
   color: var(--ink-soft);
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 1.5px;
+  background: var(--terracotta);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.nav-links a:hover::after {
+  transform: scaleX(1);
 }
 .nav-links a:hover {
   color: var(--terracotta-dark);
@@ -128,7 +219,8 @@ nav {
   cursor: pointer;
   font-family: var(--font-body);
   text-decoration: none;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease,
+    transform 0.2s ease;
 }
 .btn-primary {
   background: var(--terracotta);
@@ -140,6 +232,8 @@ nav {
 }
 .btn-primary:hover {
   background: var(--terracotta-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .btn-ghost {
   border: 1px solid var(--line);
@@ -150,7 +244,8 @@ nav {
   background: var(--ivory-2);
 }
 .btn-ghost:hover {
-  border-color: var(--ink-faint);
+  border-color: var(--ink);
+  transform: translateY(-2px);
 }
 
 /* wiederverwendbare Karten-Flaeche — Radius + Schatten statt nackter
@@ -296,13 +391,26 @@ a.card:hover {
   align-items: flex-end;
   box-shadow: var(--shadow-sm);
   text-decoration: none;
-  background-size: cover;
-  background-position: center;
-  transition: box-shadow 0.15s, transform 0.15s;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 .cat-nav-tile:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+}
+/* Das Hintergrundfoto liegt auf einer eigenen absoluten Ebene statt direkt
+   auf der Kachel — so kann das Bild beim Hover ueber die Kachelgrenze
+   hinaus zoomen, waehrend die Kachel selbst (inkl. abgerundeter Ecken via
+   overflow:hidden) ihre Groesse behaelt. */
+.cat-nav-tile .cat-nav-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.5s ease;
+}
+.cat-nav-tile:hover .cat-nav-bg {
+  transform: scale(1.09);
 }
 .cat-nav-tile::after {
   content: "";
@@ -529,6 +637,14 @@ a.card:hover {
   position: relative;
   overflow: hidden;
   padding: 14px;
+  transition: transform 0.5s ease;
+}
+/* Zoom greift auf .tpl-prev selbst (Transform statt background-size), damit
+   es unabhaengig vom Inline-Hintergrund jedes einzelnen Vorlagen-Falls
+   (~35 Varianten in TemplatePreview.tsx) funktioniert — .tpl hat sein
+   eigenes overflow:hidden, schneidet den Zoom also sauber am Kartenrand ab. */
+.tpl:hover .tpl-prev {
+  transform: scale(1.07);
 }
 .tpl-label {
   padding: 11px 13px;
@@ -1337,6 +1453,12 @@ a.card:hover {
   padding: 9px;
   background: var(--ivory-2);
   box-shadow: 0 30px 60px -28px rgba(33, 28, 25, 0.3);
+  transition: transform 0.45s ease, box-shadow 0.45s ease, border-color 0.45s ease;
+}
+.frame-wrap:hover .phone-frame {
+  transform: translateY(-7px);
+  border-color: var(--terracotta);
+  box-shadow: 0 40px 74px -26px rgba(33, 28, 25, 0.4);
 }
 .phone-inner {
   border-radius: 16px;
@@ -1380,6 +1502,12 @@ a.card:hover {
   padding: 30px 26px;
   background: #ffffff;
   box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.price-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--terracotta);
 }
 .price-card.highlight {
   border: 1.5px solid var(--terracotta);
@@ -1387,6 +1515,10 @@ a.card:hover {
   color: var(--ivory);
   position: relative;
   box-shadow: var(--shadow-md);
+}
+.price-card.highlight:hover {
+  border-color: var(--gold);
+  box-shadow: 0 20px 40px -18px rgba(33, 28, 25, 0.5);
 }
 .price-badge {
   position: absolute;
@@ -1450,6 +1582,12 @@ footer p {
   line-height: 1.6;
   max-width: 440px;
   margin-top: 14px;
+}
+footer a {
+  transition: opacity 0.2s ease;
+}
+footer a:hover {
+  opacity: 0.6;
 }
 
 @media (max-width: 900px) {
