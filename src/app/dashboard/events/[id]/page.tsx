@@ -32,6 +32,8 @@ import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { LivePreviewFrame } from "@/components/dashboard/LivePreviewFrame";
+import { EinladiKiChat } from "@/components/dashboard/EinladiKiChat";
+import { einladiKiConfigured } from "@/lib/einladi-ki";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -978,6 +980,8 @@ export default async function EventDetailPage({
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
       </div>
+
+      {einladiKiConfigured && <EinladiKiChat eventId={event.id} />}
     </div>
   );
 }

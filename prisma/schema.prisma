@@ -239,6 +239,23 @@ model Event {
   aiTextAttempts    AiTextAttempt[]
   seatingSuggestion SeatingSuggestion?
   viewDays          EventViewDay[]
+  einladiKiMessages EinladiKiMessage[]
+}
+
+// Chat-Verlauf mit "Einladi KI" (Dashboard-Assistent) — pro Event, damit
+// der Assistent beim naechsten Besuch weiss, worueber schon gesprochen
+// wurde, und die Nachrichtenzahl gleichzeitig als Kontingent-Zaehler dient.
+model EinladiKiMessage {
+  id             String   @id @default(cuid())
+  eventId        String
+  role           String // "user" | "assistant"
+  content        String
+  suggestionJson String? // strukturierter Vorschlag (siehe einladi-ki.ts), falls vorhanden
+  createdAt      DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId, createdAt])
 }
 
 // Taegliche Aufrufe-Zaehler fuer den Trend-Chart im Dashboard — separat vom
