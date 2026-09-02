@@ -17,6 +17,10 @@ import {
   updateSlug,
   updateEventDetails,
   saveThankYouCard,
+  uploadEnvelopeVideo,
+  removeEnvelopeVideo,
+  uploadBackgroundMusic,
+  removeBackgroundMusic,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -95,6 +99,8 @@ export default async function EventDetailPage({
       template: true,
       guests: { include: { rsvp: true } },
       coverImage: true,
+      envelopeVideo: true,
+      backgroundMusic: true,
       order: { include: { package: true } },
     },
   });
@@ -674,6 +680,70 @@ export default async function EventDetailPage({
               </p>
             )}
           </div>
+        )}
+      </div>
+
+      {/* Video-Umschlag */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Video-Umschlag</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Statt der Standard-Animation spielt beim Antippen euer eigenes Video, danach erscheint die Einladung — Modul
+          &bdquo;Video-Einladung&ldquo; muss dafür aktiviert sein.
+        </div>
+        {event.envelopeVideo && (
+          <div style={{ marginBottom: 14, maxWidth: 240 }}>
+            <video src={event.envelopeVideo.url} controls style={{ width: "100%", display: "block", border: "1px solid var(--line)" }} />
+          </div>
+        )}
+        <form action={uploadEnvelopeVideo.bind(null, event.id)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", maxWidth: 360 }}>
+          <FileField
+            name="file"
+            accept="video/mp4,video/quicktime,video/webm"
+            required
+            label="Video auswählen"
+            colors={{ primary: "var(--ink)", accent: "var(--terracotta)", background: "var(--ivory)" }}
+          />
+          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+            {event.envelopeVideo ? "Video ersetzen" : "Video hochladen"}
+          </button>
+        </form>
+        {event.envelopeVideo && (
+          <form action={removeEnvelopeVideo.bind(null, event.id)} style={{ marginTop: 10 }}>
+            <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+              Video entfernen
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Hintergrundmusik */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Hintergrundmusik</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Gäste schalten den Titel per Button auf der Einladungsseite selbst ein (kein Autoplay) — Modul
+          &bdquo;Hintergrundmusik&ldquo; muss dafür aktiviert sein.
+        </div>
+        {event.backgroundMusic && (
+          <audio src={event.backgroundMusic.url} controls style={{ display: "block", marginBottom: 14, maxWidth: 320 }} />
+        )}
+        <form action={uploadBackgroundMusic.bind(null, event.id)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", maxWidth: 360 }}>
+          <FileField
+            name="file"
+            accept="audio/mpeg,audio/mp4,audio/wav,audio/ogg"
+            required
+            label="Musik auswählen"
+            colors={{ primary: "var(--ink)", accent: "var(--terracotta)", background: "var(--ivory)" }}
+          />
+          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+            {event.backgroundMusic ? "Titel ersetzen" : "Titel hochladen"}
+          </button>
+        </form>
+        {event.backgroundMusic && (
+          <form action={removeBackgroundMusic.bind(null, event.id)} style={{ marginTop: 10 }}>
+            <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+              Musik entfernen
+            </button>
+          </form>
         )}
       </div>
 

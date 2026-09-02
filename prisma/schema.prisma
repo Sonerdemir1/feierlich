@@ -203,6 +203,12 @@ model Event {
   locationLat     Float?
   locationLng     Float?
   coverImageId    String?
+  // Optionales Video statt der Standard-Umschlag-Animation — beim Antippen
+  // spielt das Video, danach erscheint die eigentliche Einladung.
+  envelopeVideoId String?
+  // Optionaler Hintergrundmusik-Titel — kein Autoplay (Browser-Policy +
+  // respektiert die Gaeste), stattdessen ein Schalter auf der Seite.
+  backgroundMusicId String?
   colorOverride   String? // JSON-String, ueberschreibt Template.colors wenn gesetzt
   // JSON-String, z.B. {"fontId":"playfair","ornaments":true} — echte
   // Editor-Einstellungen fuer die oeffentliche Event-Seite (Schriftart,
@@ -220,6 +226,8 @@ model Event {
   template    Template  @relation(fields: [templateId], references: [id])
   templateId  String
   coverImage  Media?    @relation("EventCoverImage", fields: [coverImageId], references: [id])
+  envelopeVideo   Media? @relation("EventEnvelopeVideo", fields: [envelopeVideoId], references: [id])
+  backgroundMusic Media? @relation("EventBackgroundMusic", fields: [backgroundMusicId], references: [id])
   order       Order?
 
   modules           EventModule[]
@@ -423,6 +431,8 @@ model Media {
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
   table            Table?           @relation(fields: [tableId], references: [id], onDelete: SetNull)
   eventCoverFor    Event[]          @relation("EventCoverImage")
+  eventEnvelopeFor Event[]          @relation("EventEnvelopeVideo")
+  eventMusicFor    Event[]          @relation("EventBackgroundMusic")
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
   photoTags        PhotoTag[]

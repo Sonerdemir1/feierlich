@@ -58,6 +58,7 @@ const modules = [
   { key: 'agenda', name: 'Ablauf', category: 'Basis', description: 'Zeitlicher Ablaufplan des Events (z. B. Sektempfang, Trauung, Feier).' },
   { key: 'dresscode', name: 'Dresscode', category: 'Basis', description: 'Hinweis zum gewünschten Dresscode für die Gäste.' },
   { key: 'social-media', name: 'Social Media', category: 'Basis', description: 'Hashtag-/Social-Media-Hinweis für Gäste-Posts.' },
+  { key: 'background-music', name: 'Hintergrundmusik', category: 'Basis', description: 'Ein hochgeladener Musiktitel, den Gäste auf der Einladungsseite per Schalter abspielen können (kein Autoplay).' },
   { key: 'rsvp', name: 'RSVP', category: 'Gäste', description: 'Gäste sagen online direkt zu oder ab — inklusive Personenanzahl und Nachricht an euch. Antworten seht ihr gesammelt in der Gästeliste.' },
   { key: 'guest-list', name: 'Gästeliste', category: 'Gäste', description: 'Übersicht aller eingeladenen Gäste und ihres Zusage-Status.' },
   { key: 'seating', name: 'Sitzplan', category: 'Gäste', description: 'Tische anlegen und Gäste zuordnen — inklusive Sitzplatz-Suche für Gäste.' },

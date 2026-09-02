@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { validateImageFile, saveEventImage } from "@/lib/uploads";
+import { validateImageFile, saveEventImage, validateVideoFile, validateAudioFile, saveEventMedia, saveEventAudio } from "@/lib/uploads";
 import { putObject, readObject } from "@/lib/storage";
 import { removeImageBackground } from "@/lib/background-removal";
 import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -136,6 +136,58 @@ export async function uploadCoverImage(eventId: string, formData: FormData) {
   await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
 
   revalidatePath(`/dashboard/events/${eventId}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+// Video statt der Standard-Umschlag-Animation — beim Antippen spielt das
+// Video, danach erscheint die eigentliche Einladung (siehe VideoEnvelope.tsx).
+export async function uploadEnvelopeVideo(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const file = formData.get("file");
+  const error = validateVideoFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
+
+  const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
+  const media = await prisma.media.create({ data: { eventId, type: "VIDEO", url, mimeType, sizeBytes, status: "APPROVED" } });
+  await prisma.event.update({ where: { id: eventId }, data: { envelopeVideoId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+export async function removeEnvelopeVideo(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { envelopeVideoId: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+// Hintergrundmusik — kein Autoplay (Browser-Policy + respektiert die
+// Gaeste), Gaeste schalten sie selbst per Button auf der Einladungsseite ein.
+export async function uploadBackgroundMusic(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const file = formData.get("file");
+  const error = validateAudioFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
+
+  const { url, mimeType, sizeBytes } = await saveEventAudio(eventId, file as File);
+  const media = await prisma.media.create({ data: { eventId, type: "AUDIO", url, mimeType, sizeBytes, status: "APPROVED" } });
+  await prisma.event.update({ where: { id: eventId }, data: { backgroundMusicId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+export async function removeBackgroundMusic(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { backgroundMusicId: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);
 }
 

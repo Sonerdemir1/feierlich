@@ -10,6 +10,8 @@ import { FileField } from "@/components/public/FileField";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
+import { VideoEnvelope } from "@/components/marketing/VideoEnvelope";
+import { BackgroundMusicToggle } from "@/components/marketing/BackgroundMusicToggle";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
@@ -27,7 +29,7 @@ type TemplateFonts = { display: string; body: string };
 async function getEvent(slug: string) {
   return prisma.event.findUnique({
     where: { slug },
-    include: { eventType: true, template: true, coverImage: true, owner: true },
+    include: { eventType: true, template: true, coverImage: true, owner: true, envelopeVideo: true, backgroundMusic: true },
   });
 }
 
@@ -509,7 +511,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       <section style={{ padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
-        {envelopeImages ? (
+        {isModuleOn("video-invitation") && event.envelopeVideo ? (
+          <VideoEnvelope videoUrl={event.envelopeVideo.url} primary={colors.primary}>
+            {heroInner}
+          </VideoEnvelope>
+        ) : envelopeImages ? (
           heroInner
         ) : (
           <EnvelopeOpen background={colors.background} accent={colors.accent} primary={colors.primary}>
@@ -517,6 +523,10 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           </EnvelopeOpen>
         )}
       </section>
+
+      {isModuleOn("background-music") && event.backgroundMusic && (
+        <BackgroundMusicToggle url={event.backgroundMusic.url} accent={colors.accent} background={colors.background} />
+      )}
 
       {event.coverImage && (
         <div style={{ maxWidth: 640, margin: "0 auto 48px", padding: "0 28px" }}>
