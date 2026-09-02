@@ -15,6 +15,7 @@ import {
   resetDesign,
   changeTemplate,
   updateSlug,
+  updateEventDetails,
   saveThankYouCard,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
@@ -28,6 +29,8 @@ import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
 import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
+import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
+import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -58,6 +61,7 @@ const uploadErrorLabel: Record<string, string> = {
   "payment-required": "Bitte zuerst das Einladungs-Paket bezahlen, bevor das Event veröffentlicht werden kann.",
   "slug-invalid": "Der Link muss mindestens 3 Zeichen haben (Buchstaben, Zahlen, Bindestriche).",
   "slug-taken": "Dieser Link ist schon vergeben — bitte einen anderen wählen.",
+  "details-invalid": "Bitte Titel und Datum ausfüllen.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -154,6 +158,7 @@ export default async function EventDetailPage({
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
   const modulesSaved = sp.modulesSaved === "1";
   const slugSaved = sp.slugSaved === "1";
+  const detailsSaved = sp.detailsSaved === "1";
   const thankYouSaved = sp.thankYouSaved === "1";
   const thankYouModuleId = allModules.find((m) => m.key === "thank-you-card")?.id;
   const thankYouModule = thankYouModuleId ? eventModules.find((em) => em.moduleId === thankYouModuleId) : undefined;
@@ -174,10 +179,103 @@ export default async function EventDetailPage({
       <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 32, color: "var(--ink)", marginBottom: 6 }}>
         {event.title}
       </h1>
-      <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 32 }}>
+      <p style={{ fontSize: 13.5, color: "var(--ink-soft)", marginBottom: 12 }}>
         {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)} · Status:{" "}
         {statusLabel[event.status] ?? event.status}
       </p>
+
+      <details style={{ marginBottom: 32 }}>
+        <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+          Details bearbeiten
+        </summary>
+        <form
+          action={updateEventDetails.bind(null, event.id)}
+          style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480, marginTop: 16 }}
+        >
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            Titel
+            <input
+              type="text"
+              name="title"
+              required
+              defaultValue={event.title}
+              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            Untertitel (optional)
+            <input
+              type="text"
+              name="subtitle"
+              defaultValue={event.subtitle ?? ""}
+              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+            />
+          </label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+              Datum
+              <input
+                type="date"
+                name="eventDate"
+                required
+                defaultValue={event.eventDate.toISOString().slice(0, 10)}
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+              />
+            </label>
+            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+              Uhrzeit (optional)
+              <input
+                type="time"
+                name="eventTime"
+                defaultValue={event.eventTime ?? ""}
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+              />
+            </label>
+          </div>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            Location (optional)
+            <input
+              type="text"
+              name="locationName"
+              placeholder="z. B. Schloss Ehrenfels"
+              defaultValue={event.locationName ?? ""}
+              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+            />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            Adresse (optional)
+            {GOOGLE_MAPS_API_KEY ? (
+              <PlaceAutocompleteInput
+                apiKey={GOOGLE_MAPS_API_KEY}
+                name="locationAddress"
+                latName="locationLat"
+                lngName="locationLng"
+                placeholder="Adresse eingeben und Vorschlag auswählen"
+                defaultValue={event.locationAddress ?? ""}
+              />
+            ) : (
+              <input
+                type="text"
+                name="locationAddress"
+                defaultValue={event.locationAddress ?? ""}
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+              />
+            )}
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            Beschreibung (optional)
+            <textarea
+              name="description"
+              rows={3}
+              defaultValue={event.description ?? ""}
+              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5, fontFamily: "inherit" }}
+            />
+          </label>
+          <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5, alignSelf: "flex-start" }}>
+            Speichern
+          </button>
+        </form>
+      </details>
 
       {errorKey && (
         <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
@@ -192,6 +290,11 @@ export default async function EventDetailPage({
       {slugSaved && (
         <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
           Link gespeichert.
+        </div>
+      )}
+      {detailsSaved && (
+        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Details gespeichert.
         </div>
       )}
       {thankYouSaved && (

@@ -458,3 +458,46 @@ export async function updateSlug(eventId: string, formData: FormData) {
   revalidatePath(`/e/${clean}`);
   redirect(`/dashboard/events/${eventId}?slugSaved=1`);
 }
+
+// Bisher liessen sich Titel/Datum/Uhrzeit/Location nur bei der Event-
+// Erstellung setzen (oder Untertitel/Beschreibung nur ueber den KI-Text-
+// Assistenten ueberschreiben) — kein manueller Weg, einen Tippfehler im
+// Titel zu korrigieren oder Datum/Ort nachtraeglich anzupassen. Diese
+// Action schliesst genau diese Luecke.
+export async function updateEventDetails(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const title = String(formData.get("title") ?? "").trim();
+  const eventDate = String(formData.get("eventDate") ?? "");
+  if (!title || !eventDate) {
+    redirect(`/dashboard/events/${eventId}?error=details-invalid`);
+  }
+
+  const subtitle = String(formData.get("subtitle") ?? "").trim() || null;
+  const eventTime = String(formData.get("eventTime") ?? "").trim() || null;
+  const locationName = String(formData.get("locationName") ?? "").trim() || null;
+  const locationAddress = String(formData.get("locationAddress") ?? "").trim() || null;
+  const locationLatRaw = formData.get("locationLat");
+  const locationLngRaw = formData.get("locationLng");
+  const locationLat = locationLatRaw ? Number(locationLatRaw) : null;
+  const locationLng = locationLngRaw ? Number(locationLngRaw) : null;
+  const description = String(formData.get("description") ?? "").trim() || null;
+
+  await prisma.event.update({
+    where: { id: event.id },
+    data: {
+      title,
+      subtitle,
+      eventDate: new Date(eventDate),
+      eventTime,
+      locationName,
+      locationAddress,
+      locationLat,
+      locationLng,
+      description,
+    },
+  });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}?detailsSaved=1`);
+}
