@@ -317,18 +317,16 @@ export async function saveDesign(eventId: string, formData: FormData) {
 
   await prisma.event.update({ where: { id: eventId }, data: { colorOverride: JSON.stringify(override) } });
   revalidatePath(`/dashboard/events/${eventId}`);
-  revalidatePath(`/dashboard/events/${eventId}/design`);
   revalidatePath(`/e/${event.slug}`);
-  redirect(`/dashboard/events/${eventId}/design`);
+  redirect(`/dashboard/events/${eventId}`);
 }
 
 export async function resetDesign(eventId: string) {
   const { event } = await requireOwnedEvent(eventId);
   await prisma.event.update({ where: { id: eventId }, data: { colorOverride: null } });
   revalidatePath(`/dashboard/events/${eventId}`);
-  revalidatePath(`/dashboard/events/${eventId}/design`);
   revalidatePath(`/e/${event.slug}`);
-  redirect(`/dashboard/events/${eventId}/design`);
+  redirect(`/dashboard/events/${eventId}`);
 }
 
 export async function publishEvent(eventId: string) {

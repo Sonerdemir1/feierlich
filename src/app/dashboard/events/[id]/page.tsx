@@ -11,6 +11,8 @@ import {
   saveModules,
   publishEvent,
   gatedModuleKeys,
+  saveDesign,
+  resetDesign,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -104,6 +106,9 @@ export default async function EventDetailPage({
   }
   const pendingMemories = pendingGallery + pendingGuestbook;
   const canPublish = session!.user.role === "ADMIN" || event.order?.status === "PAID";
+  const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
+  const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
+  const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
   const aiDesignEventAddOn = aiDesignAddOn
     ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } })
     : null;
@@ -164,6 +169,52 @@ export default async function EventDetailPage({
         <a href={`/e/${event.slug}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
           {event.status === "PUBLISHED" ? "Seite ansehen" : "Vorschau ansehen"}
         </a>
+      </div>
+
+      {/* Design & Vorschau */}
+      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Design &amp; Vorschau</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Farben anpassen — die Vorschau rechts aktualisiert sich nach dem Speichern sofort.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+          <div style={{ flex: "0 0 260px", minWidth: 240 }}>
+            <form action={saveDesign.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+                Primär (Text)
+                <input type="color" name="primary" defaultValue={activeColors.primary} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+                Akzent
+                <input type="color" name="accent" defaultValue={activeColors.accent} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+                Hintergrund
+                <input type="color" name="background" defaultValue={activeColors.background} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
+              </label>
+              <button type="submit" className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+                Speichern
+              </button>
+            </form>
+            {hasColorOverride && (
+              <form action={resetDesign.bind(null, event.id)} style={{ marginTop: 8 }}>
+                <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12, width: "100%" }}>
+                  Zurücksetzen auf Vorlage
+                </button>
+              </form>
+            )}
+          </div>
+          <div style={{ flex: "1 1 360px", minWidth: 260 }}>
+            <div style={{ border: "1px solid var(--line)", height: 480, overflow: "hidden" }}>
+              <iframe
+                key={event.colorOverride ?? "default"}
+                title="Vorschau der Einladungsseite"
+                src={`/e/${event.slug}`}
+                style={{ width: "100%", height: "100%", border: "none" }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Titelbild */}
@@ -402,23 +453,6 @@ export default async function EventDetailPage({
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
-        <Link
-          href={`/dashboard/events/${event.id}/design`}
-          style={{
-            border: "1px solid var(--line)",
-            background: "var(--ivory-2)",
-            padding: "16px 18px",
-            fontSize: 13,
-            color: "var(--ink)",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span>Design &amp; Vorschau</span>
-          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
-        </Link>
         {aiTextConfigured && (
           <Link
             href={`/dashboard/events/${event.id}/text`}
