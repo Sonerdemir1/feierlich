@@ -339,7 +339,12 @@ export default async function EventDetailPage({
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>QR-Codes</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Zum Ausdrucken auf Einladung, Tischkarten oder Aushang.
+          Rohe QR-Codes zum direkten Download. Gestaltete Tisch-/Aufsteller-Karten mit Design-Auswahl (klassisch,
+          modern, opulent) gibt es auf der{" "}
+          <Link href={`/dashboard/events/${event.id}/seating`} style={{ color: "var(--terracotta-dark)" }}>
+            Sitzplan-Seite
+          </Link>
+          .
         </div>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           {[
