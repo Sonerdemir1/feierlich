@@ -516,7 +516,11 @@ a.card:hover {
   opacity: 1;
 }
 .tpl-prev {
-  height: 160px;
+  /* Portraetformat statt fester 160px-Hoehe — die echten Kartendesigns
+     (dugun-blanko/*.jpg, ~709x1000px) sind hochformatig; eine flache Box
+     mit background-size:cover schnitt bisher Kopf-/Fussbereich der Karte
+     weg (Bogen/Ornamente oben nicht sichtbar). */
+  aspect-ratio: 5 / 7;
   display: flex;
   flex-direction: column;
   align-items: center;
