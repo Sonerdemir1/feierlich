@@ -12,6 +12,7 @@ import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { fontOptionById } from "@/lib/fonts";
+import { recordEventView } from "@/lib/analytics";
 import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
@@ -80,6 +81,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
   if (!isOwner) {
     await prisma.event.update({ where: { id: event.id }, data: { viewCount: { increment: 1 } } });
+    await recordEventView(event.id);
   }
 
   const eventModules = await prisma.eventModule.findMany({ where: { eventId: event.id } });

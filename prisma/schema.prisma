@@ -238,6 +238,21 @@ model Event {
   aiDesignAttempts  AiDesignAttempt[]
   aiTextAttempts    AiTextAttempt[]
   seatingSuggestion SeatingSuggestion?
+  viewDays          EventViewDay[]
+}
+
+// Taegliche Aufrufe-Zaehler fuer den Trend-Chart im Dashboard — separat vom
+// laufenden Event.viewCount (bleibt die einfache Gesamtsumme), damit nicht
+// eine Zeile pro Aufruf entsteht, sondern hoechstens eine pro Event und Tag.
+model EventViewDay {
+  id      String   @id @default(cuid())
+  eventId String
+  date    DateTime // auf Tagesbeginn (UTC) normalisiert
+  count   Int      @default(0)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, date])
 }
 
 // pro Event an/aus geschaltete Module inkl. optionaler Konfiguration

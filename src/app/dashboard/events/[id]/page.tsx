@@ -25,6 +25,9 @@ import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { ELEMENT_SIZE_PRESETS, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey } from "@/lib/text-style";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
+import { getViewsTrend } from "@/lib/analytics";
+import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
+import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -96,16 +99,18 @@ export default async function EventDetailPage({
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
   const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns] = await Promise.all([
-    prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
-    prisma.eventModule.findMany({ where: { eventId: id } }),
-    prisma.galleryItem.count({ where: { eventId: id, status: "PENDING" } }),
-    prisma.guestbookEntry.count({ where: { eventId: id, status: "PENDING" } }),
-    prisma.addOn.findUnique({ where: { key: AI_DESIGN_ADDON_KEY } }),
-    prisma.aiDesignAttempt.count({ where: { eventId: id } }),
-    prisma.addOn.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.eventAddOn.findMany({ where: { eventId: id } }),
-  ]);
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend] =
+    await Promise.all([
+      prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
+      prisma.eventModule.findMany({ where: { eventId: id } }),
+      prisma.galleryItem.count({ where: { eventId: id, status: "PENDING" } }),
+      prisma.guestbookEntry.count({ where: { eventId: id, status: "PENDING" } }),
+      prisma.addOn.findUnique({ where: { key: AI_DESIGN_ADDON_KEY } }),
+      prisma.aiDesignAttempt.count({ where: { eventId: id } }),
+      prisma.addOn.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+      prisma.eventAddOn.findMany({ where: { eventId: id } }),
+      getViewsTrend(id),
+    ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const gatedKeys = await gatedModuleKeys(id);
   // Fuer die Anzeige: zu welchem (noch nicht bezahlten) AddOn gehoert ein
@@ -208,6 +213,27 @@ export default async function EventDetailPage({
         />
         <Tile label="Aufrufe" value={String(event.viewCount)} />
         <Tile label="QR-Codes" value="2" note="Eventseite · RSVP" />
+      </div>
+
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Statistik</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 18 }}>
+          Aufrufe der letzten 14 Tage und Zusage-Verteilung unter den Gästen.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 28 }}>
+          <div style={{ flex: "1 1 280px", minWidth: 240 }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.06em", color: "var(--ink-faint)", textTransform: "uppercase", marginBottom: 8 }}>
+              Aufrufe
+            </div>
+            <ViewsTrendChart data={viewsTrend.map((d) => ({ date: d.date.toISOString(), count: d.count }))} />
+          </div>
+          <div style={{ flex: "1 1 220px", minWidth: 200 }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.06em", color: "var(--ink-faint)", textTransform: "uppercase", marginBottom: 12 }}>
+              Zusagen
+            </div>
+            <RsvpBreakdownBar yes={yesCount} pending={unsureCount} no={noCount} />
+          </div>
+        </div>
       </div>
 
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
