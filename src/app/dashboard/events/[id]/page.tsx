@@ -363,9 +363,10 @@ export default async function EventDetailPage({
                   ))}
                 </div>
               </div>
-              <label className="customizer-toggle" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer" }}>
+              <label className="customizer-toggle">
                 <input type="checkbox" name="ornaments" defaultChecked={Boolean(activeStyle.ornaments)} />
-                Verzierungen (Eck-Ornamente) anzeigen
+                <span className="customizer-switch" aria-hidden="true" />
+                <span className="customizer-toggle-text">Verzierungen (Eck-Ornamente) anzeigen</span>
               </label>
 
               <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 4 }}>
