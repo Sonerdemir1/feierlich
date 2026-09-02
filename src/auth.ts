@@ -30,6 +30,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/login",
     verifyRequest: "/login/verify-request",
+    // Ohne eigene Fehlerseite landet ein bereits benutzter/abgelaufener
+    // Anmelde-Link auf Auth.js' eingebauter, unbrandeter Standardseite —
+    // fuer Kunden verwirrend ("es kommt eine Fehlermeldung").
+    error: "/login/error",
   },
   callbacks: {
     async session({ session, user }) {

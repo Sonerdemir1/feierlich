@@ -1,3 +1,5 @@
+import { emailSendingConfigured } from "@/lib/email";
+
 export default function VerifyRequestPage() {
   return (
     <main
@@ -18,9 +20,11 @@ export default function VerifyRequestPage() {
         <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.6 }}>
           Wir haben dir einen Anmelde-Link geschickt.
         </p>
-        <p style={{ fontSize: 12, color: "var(--ink-faint)", lineHeight: 1.6, marginTop: 16 }}>
-          Entwicklungsmodus: der Link wird noch nicht wirklich per E-Mail verschickt, sondern steht im Server-Terminal.
-        </p>
+        {!emailSendingConfigured && (
+          <p style={{ fontSize: 12, color: "var(--ink-faint)", lineHeight: 1.6, marginTop: 16 }}>
+            Entwicklungsmodus: der Link wird noch nicht wirklich per E-Mail verschickt, sondern steht im Server-Terminal.
+          </p>
+        )}
       </div>
     </main>
   );

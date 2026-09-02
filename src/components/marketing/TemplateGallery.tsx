@@ -357,11 +357,15 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
-                                justifyContent: "center",
+                                // Verteilt Label / Name / Datum+Ort ueber die
+                                // gesamte Sicherheitszone statt sie eng
+                                // zusammenzudraengen — nutzt den Freiraum,
+                                // den jede Karte unterschiedlich mitbringt.
+                                justifyContent: "space-evenly",
                                 textAlign: "center",
                               }}
                             >
-                              <div className="customizer-card-eyebrow" style={{ color: draft.accent }}>
+                              <div className="customizer-card-eyebrow" style={{ color: draft.accent, marginBottom: 0 }}>
                                 {draft.eventLabel || item.defaultEventLabel}
                               </div>
                               <div
@@ -376,7 +380,8 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               >
                                 {draft.text || item.defaultText}
                               </div>
-                              <div className="customizer-card-date" style={{ color: draft.primary, marginTop: 8 }}>
+                              <div>
+                              <div className="customizer-card-date" style={{ color: draft.primary, marginTop: 0, marginBottom: 6 }}>
                                 {draft.dateText || "Datum & Uhrzeit"}
                               </div>
                               <div className="customizer-card-location" style={{ color: draft.primary }}>
@@ -384,6 +389,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                   <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
                                 </svg>
                                 {draft.locationText || "Ort / Location eingeben"}
+                              </div>
                               </div>
                             </div>
                           </div>

@@ -180,29 +180,35 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
+                // Verteilt Anlass-Label / Name-Gruppe / Datum ueber die
+                // gesamte verfuegbare Hoehe der Sicherheitszone, statt sie
+                // eng zusammenzudraengen — nutzt den Freiraum, den jede
+                // Karte unterschiedlich viel mitbringt.
+                justifyContent: "space-evenly",
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent, marginBottom: 14 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent }}>
                 {event.eventType.name}
               </div>
-              <div
-                style={{
-                  fontFamily: headingFont,
-                  fontStyle: headingItalic ? "italic" : "normal",
-                  textTransform: headingUppercase ? "uppercase" : "none",
-                  fontWeight: 600,
-                  fontSize: "clamp(21px, 5.5vw, 30px)",
-                  color: colors.primary,
-                }}
-              >
-                {event.title}
+              <div>
+                <div
+                  style={{
+                    fontFamily: headingFont,
+                    fontStyle: headingItalic ? "italic" : "normal",
+                    textTransform: headingUppercase ? "uppercase" : "none",
+                    fontWeight: 600,
+                    fontSize: "clamp(21px, 5.5vw, 30px)",
+                    color: colors.primary,
+                  }}
+                >
+                  {event.title}
+                </div>
+                {event.subtitle && (
+                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary }}>{event.subtitle}</p>
+                )}
               </div>
-              {event.subtitle && (
-                <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary }}>{event.subtitle}</p>
-              )}
-              <div style={{ marginTop: 14, fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85 }}>
+              <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85 }}>
                 {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
                 {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
               </div>
