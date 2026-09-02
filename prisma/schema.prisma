@@ -204,6 +204,10 @@ model Event {
   locationLng     Float?
   coverImageId    String?
   colorOverride   String? // JSON-String, ueberschreibt Template.colors wenn gesetzt
+  // JSON-String, z.B. {"fontId":"playfair","ornaments":true} — echte
+  // Editor-Einstellungen fuer die oeffentliche Event-Seite (Schriftart,
+  // Eck-Ornamente), analog zu colorOverride. null = Template-Standard.
+  styleJson       String?
   viewCount       Int         @default(0)
   status          EventStatus @default(DRAFT)
   createdAt       DateTime    @default(now())

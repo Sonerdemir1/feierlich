@@ -140,6 +140,11 @@ const templates: Array<{
   colors: { primary: string; accent: string; background: string };
   fonts: { display: string; body: string };
   envelopeSequenceUrls?: string[];
+  // Vollflaechiges Karten-Design (echtes Foto/Kartenmotiv statt CSS-
+  // Nachbau) — wenn gesetzt, zeigen Vorschau-Kachel UND echte Event-Seite
+  // (/e/[slug]) das Bild als Rahmen mit Text in der freien Mitte, statt
+  // der generischen Farbflaeche.
+  previewUrl?: string;
 }> = [
   // Türkische Vorlagen stehen bewusst zuerst: Hauptzielgruppe ist Werbung
   // in tuerkischen Hochzeitssaelen. Nach Anlass unterkategorisiert (Düğün,
@@ -148,18 +153,71 @@ const templates: Array<{
   // muss zur Wahl stehen, nicht nur eine Richtung. Keine religiösen
   // Symbole; Muenzen/Granatapfel/Ornamentik/Kronen als saekulare,
   // dekorative Motive.
-  { slug: 'altin-sedef', name: 'Altın Sedef', category: 'Düğün', layoutKey: 'altin-sedef',
-    colors: { primary: '#FAF6EF', accent: '#E3B23C', background: '#5C0F1F' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
-  { slug: 'safir-davet', name: 'Safir Davet', category: 'Düğün', layoutKey: 'safir-davet',
-    colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#0B2447' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
-  { slug: 'ottoman-line', name: 'Ottoman Line', category: 'Düğün', layoutKey: 'ottoman-line',
-    colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#1B3A3E' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
-  { slug: 'zuemruet', name: 'Zümrüt', category: 'Düğün', layoutKey: 'zuemruet',
-    colors: { primary: '#FAF6EF', accent: '#D4AF37', background: '#0F3D2E' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  // Echte Karten-Designs (kein CSS-Nachbau) — 15 fertige "Blanko"-
+  // Einladungskarten (Kunde hat die Bilddateien bereitgestellt), decken die
+  // Bandbreite von opulent-gold bis zart-Aquarell ab. Ersetzen die
+  // vorherigen 4 CSS-Naeherungen (Altın Sedef, Safir Davet, Ottoman Line,
+  // Zümrüt) als "das sieht nach nichts aus"-Platzhalter.
+  { slug: 'dugun-01', name: 'Fildişi Saray', category: 'Düğün', layoutKey: 'dugun-01',
+    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FAF3E4' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-01.jpg' },
+  { slug: 'dugun-02', name: 'Altın Kemer', category: 'Düğün', layoutKey: 'dugun-02',
+    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FBF4E8' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-02.jpg' },
+  { slug: 'dugun-03', name: 'Altın Asma', category: 'Düğün', layoutKey: 'dugun-03',
+    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FBF3E8' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-03.jpg' },
+  { slug: 'dugun-04', name: 'Yeşil Taç', category: 'Düğün', layoutKey: 'dugun-04',
+    colors: { primary: '#FAF3E0', accent: '#D4AF6A', background: '#0B2A1E' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-04.jpg' },
+  { slug: 'dugun-05', name: 'Bordo Çerçeve', category: 'Düğün', layoutKey: 'dugun-05',
+    colors: { primary: '#5C1420', accent: '#C08A2E', background: '#F6ECD9' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-05.jpg' },
+  { slug: 'dugun-06', name: 'Lacivert Kemer', category: 'Düğün', layoutKey: 'dugun-06',
+    colors: { primary: '#16213E', accent: '#C9A24A', background: '#F5EDDC' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-06.jpg' },
+  { slug: 'dugun-07', name: 'Gül Kemeri', category: 'Düğün', layoutKey: 'dugun-07',
+    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FBF3E6' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-07.jpg' },
+  { slug: 'dugun-08', name: 'Zümrüt Gül', category: 'Düğün', layoutKey: 'dugun-08',
+    colors: { primary: '#FAF3E0', accent: '#D4AF6A', background: '#0B2A1E' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-08.jpg' },
+  { slug: 'dugun-09', name: 'Lacivert Nakış', category: 'Düğün', layoutKey: 'dugun-09',
+    colors: { primary: '#FAF3E0', accent: '#CBA135', background: '#101B36' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-09.jpg' },
+  { slug: 'dugun-11', name: 'Altın Yaprak', category: 'Düğün', layoutKey: 'dugun-11',
+    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FBF4E6' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-11.jpg' },
+  { slug: 'dugun-12', name: 'İnce Altın', category: 'Düğün', layoutKey: 'dugun-12',
+    colors: { primary: '#3A2E22', accent: '#BFA045', background: '#FCF6EC' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-12.jpg' },
+  { slug: 'dugun-14', name: 'Mavi Bahar', category: 'Düğün', layoutKey: 'dugun-14',
+    colors: { primary: '#3A362E', accent: '#7C8F86', background: '#FAF4E9' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-14.jpg' },
+  { slug: 'dugun-15', name: 'Pembe Bahar', category: 'Düğün', layoutKey: 'dugun-15',
+    colors: { primary: '#3A2E2E', accent: '#C98E92', background: '#FBF3EC' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-15.jpg' },
+  { slug: 'dugun-16', name: 'Çiçek Demeti', category: 'Düğün', layoutKey: 'dugun-16',
+    colors: { primary: '#3A2E2E', accent: '#C98E92', background: '#FBF2EA' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-16.jpg' },
+  { slug: 'dugun-17', name: 'Bahar Dalı', category: 'Düğün', layoutKey: 'dugun-17',
+    colors: { primary: '#3A2E2E', accent: '#C6878C', background: '#FBF2EA' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
+    previewUrl: '/images/templates/dugun-blanko/dugun-17.jpg' },
   // Erstes Template mit der EnvelopeReveal-Umschlag-Animation (siehe
   // src/components/marketing/EnvelopeReveal.tsx) — live sowohl in der
   // Galerie/Vorlagenauswahl (TemplatePreview.tsx) als auch auf der
@@ -348,18 +406,28 @@ async function main() {
       update: {
         name: t.name, category: t.category, layoutKey: t.layoutKey,
         colors: JSON.stringify(t.colors), fonts: JSON.stringify(t.fonts),
-        envelopeSequenceUrls,
+        envelopeSequenceUrls, previewUrl: t.previewUrl,
         status: 'ACTIVE', sortOrder: i,
       },
       create: {
         slug: t.slug, name: t.name, category: t.category, layoutKey: t.layoutKey,
         colors: JSON.stringify(t.colors), fonts: JSON.stringify(t.fonts),
-        envelopeSequenceUrls,
+        envelopeSequenceUrls, previewUrl: t.previewUrl,
         status: 'ACTIVE', sortOrder: i,
       },
     });
   }
   console.log(`Templates: ${templates.length} geseedet`);
+
+  // Durch echte Kartendesigns ersetzte CSS-Naeherungen — nicht loeschen
+  // (Fremdschluessel von bereits gewaehlten Events), nur aus der aktiven
+  // Auswahl nehmen.
+  const retiredSlugs = ['altin-sedef', 'safir-davet', 'ottoman-line', 'zuemruet'];
+  const { count: retiredCount } = await prisma.template.updateMany({
+    where: { slug: { in: retiredSlugs } },
+    data: { status: 'ARCHIVED' },
+  });
+  if (retiredCount > 0) console.log(`Templates archiviert (durch echte Kartendesigns ersetzt): ${retiredCount}`);
 }
 
 main()

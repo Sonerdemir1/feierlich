@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
+import { FONT_OPTIONS } from "@/lib/fonts";
 
 type Colors = { primary: string; accent: string; background: string };
 
@@ -37,17 +38,6 @@ function categorySlug(category: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
-
-type FontOption = { id: string; label: string; cssVar: string; italic?: boolean; uppercase?: boolean };
-
-const FONT_OPTIONS: FontOption[] = [
-  { id: "cormorant", label: "Cormorant", cssVar: "var(--font-display)", italic: true },
-  { id: "playfair", label: "Playfair", cssVar: "var(--font-playfair)" },
-  { id: "cinzel", label: "Cinzel", cssVar: "var(--font-cinzel)", uppercase: true },
-  { id: "script", label: "Skript", cssVar: "var(--font-script)" },
-  { id: "worksans", label: "Work Sans", cssVar: "var(--font-body)" },
-  { id: "poppins", label: "Poppins", cssVar: "var(--font-poppins)" },
-];
 
 type PhotoShape = "rect" | "circle" | "star" | "polaroid";
 

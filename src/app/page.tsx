@@ -29,7 +29,6 @@ function defaultTextForCategory(category: string): string {
 // Nachtfoto und Iznik-Fliesenmuster farblich zur jeweiligen Vorlage passen
 // statt immer denselben Ton zu haben.
 const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
-  "altin-sedef": { src: "/images/templates/bosphorus-night.jpg", tint: "92,15,31" },
   "kina-kirmizi": { src: "/images/templates/iznik-floral.jpg", tint: "122,20,40" },
   "kraliyet-moru": { src: "/images/templates/iznik-floral.jpg", tint: "46,26,71" },
   // Sünnet zeigt keine echten Zeremonie-Fotos (Kinder) — stattdessen dasselbe
@@ -396,12 +395,23 @@ export default async function Home() {
         <p>
           {t.footer.tagline}
           <br />
-          [KONTAKT E-MAIL] · © 2026 einladi
+          info@sonerdemir.de · © 2026 einladi
         </p>
+        <div style={{ display: "flex", gap: 16, marginTop: 14, fontSize: 12.5 }}>
+          <a href="/kontakt" style={{ color: "var(--terracotta-dark)" }}>
+            Kontakt
+          </a>
+          <a href="/impressum" style={{ color: "var(--terracotta-dark)" }}>
+            Impressum
+          </a>
+          <a href="/datenschutz" style={{ color: "var(--terracotta-dark)" }}>
+            Datenschutz
+          </a>
+        </div>
         {/* Pflicht-Namensnennung fuer die 3 neuen Kategorie-Fotos mit
             CC-BY/CC-BY-SA-Lizenz (nicht attributionsfrei wie Pexels) —
             die anderen Fotos auf der Seite sind CC0 und brauchen das nicht. */}
-        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 10 }}>
+        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 14 }}>
           Foto-Nachweise: Farn-Nahaufnahme © Cyron Ray Macey (CC BY 2.0) · Luftballons © D. Sharon Pruitt (CC BY 2.0)
           · Lounge © Basile Morin (CC BY-SA 4.0), via Wikimedia Commons.
         </p>

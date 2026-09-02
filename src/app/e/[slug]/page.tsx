@@ -9,6 +9,9 @@ import { GuestNameField } from "@/components/public/GuestNameField";
 import { FileField } from "@/components/public/FileField";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
+import { CornerMotif } from "@/components/marketing/TemplatePreview";
+import { fontOptionById } from "@/lib/fonts";
+import { cardTextZone } from "@/lib/card-frames";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -62,10 +65,26 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const templateColors: TemplateColors = JSON.parse(event.template.colors);
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
   const colors: TemplateColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
-  const headingFont = templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)";
+  const style: { fontId?: string; ornaments?: boolean } = event.styleJson ? JSON.parse(event.styleJson) : {};
+  // Echte Schriftart-Wahl aus dem Dashboard-Editor hat Vorrang — ohne
+  // gesetztes styleJson faellt es wie bisher auf die automatische
+  // Template-Schrift zurueck (Anzeige-/Textschrift des Templates gleich =
+  // Body-Schrift nutzen, sonst die Display-Schrift).
+  const chosenFont = fontOptionById(style.fontId);
+  const headingFont = chosenFont?.cssVar ?? (templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)");
+  const headingItalic = chosenFont ? Boolean(chosenFont.italic) : headingFont === "var(--font-display)";
+  const headingUppercase = Boolean(chosenFont?.uppercase);
+  const showOrnaments = Boolean(style.ornaments);
   const envelopeImages: string[] | null = event.template.envelopeSequenceUrls
     ? JSON.parse(event.template.envelopeSequenceUrls)
     : null;
+  // Echtes Karten-Design (siehe Template.previewUrl) — Kartenbild als
+  // Rahmen mit dem Text in der vorgesehenen freien Mitte, ersetzt die
+  // generische Farbflaeche. Hat Vorrang vor den Eck-Ornamenten (Motiv
+  // bringt seinen eigenen Rahmen schon mit).
+  const cardImageUrl = event.template.previewUrl;
+  const applyOrnamentFrame = showOrnaments && !cardImageUrl;
+  const textZone = cardTextZone(event.template.layoutKey);
 
   // Kommt von einem Tisch-QR-Code (/dashboard/events/[id]/qr/table/[tableId])
   // — eventId-Check verhindert, dass eine fremde tableId aus einem anderen
@@ -135,7 +154,61 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       <section style={{ padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
-        {envelopeImages ? (
+        <div style={applyOrnamentFrame ? { position: "relative", padding: "22px 18px" } : undefined}>
+        {applyOrnamentFrame && (
+          <>
+            <div style={{ position: "absolute", inset: 0, border: `1px solid ${colors.accent}` }} />
+            <div style={{ position: "absolute", inset: 6, border: `1px solid ${colors.accent}66` }} />
+            <CornerMotif color={colors.accent} corner="tl" />
+            <CornerMotif color={colors.accent} corner="tr" />
+            <CornerMotif color={colors.accent} corner="bl" />
+            <CornerMotif color={colors.accent} corner="br" />
+          </>
+        )}
+        {cardImageUrl ? (
+          <div style={{ position: "relative", maxWidth: 380, margin: "0 auto" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Kartengrafik mit variablem Seitenverhaeltnis je Design, kein fixes next/image-Format */}
+            <img
+              src={cardImageUrl}
+              alt=""
+              style={{ width: "100%", height: "auto", display: "block", borderRadius: "var(--radius)", boxShadow: "var(--shadow-md)" }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: `${textZone.top}% ${textZone.right}% ${textZone.bottom}% ${textZone.left}%`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent, marginBottom: 14 }}>
+                {event.eventType.name}
+              </div>
+              <div
+                style={{
+                  fontFamily: headingFont,
+                  fontStyle: headingItalic ? "italic" : "normal",
+                  textTransform: headingUppercase ? "uppercase" : "none",
+                  fontWeight: 600,
+                  fontSize: "clamp(21px, 5.5vw, 30px)",
+                  color: colors.primary,
+                }}
+              >
+                {event.title}
+              </div>
+              {event.subtitle && (
+                <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary }}>{event.subtitle}</p>
+              )}
+              <div style={{ marginTop: 14, fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85 }}>
+                {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+                {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+              </div>
+            </div>
+          </div>
+        ) : envelopeImages ? (
           <>
             <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
               {event.eventType.name}
@@ -146,7 +219,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   <div
                     style={{
                       fontFamily: headingFont,
-                      fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal",
+                      fontStyle: headingItalic ? "italic" : "normal",
+                      textTransform: headingUppercase ? "uppercase" : "none",
                       fontWeight: 600,
                       fontSize: "clamp(24px, 5vw, 34px)",
                       color: colors.primary,
@@ -168,7 +242,16 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
               {event.eventType.name}
             </div>
-            <h1 style={{ fontFamily: headingFont, fontStyle: headingFont === "var(--font-display)" ? "italic" : "normal", fontWeight: 600, fontSize: "clamp(34px, 6vw, 52px)", margin: 0 }}>
+            <h1
+              style={{
+                fontFamily: headingFont,
+                fontStyle: headingItalic ? "italic" : "normal",
+                textTransform: headingUppercase ? "uppercase" : "none",
+                fontWeight: 600,
+                fontSize: "clamp(34px, 6vw, 52px)",
+                margin: 0,
+              }}
+            >
               {event.title}
             </h1>
             {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12 }}>{event.subtitle}</p>}
@@ -185,6 +268,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <Countdown targetIso={event.eventDate.toISOString()} accent={colors.accent} />
           </div>
         )}
+        </div>
       </section>
 
       {event.coverImage && (

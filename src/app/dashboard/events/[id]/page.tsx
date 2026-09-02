@@ -13,11 +13,14 @@ import {
   gatedModuleKeys,
   saveDesign,
   resetDesign,
+  changeTemplate,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured } from "@/lib/ai-text";
 import { FileField } from "@/components/public/FileField";
+import { TemplatePreview } from "@/components/marketing/TemplatePreview";
+import { FONT_OPTIONS } from "@/lib/fonts";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -110,6 +113,16 @@ export default async function EventDetailPage({
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
+  const activeStyle: { fontId?: string; ornaments?: boolean } = event.styleJson ? JSON.parse(event.styleJson) : {};
+  const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
+
+  const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
+  const templatesByCategory = new Map<string, typeof allTemplates>();
+  for (const t of allTemplates) {
+    const list = templatesByCategory.get(t.category) ?? [];
+    list.push(t);
+    templatesByCategory.set(t.category, list);
+  }
   const aiDesignEventAddOn = aiDesignAddOn
     ? await prisma.eventAddOn.findUnique({ where: { eventId_addOnId: { eventId: id, addOnId: aiDesignAddOn.id } } })
     : null;
@@ -176,7 +189,7 @@ export default async function EventDetailPage({
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Design &amp; Vorschau</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Farben anpassen — die Vorschau rechts aktualisiert sich nach dem Speichern sofort.
+          Farben, Schriftart &amp; Verzierungen anpassen — die Vorschau rechts aktualisiert sich nach dem Speichern sofort.
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
           <div style={{ flex: "0 0 260px", minWidth: 240 }}>
@@ -193,11 +206,53 @@ export default async function EventDetailPage({
                 Hintergrund
                 <input type="color" name="background" defaultValue={activeColors.background} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
               </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+                Schriftart
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(74px, 1fr))", gap: 6 }}>
+                  <label className="customizer-font-btn" style={{ display: "block", cursor: "pointer", position: "relative" }}>
+                    <input
+                      type="radio"
+                      name="fontId"
+                      value=""
+                      defaultChecked={!activeStyle.fontId}
+                      style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                    />
+                    <span style={{ display: "block", fontFamily: "var(--font-display)", fontStyle: "italic" }}>Aa</span>
+                    <small style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 9.5, marginTop: 4 }}>Standard</small>
+                  </label>
+                  {FONT_OPTIONS.map((f) => (
+                    <label key={f.id} className="customizer-font-btn" style={{ display: "block", cursor: "pointer", position: "relative" }}>
+                      <input
+                        type="radio"
+                        name="fontId"
+                        value={f.id}
+                        defaultChecked={activeStyle.fontId === f.id}
+                        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+                      />
+                      <span
+                        style={{
+                          display: "block",
+                          fontFamily: f.cssVar,
+                          fontStyle: f.italic ? "italic" : "normal",
+                          textTransform: f.uppercase ? "uppercase" : "none",
+                        }}
+                      >
+                        Aa
+                      </span>
+                      <small style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 9.5, marginTop: 4 }}>{f.label}</small>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <label className="customizer-toggle" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer" }}>
+                <input type="checkbox" name="ornaments" defaultChecked={Boolean(activeStyle.ornaments)} />
+                Verzierungen (Eck-Ornamente) anzeigen
+              </label>
               <button type="submit" className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5 }}>
                 Speichern
               </button>
             </form>
-            {hasColorOverride && (
+            {(hasColorOverride || hasStyleOverride) && (
               <form action={resetDesign.bind(null, event.id)} style={{ marginTop: 8 }}>
                 <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12, width: "100%" }}>
                   Zurücksetzen auf Vorlage
@@ -208,7 +263,7 @@ export default async function EventDetailPage({
           <div style={{ flex: "1 1 360px", minWidth: 260 }}>
             <div className="card" style={{ height: 480, overflow: "hidden" }}>
               <iframe
-                key={event.colorOverride ?? "default"}
+                key={`${event.colorOverride ?? "default"}-${event.styleJson ?? "default"}`}
                 title="Vorschau der Einladungsseite"
                 src={`/e/${event.slug}`}
                 style={{ width: "100%", height: "100%", border: "none" }}
@@ -216,6 +271,39 @@ export default async function EventDetailPage({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Vorlage wechseln */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Vorlage</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 14 }}>
+          Aktuell: <strong>{event.template.name}</strong> ({event.template.category}). Beim Wechsel werden Farben,
+          Schriftart und Verzierungen auf die neue Vorlage zurückgesetzt.
+        </div>
+        <details>
+          <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+            Andere Vorlage wählen
+          </summary>
+          <form action={changeTemplate.bind(null, event.id)} style={{ marginTop: 16 }}>
+            {[...templatesByCategory.entries()].map(([category, items]) => (
+              <div key={category} style={{ marginBottom: 22 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--ink-soft)", marginBottom: 8 }}>{category}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10 }}>
+                  {items.map((t) => (
+                    <label key={t.id} className="tpl-pick">
+                      <input type="radio" name="templateId" value={t.id} defaultChecked={t.id === event.templateId} style={{ position: "absolute", opacity: 0 }} />
+                      <TemplatePreview layoutKey={t.layoutKey} />
+                      <div className="tpl-pick-label">{t.name}</div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5 }}>
+              Vorlage übernehmen
+            </button>
+          </form>
+        </details>
       </div>
 
       {/* Titelbild */}

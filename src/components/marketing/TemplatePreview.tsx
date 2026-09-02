@@ -369,22 +369,6 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           </svg>
         </div>
       );
-    case "ottoman-line":
-      return (
-        <div className="tpl-prev" style={{ background: "#1B3A3E" }}>
-          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="4" y="4" width="30" height="30" transform="rotate(15 19 19)" />
-            <rect x="4" y="4" width="30" height="30" transform="rotate(-15 19 19)" />
-          </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
-            Ayşe &amp; Emre
-          </div>
-          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", bottom: 14, right: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="4" y="4" width="30" height="30" transform="rotate(15 19 19)" />
-            <rect x="4" y="4" width="30" height="30" transform="rotate(-15 19 19)" />
-          </svg>
-        </div>
-      );
     case "nar-cicegi":
       return (
         <div className="tpl-prev" style={{ background: "#F7E3D9" }}>
@@ -397,31 +381,6 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           </svg>
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#7A2E3A" }}>
             Ayşe &amp; Emre
-          </div>
-        </div>
-      );
-    case "altin-sedef":
-      return (
-        <div
-          className="tpl-prev"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, rgba(92,15,31,0.5) 0%, rgba(92,15,31,0.72) 55%, rgba(92,15,31,0.92) 100%), url(/images/templates/bosphorus-night.jpg)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div style={{ position: "absolute", top: 8, left: 8, right: 8, bottom: 8, border: "2px solid #E3B23C" }} />
-          <div style={{ position: "absolute", top: 12, left: 12, right: 12, bottom: 12, border: "1px solid #E3B23C" }} />
-          <CornerMotif color="#E3B23C" corner="tl" />
-          <CornerMotif color="#E3B23C" corner="tr" />
-          <CornerMotif color="#E3B23C" corner="bl" />
-          <CornerMotif color="#E3B23C" corner="br" />
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
-            Ayşe &amp; Emre
-          </div>
-          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#E3B23C", marginTop: 8, zIndex: 1 }}>
-            DÜĞÜN
           </div>
         </div>
       );
@@ -441,16 +400,63 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#B9975B", marginTop: 8 }}>DÜĞÜN</div>
         </div>
       );
-    case "safir-davet":
+    // Echte "Blanko"-Kartendesigns (Kunde hat die fertigen Bilder
+    // bereitgestellt) — kein CSS-Nachbau: Kartenbild als Hintergrund,
+    // Brautpaar-Text mittig darueber. Textfarbe je nach Kartenmotiv hell
+    // (dunkle Karten) oder dunkel (helle/Elfenbein-Karten).
+    case "dugun-01":
+    case "dugun-02":
+    case "dugun-03":
+    case "dugun-07":
+    case "dugun-11":
+    case "dugun-12":
+    case "dugun-14":
+    case "dugun-15":
+    case "dugun-16":
+    case "dugun-17":
       return (
-        <div className="tpl-prev" style={{ background: "#0B2447" }}>
-          <svg width="160" height="160" viewBox="0 0 160 160" style={{ position: "absolute", inset: 0 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="14" y="14" width="132" height="132" />
-            <path d="M14 14 L34 34 M146 14 L126 34 M14 146 L34 126 M146 146 L126 126" />
-          </svg>
-          <CornerMotif color="#D4AF37" corner="tl" />
-          <CornerMotif color="#D4AF37" corner="br" />
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage: `url(/images/templates/dugun-blanko/${layoutKey}.jpg)`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#2E241A" }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "dugun-05":
+    case "dugun-06":
+      return (
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage: `url(/images/templates/dugun-blanko/${layoutKey}.jpg)`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#3B1620" }}>
+            Ayşe &amp; Emre
+          </div>
+        </div>
+      );
+    case "dugun-04":
+    case "dugun-08":
+    case "dugun-09":
+      return (
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage: `url(/images/templates/dugun-blanko/${layoutKey}.jpg)`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#FAF3E0" }}>
             Ayşe &amp; Emre
           </div>
         </div>
@@ -487,18 +493,6 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
             <path d="M20 4 L36 20 L20 36 L4 20 Z" />
           </svg>
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#5C1A2E" }}>
-            Ayşe &amp; Emre
-          </div>
-        </div>
-      );
-    case "zuemruet":
-      return (
-        <div className="tpl-prev" style={{ background: "#0F3D2E" }}>
-          <div style={{ position: "absolute", inset: 9, border: "1px solid #D4AF3766" }} />
-          <svg width="52" height="52" viewBox="0 0 52 52" style={{ position: "absolute", top: 14, left: 14 }} fill="none" stroke="#D4AF37" strokeWidth="1">
-            <rect x="4" y="4" width="30" height="30" transform="rotate(45 19 19)" />
-          </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "#FAF6EF", zIndex: 1 }}>
             Ayşe &amp; Emre
           </div>
         </div>

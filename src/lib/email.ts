@@ -14,6 +14,10 @@ export async function sendEmail(params: {
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
+  // Fuer das Kontaktformular: Absender-Adresse des Nutzers, damit der
+  // Betreiber direkt auf die Benachrichtigung antworten kann, statt die
+  // Adresse manuell aus dem Text kopieren zu muessen.
+  replyTo?: string;
 }): Promise<void> {
   if (!emailSendingConfigured) {
     console.log("\n──────────────────────────────────────────");
@@ -35,6 +39,7 @@ export async function sendEmail(params: {
       subject: params.subject,
       html: params.html,
       ...(params.attachments ? { attachments: params.attachments } : {}),
+      ...(params.replyTo ? { reply_to: params.replyTo } : {}),
     }),
   });
 

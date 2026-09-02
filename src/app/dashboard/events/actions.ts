@@ -315,7 +315,20 @@ export async function saveDesign(eventId: string, formData: FormData) {
     if (value) override[key] = value;
   }
 
-  await prisma.event.update({ where: { id: eventId }, data: { colorOverride: JSON.stringify(override) } });
+  // fontId/ornaments sind echte Editor-Einstellungen fuer die oeffentliche
+  // Event-Seite (siehe /e/[slug]/page.tsx), unabhaengig von den Farben —
+  // eigenes JSON-Feld statt in colorOverride mit reingemischt, damit beide
+  // unabhaengig voneinander zurueckgesetzt werden koennen.
+  const fontId = String(formData.get("fontId") ?? "").trim();
+  const ornaments = formData.get("ornaments") === "on";
+  const style: Record<string, unknown> = {};
+  if (fontId) style.fontId = fontId;
+  if (ornaments) style.ornaments = true;
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { colorOverride: JSON.stringify(override), styleJson: JSON.stringify(style) },
+  });
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);
@@ -323,10 +336,36 @@ export async function saveDesign(eventId: string, formData: FormData) {
 
 export async function resetDesign(eventId: string) {
   const { event } = await requireOwnedEvent(eventId);
-  await prisma.event.update({ where: { id: eventId }, data: { colorOverride: null } });
+  await prisma.event.update({ where: { id: eventId }, data: { colorOverride: null, styleJson: null } });
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);
+}
+
+// Vorlage jederzeit wechseln, statt nur bei Erstellung festzulegen (siehe
+// createEvent oben) — colorOverride/styleJson werden dabei zurueckgesetzt,
+// sonst blieben Farben/Schriftart der alten Vorlage haengen, die zur neuen
+// nicht mehr passen.
+export async function changeTemplate(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const templateId = String(formData.get("templateId") ?? "").trim();
+  if (!templateId || templateId === event.templateId) {
+    redirect(`/dashboard/events/${eventId}`);
+  }
+
+  const template = await prisma.template.findUnique({ where: { id: templateId } });
+  if (!template || template.status !== "ACTIVE") {
+    redirect(`/dashboard/events/${eventId}?error=template-not-found`);
+  }
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: { templateId, colorOverride: null, styleJson: null },
+  });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}?templateSaved=1`);
 }
 
 export async function publishEvent(eventId: string) {
