@@ -21,6 +21,7 @@ import { aiTextConfigured } from "@/lib/ai-text";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { FONT_OPTIONS } from "@/lib/fonts";
+import { ELEMENT_SIZE_PRESETS, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey } from "@/lib/text-style";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -113,7 +114,10 @@ export default async function EventDetailPage({
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
-  const activeStyle: { fontId?: string; ornaments?: boolean } = event.styleJson ? JSON.parse(event.styleJson) : {};
+  const activeStyle: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
+    ? JSON.parse(event.styleJson)
+    : {};
+  const TEXT_ELEMENT_KEYS: TextElementKey[] = ["title", "subtitle", "date", "description"];
   const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
 
   const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
@@ -248,6 +252,49 @@ export default async function EventDetailPage({
                 <input type="checkbox" name="ornaments" defaultChecked={Boolean(activeStyle.ornaments)} />
                 Verzierungen (Eck-Ornamente) anzeigen
               </label>
+
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 2 }}>Text-Feinsteuerung</div>
+                <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>
+                  Größe &amp; Farbe für jeden Text einzeln — Titel, Untertitel, Datum, Beschreibung.
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {TEXT_ELEMENT_KEYS.map((key) => {
+                    const el = activeStyle.elements?.[key];
+                    return (
+                      <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ flex: "1 1 auto", fontSize: 12, color: "var(--ink-soft)" }}>
+                          {TEXT_ELEMENT_LABELS[key]}
+                        </span>
+                        <select
+                          name={`${key}Size`}
+                          defaultValue={el?.size ?? "md"}
+                          style={{ padding: "7px 8px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 11.5 }}
+                        >
+                          {ELEMENT_SIZE_PRESETS[key].map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                        <label
+                          title="Eigene Farbe verwenden (sonst folgt der Text der globalen Primär-Farbe oben)"
+                          style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+                        >
+                          <input type="checkbox" name={`${key}ColorOn`} defaultChecked={Boolean(el?.color)} style={{ marginRight: 4 }} />
+                        </label>
+                        <input
+                          type="color"
+                          name={`${key}Color`}
+                          defaultValue={el?.color ?? activeColors.primary}
+                          style={{ width: 34, height: 30, border: "1px solid var(--line)", cursor: "pointer", padding: 0 }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <button type="submit" className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5 }}>
                 Speichern
               </button>

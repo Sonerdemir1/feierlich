@@ -12,6 +12,7 @@ import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { fontOptionById } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
+import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -65,7 +66,17 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const templateColors: TemplateColors = JSON.parse(event.template.colors);
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
   const colors: TemplateColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
-  const style: { fontId?: string; ornaments?: boolean } = event.styleJson ? JSON.parse(event.styleJson) : {};
+  const style: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
+    ? JSON.parse(event.styleJson)
+    : {};
+  // Pro-Element Groesse/Farbe (Titel/Untertitel/Datum/Beschreibung) —
+  // leeres Objekt {} wenn kein Override gesetzt ist, damit die
+  // bestehenden clamp()/opacity-Werte an den Einsatzstellen unangetastet
+  // bleiben (Object-Spread mit {} aendert nichts).
+  const titleOverride = elementOverrideStyle(style.elements, "title");
+  const subtitleOverride = elementOverrideStyle(style.elements, "subtitle");
+  const dateOverride = elementOverrideStyle(style.elements, "date");
+  const descriptionOverride = elementOverrideStyle(style.elements, "description");
   // Echte Schriftart-Wahl aus dem Dashboard-Editor hat Vorrang — ohne
   // gesetztes styleJson faellt es wie bisher auf die automatische
   // Template-Schrift zurueck (Anzeige-/Textschrift des Templates gleich =
@@ -200,15 +211,18 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                     fontWeight: 600,
                     fontSize: "clamp(21px, 5.5vw, 30px)",
                     color: colors.primary,
+                    ...titleOverride,
                   }}
                 >
                   {event.title}
                 </div>
                 {event.subtitle && (
-                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary }}>{event.subtitle}</p>
+                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>
+                    {event.subtitle}
+                  </p>
                 )}
               </div>
-              <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85 }}>
+              <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>
                 {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
                 {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
               </div>
@@ -230,18 +244,30 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                       fontWeight: 600,
                       fontSize: "clamp(24px, 5vw, 34px)",
                       color: colors.primary,
+                      ...titleOverride,
                     }}
                   >
                     {event.title}
                   </div>
-                  <div style={{ marginTop: 10, fontSize: 11.5, letterSpacing: "0.06em", color: colors.primary, opacity: 0.8 }}>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: 11.5,
+                      letterSpacing: "0.06em",
+                      color: colors.primary,
+                      opacity: 0.8,
+                      ...dateOverride,
+                    }}
+                  >
                     {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
                     {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
                   </div>
                 </div>
               </EnvelopeReveal>
             </div>
-            {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24 }}>{event.subtitle}</p>}
+            {event.subtitle && (
+              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
+            )}
           </>
         ) : (
           <>
@@ -256,13 +282,16 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 fontWeight: 600,
                 fontSize: "clamp(34px, 6vw, 52px)",
                 margin: 0,
+                ...titleOverride,
               }}
             >
               {event.title}
             </h1>
-            {event.subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12 }}>{event.subtitle}</p>}
+            {event.subtitle && (
+              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
+            )}
             <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
-            <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8 }}>
+            <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>
               {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
               {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
             </div>
@@ -286,7 +315,9 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
       {event.description && (
         <section style={{ maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-          <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line" }}>{event.description}</p>
+          <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
+            {event.description}
+          </p>
         </section>
       )}
 

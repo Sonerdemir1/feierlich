@@ -325,6 +325,21 @@ export async function saveDesign(eventId: string, formData: FormData) {
   if (fontId) style.fontId = fontId;
   if (ornaments) style.ornaments = true;
 
+  // Pro-Element Groesse/Farbe (Titel/Untertitel/Datum/Beschreibung) — siehe
+  // src/lib/text-style.ts. Nur nicht-"md"/nicht-leere Werte aufnehmen,
+  // gleiches Muster wie bei den Farben oben.
+  const elements: Record<string, { size?: string; color?: string }> = {};
+  for (const key of ["title", "subtitle", "date", "description"] as const) {
+    const size = String(formData.get(`${key}Size`) ?? "").trim();
+    const colorOn = formData.get(`${key}ColorOn`) === "on";
+    const color = colorOn ? String(formData.get(`${key}Color`) ?? "").trim() : "";
+    const entry: { size?: string; color?: string } = {};
+    if (size && size !== "md") entry.size = size;
+    if (color) entry.color = color;
+    if (entry.size || entry.color) elements[key] = entry;
+  }
+  if (Object.keys(elements).length > 0) style.elements = elements;
+
   await prisma.event.update({
     where: { id: eventId },
     data: { colorOverride: JSON.stringify(override), styleJson: JSON.stringify(style) },
