@@ -14,6 +14,7 @@ import {
   saveDesign,
   resetDesign,
   changeTemplate,
+  updateSlug,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -22,6 +23,7 @@ import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { ELEMENT_SIZE_PRESETS, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey } from "@/lib/text-style";
+import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -50,6 +52,8 @@ const uploadErrorLabel: Record<string, string> = {
   "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
   "addon-cancelled": "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
   "payment-required": "Bitte zuerst das Einladungs-Paket bezahlen, bevor das Event veröffentlicht werden kann.",
+  "slug-invalid": "Der Link muss mindestens 3 Zeichen haben (Buchstaben, Zahlen, Bindestriche).",
+  "slug-taken": "Dieser Link ist schon vergeben — bitte einen anderen wählen.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -142,6 +146,14 @@ export default async function EventDetailPage({
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
   const modulesSaved = sp.modulesSaved === "1";
+  const slugSaved = sp.slugSaved === "1";
+  // Gleiche Vorschaubild-Logik wie generateMetadata in /e/[slug] — eigenes
+  // Titelbild zuerst, sonst das Kartendesign der Vorlage, damit der Kunde
+  // hier sieht, was beim Teilen in WhatsApp/Facebook/Instagram ankommt.
+  const shareImage = event.coverImage?.url ?? event.template.previewUrl ?? null;
+  const shareUrl = `https://${publicHost()}/e/${event.slug}`;
+  const shareDescription =
+    event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`;
 
   return (
     <div>
@@ -166,6 +178,11 @@ export default async function EventDetailPage({
           Module gespeichert.
         </div>
       )}
+      {slugSaved && (
+        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Link gespeichert.
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 36 }}>
         <Tile label="Gäste" value={String(event.guests.length)} />
@@ -174,19 +191,98 @@ export default async function EventDetailPage({
         <Tile label="QR-Codes" value="2" note="Eventseite · RSVP" />
       </div>
 
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Öffentliche Event-Seite</div>
-          <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{publicHost()}/e/{event.slug}</div>
-          {event.status !== "PUBLISHED" && (
-            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
-              Nur du kannst sie schon jetzt als Vorschau sehen.
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Öffentliche Event-Seite</div>
+            <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{publicHost()}/e/{event.slug}</div>
+            {event.status !== "PUBLISHED" && (
+              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 6 }}>
+                Nur du kannst sie schon jetzt als Vorschau sehen.
+              </div>
+            )}
+          </div>
+          <a href={`/e/${event.slug}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+            {event.status === "PUBLISHED" ? "Seite ansehen" : "Vorschau ansehen"}
+          </a>
+        </div>
+
+        <details style={{ marginTop: 14 }}>
+          <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+            Link bearbeiten
+          </summary>
+          <form
+            action={updateSlug.bind(null, event.id)}
+            style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginTop: 12 }}
+          >
+            <span style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>{publicHost()}/e/</span>
+            <input
+              type="text"
+              name="slug"
+              defaultValue={event.slug}
+              minLength={3}
+              required
+              style={{ flex: "1 1 180px", padding: "9px 11px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13 }}
+            />
+            <button type="submit" className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5 }}>
+              Speichern
+            </button>
+          </form>
+          <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6 }}>
+            Nur Buchstaben, Zahlen und Bindestriche. Bestehende QR-Codes und geteilte Links zeigen danach ins Leere —
+            am besten vor dem ersten Teilen festlegen.
+          </div>
+        </details>
+
+        <div style={{ borderTop: "1px solid var(--line)", marginTop: 18, paddingTop: 16 }}>
+          <div style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-faint)", marginBottom: 10 }}>
+            So sieht der Link aus, wenn du ihn teilst
+          </div>
+          <div style={{ display: "flex", gap: 12, border: "1px solid var(--line)", background: "var(--ivory-2)", padding: 12, maxWidth: 420 }}>
+            {shareImage && (
+              // eslint-disable-next-line @next/next/no-img-element -- Titelbild/Kartendesign, variables Seitenverhaeltnis
+              <img src={shareImage} alt="" style={{ width: 56, height: 56, objectFit: "cover", flexShrink: 0, border: "1px solid var(--line)" }} />
+            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {event.title} – einladi
+              </div>
+              <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                {shareDescription}
+              </div>
+              <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                {publicHost()}
+              </div>
+            </div>
+          </div>
+
+          {event.status === "PUBLISHED" && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`${event.title} 💌 ${shareUrl}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost"
+                style={{ padding: "8px 14px", fontSize: 12 }}
+              >
+                WhatsApp
+              </a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost"
+                style={{ padding: "8px 14px", fontSize: 12 }}
+              >
+                Facebook
+              </a>
+              <CopyLinkButton url={shareUrl} className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }} />
+              <span style={{ fontSize: 11, color: "var(--ink-faint)", alignSelf: "center" }}>
+                Instagram &amp; Story: Link kopieren, dann in der Bio oder als Sticker einfügen.
+              </span>
             </div>
           )}
         </div>
-        <a href={`/e/${event.slug}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
-          {event.status === "PUBLISHED" ? "Seite ansehen" : "Vorschau ansehen"}
-        </a>
       </div>
 
       {/* Design & Vorschau */}

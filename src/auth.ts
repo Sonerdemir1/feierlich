@@ -3,6 +3,32 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Nodemailer from "next-auth/providers/nodemailer";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
+import { Prisma } from "@/generated/prisma/client";
+
+// PrismaAdapter loescht beim Einloggen die alte Session, die zum Browser-
+// Cookie gehoert (Session-Rotation). Existiert diese DB-Zeile nicht mehr
+// (z.B. weil sie schon abgelaufen/aufgeraeumt wurde, aber der Cookie noch
+// im Browser lag), wirft Prisma "P2025 record not found" und der komplette
+// Login schlaegt mit einer Fehlermeldung fehl — obwohl aus Nutzersicht
+// gar nichts falsch gemacht wurde ("beim zweiten Mal funktioniert es
+// nicht"). deleteSession/deleteUser hier idempotent gemacht: eine bereits
+// fehlende Zeile ist kein Fehler, das Ziel (Zeile weg) ist ja erreicht.
+function tolerantAdapter(adapter: ReturnType<typeof PrismaAdapter>): typeof adapter {
+  const originalDeleteSession = adapter.deleteSession?.bind(adapter);
+  if (originalDeleteSession) {
+    adapter.deleteSession = (async (sessionToken: string) => {
+      try {
+        return await originalDeleteSession(sessionToken);
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+          return undefined;
+        }
+        throw error;
+      }
+    }) as typeof adapter.deleteSession;
+  }
+  return adapter;
+}
 
 const emailProvider = Nodemailer({
   // Required by the provider's validation even though it's unused —
@@ -19,14 +45,19 @@ const emailProvider = Nodemailer({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: tolerantAdapter(PrismaAdapter(prisma)),
   // Ohne dies lehnt Auth.js in production ausserhalb von Vercel/Cloudflare
   // Pages Requests als "untrusted host" ab (es kennt Railway/Render/Fly
   // nicht automatisch). Unbedenklich hier: die App laeuft nur unter der
   // eigenen Domain, kein Multi-Tenant-Host-Szenario.
   trustHost: true,
   providers: [emailProvider],
-  session: { strategy: "database" },
+  // 60 statt der Auth.js-Standard-30-Tage: Kunden bearbeiten ihre
+  // Einladung ueber Wochen/Monate hinweg immer wieder — jedes Mal per
+  // E-Mail-Link neu anmelden zu muessen ("muss einfacher sein"), ist bei
+  // einem Hochzeits-/Feier-Tool unnoetige Reibung, kein Sicherheitsrisiko
+  // wie bei sensibleren Anwendungen.
+  session: { strategy: "database", maxAge: 60 * 24 * 60 * 60 },
   pages: {
     signIn: "/login",
     verifyRequest: "/login/verify-request",

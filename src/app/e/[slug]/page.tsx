@@ -31,12 +31,36 @@ export async function generateMetadata({ params }: PageProps<"/e/[slug]">): Prom
   const event = await getEvent(slug);
   // Persoenliche Einladungsseiten sind privat (per Link/QR geteilt) — nie
   // fuer Suchmaschinen bestimmt, unabhaengig vom Veroeffentlichungsstatus.
+  // Betrifft nur die Google/Bing-Indexierung — WhatsApp/Facebook/Instagram
+  // lesen die Open-Graph-Daten unten trotzdem fuer die Link-Vorschau aus.
   const robots = { index: false, follow: false };
   if (!event) return { robots };
+  const title = `${event.title} – einladi`;
+  const description =
+    event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`;
+  // Eigenes Titelbild hat Vorrang (am persoenlichsten), sonst das
+  // Kartendesign der Vorlage als Vorschaubild — beides sorgt dafuer, dass
+  // der Link in WhatsApp/Instagram/Facebook nicht ohne Bild ankommt.
+  const previewImage = event.coverImage?.url ?? event.template.previewUrl ?? undefined;
   return {
-    title: `${event.title} – einladi`,
-    description: event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`,
+    title,
+    description,
     robots,
+    openGraph: {
+      title,
+      description,
+      url: `/e/${event.slug}`,
+      siteName: "einladi",
+      locale: "de_DE",
+      type: "website",
+      images: previewImage ? [{ url: previewImage }] : undefined,
+    },
+    twitter: {
+      card: previewImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: previewImage ? [previewImage] : undefined,
+    },
   };
 }
 

@@ -38,7 +38,8 @@ export default function LoginPage() {
           Anmelden
         </h1>
         <p style={{ fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.6, marginBottom: 24 }}>
-          Gib deine E-Mail-Adresse ein — wir schicken dir einen Anmelde-Link, kein Passwort nötig.
+          Gib deine E-Mail-Adresse ein — wir schicken dir einen Anmelde-Link, kein Passwort nötig. Danach bleibst du
+          auf diesem Gerät angemeldet, ohne dich jedes Mal neu einzuloggen.
         </p>
         <form action={login} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input

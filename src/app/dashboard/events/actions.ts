@@ -44,6 +44,15 @@ function slugify(title: string): string {
   return `${base || "event"}-${suffix}`;
 }
 
+function sanitizeSlug(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -403,4 +412,29 @@ export async function publishEvent(eventId: string) {
   await prisma.event.update({ where: { id: eventId }, data: { status: "PUBLISHED" } });
   revalidatePath(`/dashboard/events/${eventId}`);
   redirect(`/dashboard/events/${eventId}`);
+}
+
+// Eigener Link-Name statt des zufaellig generierten Vorschlags aus
+// createEvent (slugify oben) — Kunden-Feedback (Konkurrenz-Screenshot
+// "Davetiye Linkinizi Oluşturun") wollte den Link selbst waehlen koennen,
+// bevor er geteilt wird.
+export async function updateSlug(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+  const clean = sanitizeSlug(String(formData.get("slug") ?? ""));
+
+  if (!clean || clean.length < 3) {
+    redirect(`/dashboard/events/${eventId}?error=slug-invalid`);
+  }
+  if (clean === event.slug) {
+    redirect(`/dashboard/events/${eventId}`);
+  }
+  const existing = await prisma.event.findUnique({ where: { slug: clean } });
+  if (existing) {
+    redirect(`/dashboard/events/${eventId}?error=slug-taken`);
+  }
+
+  await prisma.event.update({ where: { id: eventId }, data: { slug: clean } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${clean}`);
+  redirect(`/dashboard/events/${eventId}?slugSaved=1`);
 }
