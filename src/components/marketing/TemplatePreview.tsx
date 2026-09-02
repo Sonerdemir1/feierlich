@@ -406,14 +406,11 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
     // (dunkle Karten) oder dunkel (helle/Elfenbein-Karten).
     case "dugun-01":
     case "dugun-02":
-    case "dugun-03":
     case "dugun-07":
     case "dugun-11":
     case "dugun-12":
     case "dugun-14":
     case "dugun-15":
-    case "dugun-16":
-    case "dugun-17":
       return (
         <div
           className="tpl-prev"

@@ -166,10 +166,6 @@ const templates: Array<{
     colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FBF4E8' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
     previewUrl: '/images/templates/dugun-blanko/dugun-02.jpg' },
-  { slug: 'dugun-03', name: 'Altın Asma', category: 'Düğün', layoutKey: 'dugun-03',
-    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FBF3E8' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
-    previewUrl: '/images/templates/dugun-blanko/dugun-03.jpg' },
   { slug: 'dugun-04', name: 'Yeşil Taç', category: 'Düğün', layoutKey: 'dugun-04',
     colors: { primary: '#FAF3E0', accent: '#D4AF6A', background: '#0B2A1E' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
@@ -210,14 +206,6 @@ const templates: Array<{
     colors: { primary: '#3A2E2E', accent: '#C98E92', background: '#FBF3EC' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
     previewUrl: '/images/templates/dugun-blanko/dugun-15.jpg' },
-  { slug: 'dugun-16', name: 'Çiçek Demeti', category: 'Düğün', layoutKey: 'dugun-16',
-    colors: { primary: '#3A2E2E', accent: '#C98E92', background: '#FBF2EA' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
-    previewUrl: '/images/templates/dugun-blanko/dugun-16.jpg' },
-  { slug: 'dugun-17', name: 'Bahar Dalı', category: 'Düğün', layoutKey: 'dugun-17',
-    colors: { primary: '#3A2E2E', accent: '#C6878C', background: '#FBF2EA' },
-    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
-    previewUrl: '/images/templates/dugun-blanko/dugun-17.jpg' },
   // Erstes Template mit der EnvelopeReveal-Umschlag-Animation (siehe
   // src/components/marketing/EnvelopeReveal.tsx) — live sowohl in der
   // Galerie/Vorlagenauswahl (TemplatePreview.tsx) als auch auf der
@@ -421,8 +409,9 @@ async function main() {
 
   // Durch echte Kartendesigns ersetzte CSS-Naeherungen — nicht loeschen
   // (Fremdschluessel von bereits gewaehlten Events), nur aus der aktiven
-  // Auswahl nehmen.
-  const retiredSlugs = ['altin-sedef', 'safir-davet', 'ottoman-line', 'zuemruet'];
+  // Auswahl nehmen. dugun-03/16/17 waren zu aehnlich zu dugun-02/15 (Kunden-
+  // Feedback) und wurden ebenfalls zurueckgezogen.
+  const retiredSlugs = ['altin-sedef', 'safir-davet', 'ottoman-line', 'zuemruet', 'dugun-03', 'dugun-16', 'dugun-17'];
   const { count: retiredCount } = await prisma.template.updateMany({
     where: { slug: { in: retiredSlugs } },
     data: { status: 'ARCHIVED' },

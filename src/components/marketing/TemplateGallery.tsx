@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
 import { FONT_OPTIONS } from "@/lib/fonts";
+import { cardTextZone } from "@/lib/card-frames";
 
 type Colors = { primary: string; accent: string; background: string };
 
@@ -17,6 +18,10 @@ export type GalleryTemplate = {
   defaultText: string;
   defaultEventLabel: string;
   photoBackground: { src: string; tint: string } | null;
+  // Echtes Kartendesign (Template.previewUrl) — wenn gesetzt, zeigt der
+  // Customizer das Kartenbild statt des generischen CSS-Rahmens, analog
+  // zur echten Event-Seite (/e/[slug]).
+  cardImageUrl: string | null;
 };
 
 export type GalleryCategory = {
@@ -313,6 +318,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
           const { item, category } = activeEntry;
           const draft = draftFor(item);
           const font = FONT_OPTIONS.find((f) => f.id === draft.fontId) ?? FONT_OPTIONS[0];
+          const zone = item.cardImageUrl ? cardTextZone(item.layoutKey) : null;
 
           return (
             <div className="tpl-overlay" onClick={(e) => e.target === e.currentTarget && closeOverlay()}>
@@ -340,6 +346,49 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                       }}
                     >
                       <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
+                        {item.cardImageUrl && zone ? (
+                          <div style={{ position: "relative", margin: "-26px -20px 18px", width: "calc(100% + 40px)" }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element -- feste Kartengrafik mit variablem Seitenverhaeltnis je Design */}
+                            <img src={item.cardImageUrl} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: `${zone.top}% ${zone.right}% ${zone.bottom}% ${zone.left}%`,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                textAlign: "center",
+                              }}
+                            >
+                              <div className="customizer-card-eyebrow" style={{ color: draft.accent }}>
+                                {draft.eventLabel || item.defaultEventLabel}
+                              </div>
+                              <div
+                                className="customizer-card-name"
+                                style={{
+                                  fontFamily: font.cssVar,
+                                  fontStyle: font.italic ? "italic" : "normal",
+                                  textTransform: font.uppercase ? "uppercase" : "none",
+                                  fontSize: draft.fontSize,
+                                  color: draft.primary,
+                                }}
+                              >
+                                {draft.text || item.defaultText}
+                              </div>
+                              <div className="customizer-card-date" style={{ color: draft.primary, marginTop: 8 }}>
+                                {draft.dateText || "Datum & Uhrzeit"}
+                              </div>
+                              <div className="customizer-card-location" style={{ color: draft.primary }}>
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
+                                  <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
+                                </svg>
+                                {draft.locationText || "Ort / Location eingeben"}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
                             {draft.showFloral && !(item.photoBackground && draft.showPhotoBackground) && (
                               <svg
                                 className="customizer-card-floral"
@@ -427,6 +476,8 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                               </svg>
                               {draft.locationText || "Ort / Location eingeben"}
                             </div>
+                          </>
+                        )}
 
                             {draft.showCountdown && (
                               <div className="customizer-card-countdown">

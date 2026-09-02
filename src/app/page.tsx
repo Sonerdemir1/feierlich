@@ -130,6 +130,7 @@ export default async function Home() {
       defaultText: defaultTextForCategory(category),
       defaultEventLabel: defaultEventLabelForCategory(category),
       photoBackground: PHOTO_BACKGROUND[t.layoutKey] ?? null,
+      cardImageUrl: t.previewUrl,
     })),
   }));
 
@@ -192,12 +193,21 @@ export default async function Home() {
         <div className="cat-nav-grid">
           {galleryCategories.map(({ category, items }) => {
             const photo = items.find((i) => i.photoBackground)?.photoBackground;
+            // Düğün hat keine ambient-getönten Fotos (PHOTO_BACKGROUND) mehr,
+            // sondern echte Kartendesigns (cardImageUrl) — die Karte selbst
+            // eignet sich als Kachel-Hintergrund genauso gut.
+            const cardImage = items.find((i) => i.cardImageUrl)?.cardImageUrl;
+            const tileBg = photo
+              ? { backgroundImage: `url(${photo.src})` }
+              : cardImage
+                ? { backgroundImage: `url(${cardImage})` }
+                : { background: "var(--ivory-2)" };
             return (
               <a
                 key={category}
                 href={`#cat-${categorySlug(category)}`}
                 className="cat-nav-tile"
-                style={photo ? { backgroundImage: `url(${photo.src})` } : { background: "var(--ivory-2)" }}
+                style={tileBg}
               >
                 <span>{category}</span>
               </a>
