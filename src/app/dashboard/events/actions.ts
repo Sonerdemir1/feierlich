@@ -311,6 +311,26 @@ export async function saveModules(eventId: string, formData: FormData) {
   redirect(`/dashboard/events/${eventId}?modulesSaved=1`);
 }
 
+// Modul-spezifische Konfiguration ("thank-you-card") liegt im generischen
+// EventModule.config-JSON-Feld — gleiches Muster wie Event.colorOverride,
+// keine eigene Spalte noetig.
+export async function saveThankYouCard(eventId: string, formData: FormData) {
+  await requireOwnedEvent(eventId);
+
+  const message = String(formData.get("thankYouMessage") ?? "").trim().slice(0, 500);
+  const thankYouModule = await prisma.module.findUnique({ where: { key: "thank-you-card" } });
+  if (!thankYouModule) redirect(`/dashboard/events/${eventId}`);
+
+  await prisma.eventModule.upsert({
+    where: { eventId_moduleId: { eventId, moduleId: thankYouModule.id } },
+    update: { config: message ? JSON.stringify({ message }) : null },
+    create: { eventId, moduleId: thankYouModule.id, enabled: true, config: message ? JSON.stringify({ message }) : null },
+  });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  redirect(`/dashboard/events/${eventId}?thankYouSaved=1`);
+}
+
 export async function saveDesign(eventId: string, formData: FormData) {
   const { event } = await requireOwnedEvent(eventId);
 

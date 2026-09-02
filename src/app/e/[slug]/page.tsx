@@ -15,6 +15,7 @@ import { fontOptionById } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
+import { isPast } from "@/lib/time";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -88,6 +89,22 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     if (!m) return false;
     return enabled.get(m.id) ?? true;
   };
+  const moduleConfig = (key: string): Record<string, unknown> => {
+    const m = modules.find((mm) => mm.key === key);
+    const em = m ? eventModules.find((e) => e.moduleId === m.id) : undefined;
+    if (!em?.config) return {};
+    try {
+      return JSON.parse(em.config);
+    } catch {
+      return {};
+    }
+  };
+  // Die Dankeskarte ist inhaltlich erst nach dem Event sinnvoll ("danke,
+  // dass ihr da wart") — kein separater Versand-Schritt noetig (passt zum
+  // Einseiten-Prinzip), sie erscheint einfach automatisch sobald das
+  // Datum vorbei ist.
+  const isPastEvent = isPast(event.eventDate);
+  const thankYouMessage = String(moduleConfig("thank-you-card").message ?? "").trim();
 
   const templateColors: TemplateColors = JSON.parse(event.template.colors);
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
@@ -601,6 +618,18 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 </button>
               </form>
             )}
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("thank-you-card") && isPastEvent && (
+        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "32px 28px", textAlign: "center" }}>
+            <div style={{ fontSize: 22, marginBottom: 10, color: colors.accent }}>♥</div>
+            <div style={{ fontFamily: headingFont, fontSize: 19, marginBottom: 12 }}>Danke euch von Herzen</div>
+            <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85 }}>
+              {thankYouMessage || `Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
+            </p>
           </div>
         </section>
       )}

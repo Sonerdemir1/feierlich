@@ -15,6 +15,7 @@ import {
   resetDesign,
   changeTemplate,
   updateSlug,
+  saveThankYouCard,
 } from "../actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -93,6 +94,7 @@ export default async function EventDetailPage({
 
   const yesCount = event.guests.filter((g) => g.rsvp?.status === "YES").length;
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
+  const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
   const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns] = await Promise.all([
     prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
@@ -147,6 +149,10 @@ export default async function EventDetailPage({
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
   const modulesSaved = sp.modulesSaved === "1";
   const slugSaved = sp.slugSaved === "1";
+  const thankYouSaved = sp.thankYouSaved === "1";
+  const thankYouModuleId = allModules.find((m) => m.key === "thank-you-card")?.id;
+  const thankYouModule = thankYouModuleId ? eventModules.find((em) => em.moduleId === thankYouModuleId) : undefined;
+  const thankYouMessage: string = thankYouModule?.config ? (JSON.parse(thankYouModule.config).message ?? "") : "";
   // Gleiche Vorschaubild-Logik wie generateMetadata in /e/[slug] — eigenes
   // Titelbild zuerst, sonst das Kartendesign der Vorlage, damit der Kunde
   // hier sieht, was beim Teilen in WhatsApp/Facebook/Instagram ankommt.
@@ -183,10 +189,23 @@ export default async function EventDetailPage({
           Link gespeichert.
         </div>
       )}
+      {thankYouSaved && (
+        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Dankeskarte gespeichert.
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 36 }}>
         <Tile label="Gäste" value={String(event.guests.length)} />
-        <Tile label="Zusagen" value={String(yesCount)} note={noCount > 0 ? `${noCount} Absagen` : undefined} />
+        <Tile
+          label="Zusagen"
+          value={String(yesCount)}
+          note={
+            [noCount > 0 ? `${noCount} Absagen` : null, unsureCount > 0 ? `${unsureCount} unsicher` : null]
+              .filter(Boolean)
+              .join(" · ") || undefined
+          }
+        />
         <Tile label="Aufrufe" value={String(event.viewCount)} />
         <Tile label="QR-Codes" value="2" note="Eventseite · RSVP" />
       </div>
@@ -578,6 +597,30 @@ export default async function EventDetailPage({
           </button>
         </form>
       </div>
+
+      {/* Dankeskarte */}
+      {thankYouModuleId && (
+        <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Digitale Dankeskarte</div>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+            Erscheint automatisch für eure Gäste auf der Event-Seite, sobald das Datum vorbei ist — kein separater
+            Versand nötig. Ohne eigenen Text wird ein Standard-Dank angezeigt.
+          </div>
+          <form action={saveThankYouCard.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <textarea
+              name="thankYouMessage"
+              defaultValue={thankYouMessage}
+              placeholder={`Von Herzen: Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
+              rows={3}
+              maxLength={500}
+              style={{ padding: "11px 13px", border: "1px solid var(--line)", background: "var(--ivory-2)", color: "var(--ink)", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
+            />
+            <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5, alignSelf: "flex-start" }}>
+              Dankeskarte speichern
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Zusatzpakete */}
       {otherAddOns.length > 0 && (
