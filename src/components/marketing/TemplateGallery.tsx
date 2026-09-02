@@ -121,6 +121,17 @@ const FEATURE_TIER: Record<string, string> = {
   "video-invitation": "VIP",
 };
 
+// Preise der Pakete, die die Tiers oben freischalten (aus prisma/seed.ts,
+// gleiches Wartungsmuster wie FEATURE_TIER) — der Kunde soll beim Anhaken
+// direkt sehen, was ihn das kostet, statt nur einen Tier-Namen ohne Preis.
+const TIER_PRICE: Record<string, number> = {
+  Basic: 4900,
+  Premium: 9900,
+  "Premium Plus": 14900,
+  VIP: 29900,
+};
+const TIER_ORDER = ["Basic", "Premium", "Premium Plus", "VIP"];
+
 // Zusaetzliche VIP-Funktionen, kompakt als Chips statt als eigene grosse
 // Kartenabschnitte — sonst waechst die Karte ins Unendliche. Countdown,
 // Zusagen, Sitzplan und Galerie bleiben die einzigen mit eigenem grossen
@@ -319,6 +330,28 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
           const draft = draftFor(item);
           const font = FONT_OPTIONS.find((f) => f.id === draft.fontId) ?? FONT_OPTIONS[0];
           const zone = item.cardImageUrl ? cardTextZone(item.layoutKey) : null;
+
+          // Vereinheitlicht die vier fest benannten Umschalter
+          // (Countdown/Zusagen/Sitzplan/Galerie) und die EXTRA_FEATURES zu
+          // einer Liste, damit sie zusammen nach Paket gruppiert werden
+          // koennen — der Kunde soll den Preis einmal pro Paket sehen,
+          // nicht raten muessen, was "ab VIP" kostet.
+          const toggleItems: { key: string; label: string; checked: boolean; onChange: (v: boolean) => void }[] = [
+            { key: "countdown", label: "Countdown", checked: draft.showCountdown, onChange: (v) => updateDraft(item, { showCountdown: v }) },
+            { key: "rsvp", label: "Zusagen-Bereich", checked: draft.showRsvp, onChange: (v) => updateDraft(item, { showRsvp: v }) },
+            { key: "seating", label: "Sitzplan-Suche", checked: draft.showSeating, onChange: (v) => updateDraft(item, { showSeating: v }) },
+            { key: "gallery", label: "Foto- & Videogalerie", checked: draft.showGallery, onChange: (v) => updateDraft(item, { showGallery: v }) },
+            ...EXTRA_FEATURES.map((f) => ({
+              key: f.key,
+              label: f.label,
+              checked: draft.extraFeatures[f.key] ?? true,
+              onChange: (v: boolean) => updateDraft(item, { extraFeatures: { ...draft.extraFeatures, [f.key]: v } }),
+            })),
+          ];
+          const toggleGroups = TIER_ORDER.map((tier) => ({
+            tier,
+            items: toggleItems.filter((t) => FEATURE_TIER[t.key] === tier),
+          })).filter((g) => g.items.length > 0);
 
           return (
             <div className="tpl-overlay" onClick={(e) => e.target === e.currentTarget && closeOverlay()}>
@@ -776,6 +809,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 checked={draft.showFloral}
                                 onChange={(e) => updateDraft(item, { showFloral: e.target.checked })}
                               />
+                              <span className="customizer-switch" aria-hidden="true" />
                               Floral-Muster
                             </label>
                             <label className="customizer-toggle">
@@ -784,6 +818,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                 checked={draft.showOrnaments}
                                 onChange={(e) => updateDraft(item, { showOrnaments: e.target.checked })}
                               />
+                              <span className="customizer-switch" aria-hidden="true" />
                               Eck-Ornamente &amp; Streumuster
                             </label>
                             {item.photoBackground && (
@@ -793,6 +828,7 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
                                   checked={draft.showPhotoBackground}
                                   onChange={(e) => updateDraft(item, { showPhotoBackground: e.target.checked })}
                                 />
+                                <span className="customizer-switch" aria-hidden="true" />
                                 Foto-Hintergrund
                               </label>
                             )}
@@ -801,62 +837,34 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
 
                         <div className="customizer-field">
                           <label>Funktionen</label>
-                          <div className="customizer-toggles">
-                            <label className="customizer-toggle">
-                              <input
-                                type="checkbox"
-                                checked={draft.showCountdown}
-                                onChange={(e) => updateDraft(item, { showCountdown: e.target.checked })}
-                              />
-                              Countdown
-                              <span className="customizer-tier-badge">ab {FEATURE_TIER.countdown}</span>
-                            </label>
-                            <label className="customizer-toggle">
-                              <input
-                                type="checkbox"
-                                checked={draft.showRsvp}
-                                onChange={(e) => updateDraft(item, { showRsvp: e.target.checked })}
-                              />
-                              Zusagen-Bereich
-                              <span className="customizer-tier-badge">ab {FEATURE_TIER.rsvp}</span>
-                            </label>
-                            <label className="customizer-toggle">
-                              <input
-                                type="checkbox"
-                                checked={draft.showSeating}
-                                onChange={(e) => updateDraft(item, { showSeating: e.target.checked })}
-                              />
-                              Sitzplan-Suche
-                              <span className="customizer-tier-badge">ab {FEATURE_TIER.seating}</span>
-                            </label>
-                            <label className="customizer-toggle">
-                              <input
-                                type="checkbox"
-                                checked={draft.showGallery}
-                                onChange={(e) => updateDraft(item, { showGallery: e.target.checked })}
-                              />
-                              Foto- &amp; Videogalerie
-                              <span className="customizer-tier-badge">ab {FEATURE_TIER.gallery}</span>
-                            </label>
-                            {EXTRA_FEATURES.map((f) => (
-                              <label className="customizer-toggle" key={f.key}>
-                                <input
-                                  type="checkbox"
-                                  checked={draft.extraFeatures[f.key] ?? true}
-                                  onChange={(e) =>
-                                    updateDraft(item, {
-                                      extraFeatures: { ...draft.extraFeatures, [f.key]: e.target.checked },
-                                    })
-                                  }
-                                />
-                                {f.label}
-                                <span className="customizer-tier-badge">ab {FEATURE_TIER[f.key]}</span>
-                              </label>
+                          <div className="customizer-tier-groups">
+                            {toggleGroups.map((group) => (
+                              <div className="customizer-tier-group" key={group.tier}>
+                                <div className="customizer-tier-head">
+                                  <span>{group.tier}</span>
+                                  <span className="customizer-tier-price">
+                                    ab {eur.format(TIER_PRICE[group.tier] / 100)}
+                                  </span>
+                                </div>
+                                <div className="customizer-toggles">
+                                  {group.items.map((t) => (
+                                    <label className="customizer-toggle" key={t.key}>
+                                      <input
+                                        type="checkbox"
+                                        checked={t.checked}
+                                        onChange={(e) => t.onChange(e.target.checked)}
+                                      />
+                                      <span className="customizer-switch" aria-hidden="true" />
+                                      {t.label}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
                             ))}
                           </div>
                           <span className="customizer-hint">
-                            Alle Funktionen sind hier zur Ansicht aktiv — welches Paket ihr braucht, hängt davon ab,
-                            was ihr am Ende nutzen wollt.
+                            Alle Funktionen sind hier zur Ansicht aktiv. Preise gelten pro Paket, nicht pro
+                            Funktion — welches ihr braucht, hängt davon ab, was ihr am Ende nutzen wollt.
                           </span>
                         </div>
 

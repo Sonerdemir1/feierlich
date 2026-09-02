@@ -1050,34 +1050,94 @@ a.card:hover {
 .customizer-toggles {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 .customizer-field label.customizer-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 12.5px;
   color: var(--ink-soft);
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
   cursor: pointer;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  transition: background-color 0.12s ease;
 }
+.customizer-field label.customizer-toggle:hover {
+  background: var(--ivory-2);
+}
+/* Native Checkbox bleibt fuer Tastatur/Screenreader vorhanden, aber
+   unsichtbar — .customizer-switch daneben ist die eigentliche, sichtbare
+   Bedienoberflaeche (echter Toggle-Schalter statt Browser-Standard-Haekchen,
+   passend zum sonstigen SaaS-Look statt "Formular aus den 2000ern"). */
 .customizer-toggle input {
-  accent-color: var(--terracotta);
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
 }
-.customizer-tier-badge {
-  font-size: 9.5px;
+.customizer-switch {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--line);
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+.customizer-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease;
+}
+.customizer-toggle input:checked + .customizer-switch {
+  background: var(--terracotta);
+}
+.customizer-toggle input:checked + .customizer-switch::after {
+  transform: translateX(14px);
+}
+.customizer-toggle input:focus-visible + .customizer-switch {
+  outline: 2px solid var(--terracotta);
+  outline-offset: 2px;
+}
+.customizer-tier-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.customizer-tier-group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.customizer-tier-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--ivory-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.customizer-tier-price {
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
   color: var(--terracotta-dark);
-  background: var(--blush);
-  padding: 2px 7px;
-  margin-left: auto;
+}
+.customizer-tier-group .customizer-toggles {
+  padding: 6px;
 }
 .customizer-cta {
   display: flex;
