@@ -186,19 +186,19 @@ export function SharePreview() {
   );
 }
 
-// Echte (lizenzfreie) Beispielfotos statt einfarbiger Platzhalter-Kacheln —
-// dieselben Bilder, die auch als Kartenvorschau-Hintergruende dienen
-// (PHOTO_BACKGROUND in gallery-templates.ts), hier als Ausschnitt in der
-// Galerie-Kachel. Zwei davon zusaetzlich mit Video-Play-Icon markiert,
-// passend zur "12 Videos"-Angabe darunter — keine echten Gaesterfotos
-// (waeren personenbezogen), sondern nur eine plausiblere Illustration.
+// KI-generierte Beispielfotos (OpenAI, gpt-image-2 — siehe scripts/gen-
+// gallery-photos.ts) statt einfarbiger Platzhalter-Kacheln: zeigen bewusst
+// keine echten Gaeste (waeren personenbezogen), sondern frei erfundene
+// Feier-Szenen, passend zur warmen Gold-Bildsprache der Seite. Zwei davon
+// zusaetzlich mit Video-Play-Icon markiert, passend zur "12 Videos"-Angabe
+// darunter.
 const GALLERY_TILES: { src: string; video?: boolean }[] = [
-  { src: "/images/templates/wedding-aisle-classic.jpg" },
-  { src: "/images/templates/rose-tulip-bouquet.jpg", video: true },
-  { src: "/images/templates/grand-hall-dramatic.jpg" },
-  { src: "/images/templates/fern-greenery.jpg" },
-  { src: "/images/templates/party-balloons.jpg", video: true },
-  { src: "/images/templates/modern-lounge-warm.jpg" },
+  { src: "/images/marketing/toast.jpg" },
+  { src: "/images/marketing/dancing.jpg", video: true },
+  { src: "/images/marketing/confetti.jpg" },
+  { src: "/images/marketing/grouphug.jpg" },
+  { src: "/images/marketing/selfie.jpg", video: true },
+  { src: "/images/marketing/cheers.jpg" },
 ];
 
 function PlayBadge() {
