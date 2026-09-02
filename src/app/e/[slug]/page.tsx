@@ -453,11 +453,14 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   required
                   style={{ padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
                 />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "10px 0", fontSize: 13, cursor: "pointer" }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <label style={{ flex: "1 1 100px", display: "flex", alignItems: "center", gap: 6, padding: "10px 0", fontSize: 12.5, cursor: "pointer" }}>
                     <input type="radio" name="attending" value="yes" defaultChecked /> Wir kommen
                   </label>
-                  <label style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "10px 0", fontSize: 13, cursor: "pointer" }}>
+                  <label style={{ flex: "1 1 100px", display: "flex", alignItems: "center", gap: 6, padding: "10px 0", fontSize: 12.5, cursor: "pointer" }}>
+                    <input type="radio" name="attending" value="unsure" /> Noch unsicher
+                  </label>
+                  <label style={{ flex: "1 1 100px", display: "flex", alignItems: "center", gap: 6, padding: "10px 0", fontSize: 12.5, cursor: "pointer" }}>
                     <input type="radio" name="attending" value="no" /> Leider nicht
                   </label>
                 </div>

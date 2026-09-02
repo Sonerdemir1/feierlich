@@ -10,7 +10,11 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
   if (!name) redirect(`/e/${slug}?rsvp=error`);
 
-  const attending = formData.get("attending") === "yes";
+  // Drei Zustaende statt nur Ja/Nein — "Noch unsicher" nutzt den bereits
+  // vorhandenen RsvpStatus.PENDING (bisher nur als impliziter Default vor
+  // jeder Antwort genutzt, jetzt auch aktiv waehlbar).
+  const attendingRaw = String(formData.get("attending") ?? "yes");
+  const status = attendingRaw === "no" ? "NO" : attendingRaw === "unsure" ? "PENDING" : "YES";
   const countRaw = Number(formData.get("count") ?? 1);
   const count = Number.isFinite(countRaw) && countRaw > 0 ? Math.min(countRaw, 20) : 1;
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000) || null;
@@ -21,8 +25,8 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
   await prisma.rSVP.create({
     data: {
       guestId: guest.id,
-      status: attending ? "YES" : "NO",
-      attendingCount: attending ? count : 0,
+      status,
+      attendingCount: status === "YES" ? count : null,
       message,
       respondedAt: new Date(),
     },
