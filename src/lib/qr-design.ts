@@ -60,10 +60,15 @@ function extractQrInner(svg: string): { viewBox: string; inner: string } {
   };
 }
 
-// Baut eine druckfertige SVG-"Tischkarte"/"Aufsteller" mit QR-Code,
-// Titel/Untertitel und Anleitungstext. Keine neue Abhaengigkeit (kein
-// Canvas/PDF-Renderer) — reine SVG-String-Komposition.
-export async function buildQrDesignSvg(params: {
+export type QrTheme = "classic" | "modern-block" | "gold-frame";
+
+export const QR_THEMES: Array<{ id: QrTheme; label: string }> = [
+  { id: "classic", label: "Klassisch — schlichter Rahmen" },
+  { id: "modern-block", label: "Modern — kräftige Farbfläche" },
+  { id: "gold-frame", label: "Opulent — Doppellinie mit Eckakzenten" },
+];
+
+type QrDesignParams = {
   size: PrintSize;
   title: string;
   subtitle?: string;
@@ -71,26 +76,101 @@ export async function buildQrDesignSvg(params: {
   targetUrl: string;
   primary?: string;
   accent?: string;
-}): Promise<string> {
-  const { width, height } = PRINT_SIZE_MM[params.size];
-  const primary = params.primary ?? "#211C19";
-  const accent = params.accent ?? "#B9975B";
+  background?: string;
+};
 
-  const rawQr = await qrSvg(params.targetUrl);
-  const { viewBox, inner } = extractQrInner(rawQr);
+type ThemeInput = QrDesignParams & { width: number; height: number; primary: string; accent: string; background: string; qr: { viewBox: string; inner: string }; instructions: string };
 
+function classicTheme(p: ThemeInput): string {
+  const { width, height, primary, accent, background, qr, instructions } = p;
   const qrSizeMm = width * 0.55;
   const qrX = (width - qrSizeMm) / 2;
   const qrY = height * 0.32;
+
+  return `<rect width="${width}" height="${height}" fill="${background}" />
+  <rect x="4" y="4" width="${width - 8}" height="${height - 8}" fill="none" stroke="${accent}" stroke-width="0.4" />
+  <text x="${width / 2}" y="${height * 0.14}" text-anchor="middle" font-family="Georgia, serif" font-size="6" fill="${primary}">${escapeXml(p.title)}</text>
+  ${p.subtitle ? `<text x="${width / 2}" y="${height * 0.14 + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.2" fill="${accent}" letter-spacing="0.3">${escapeXml(p.subtitle)}</text>` : ""}
+  <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${qr.viewBox}">${qr.inner}</svg>
+  <text x="${width / 2}" y="${qrY + qrSizeMm + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.4" fill="${primary}">${escapeXml(instructions)}</text>
+  <text x="${width / 2}" y="${height - 6}" text-anchor="middle" font-family="sans-serif" font-size="2.6" fill="${accent}" letter-spacing="0.2">EINLADI.DE</text>`;
+}
+
+// Kraeftige Farbflaeche statt zurueckhaltendem Rahmen — die QR-Karte selbst
+// wird zum Blickfang auf dem Tisch. Der QR-Code sitzt auf einer weissen
+// Karte (Kontrast/Scanbarkeit bleibt unabhaengig von der Akzentfarbe hoch).
+function modernBlockTheme(p: ThemeInput): string {
+  const { width, height, accent, qr, instructions } = p;
+  const cardSizeMm = width * 0.62;
+  const cardX = (width - cardSizeMm) / 2;
+  const cardY = height * 0.3;
+  const qrSizeMm = cardSizeMm * 0.82;
+  const qrX = cardX + (cardSizeMm - qrSizeMm) / 2;
+  const qrY = cardY + (cardSizeMm - qrSizeMm) / 2;
+
+  return `<rect width="${width}" height="${height}" fill="${accent}" />
+  <text x="${width / 2}" y="${height * 0.14}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="6.2" fill="#FFFFFF" letter-spacing="0.4">${escapeXml(p.title.toUpperCase())}</text>
+  ${p.subtitle ? `<text x="${width / 2}" y="${height * 0.14 + 7.5}" text-anchor="middle" font-family="sans-serif" font-size="3" fill="#FFFFFFCC" letter-spacing="0.5">${escapeXml(p.subtitle.toUpperCase())}</text>` : ""}
+  <rect x="${cardX}" y="${cardY}" width="${cardSizeMm}" height="${cardSizeMm}" fill="#FFFFFF" rx="2.5" />
+  <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${qr.viewBox}">${qr.inner}</svg>
+  <text x="${width / 2}" y="${cardY + cardSizeMm + 9}" text-anchor="middle" font-family="sans-serif" font-size="3.4" fill="#FFFFFF">${escapeXml(instructions)}</text>
+  <text x="${width / 2}" y="${height - 6}" text-anchor="middle" font-family="sans-serif" font-size="2.6" fill="#FFFFFFAA" letter-spacing="0.3">EINLADI.DE</text>`;
+}
+
+// Doppellinien-Rahmen mit kleinen Eck-Akzenten (diagonale Striche statt
+// botanischer Illustration — als handgeschriebenes SVG zuverlaessig sauber
+// darstellbar) und kursiver Serifenschrift — angelehnt an klassische
+// Hochzeits-Einladungskarten, passend zum tuerkisch-/kurdischsprachigen
+// Hochzeitssaal-Publikum (opulente, aber elegante Optik).
+function goldFrameTheme(p: ThemeInput): string {
+  const { width, height, primary, accent, background, qr, instructions } = p;
+  const outerMargin = 4;
+  const innerMargin = 6.5;
+  const qrSizeMm = width * 0.52;
+  const qrX = (width - qrSizeMm) / 2;
+  const qrY = height * 0.33;
+  const corner = 6;
+
+  const corners = [
+    [innerMargin, innerMargin, innerMargin + corner, innerMargin, innerMargin, innerMargin + corner],
+    [width - innerMargin, innerMargin, width - innerMargin - corner, innerMargin, width - innerMargin, innerMargin + corner],
+    [innerMargin, height - innerMargin, innerMargin + corner, height - innerMargin, innerMargin, height - innerMargin - corner],
+    [width - innerMargin, height - innerMargin, width - innerMargin - corner, height - innerMargin, width - innerMargin, height - innerMargin - corner],
+  ]
+    .map(([x, y, x1, y1, x2, y2]) => `<path d="M ${x1} ${y1} L ${x} ${y} L ${x2} ${y2}" fill="none" stroke="${accent}" stroke-width="0.35" />`)
+    .join("\n  ");
+
+  return `<rect width="${width}" height="${height}" fill="${background}" />
+  <rect x="${outerMargin}" y="${outerMargin}" width="${width - outerMargin * 2}" height="${height - outerMargin * 2}" fill="none" stroke="${accent}" stroke-width="0.25" />
+  <rect x="${innerMargin}" y="${innerMargin}" width="${width - innerMargin * 2}" height="${height - innerMargin * 2}" fill="none" stroke="${accent}" stroke-width="0.25" />
+  ${corners}
+  <text x="${width / 2}" y="${height * 0.16}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="6.5" fill="${primary}">${escapeXml(p.title)}</text>
+  <line x1="${width / 2 - 10}" y1="${height * 0.16 + 4}" x2="${width / 2 + 10}" y2="${height * 0.16 + 4}" stroke="${accent}" stroke-width="0.3" />
+  ${p.subtitle ? `<text x="${width / 2}" y="${height * 0.16 + 9}" text-anchor="middle" font-family="sans-serif" font-size="3" fill="${accent}" letter-spacing="0.6">${escapeXml(p.subtitle.toUpperCase())}</text>` : ""}
+  <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${qr.viewBox}">${qr.inner}</svg>
+  <text x="${width / 2}" y="${qrY + qrSizeMm + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.2" fill="${primary}" letter-spacing="0.2">${escapeXml(instructions)}</text>
+  <text x="${width / 2}" y="${height - 8}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="2.8" fill="${accent}" letter-spacing="0.4">einladi.de</text>`;
+}
+
+// Baut eine druckfertige SVG-"Tischkarte"/"Aufsteller" mit QR-Code,
+// Titel/Untertitel und Anleitungstext. Keine neue Abhaengigkeit (kein
+// Canvas/PDF-Renderer) — reine SVG-String-Komposition. `theme` waehlt
+// zwischen mehreren eigenstaendigen Layouts (nicht nur Farbvarianten).
+export async function buildQrDesignSvg(params: QrDesignParams & { theme?: QrTheme }): Promise<string> {
+  const { width, height } = PRINT_SIZE_MM[params.size];
+  const primary = params.primary ?? "#211C19";
+  const accent = params.accent ?? "#B9975B";
+  const background = params.background ?? "#FAF6EF";
   const instructions = params.instructions ?? "Scannt den Code, um Fotos & Videos zu teilen";
 
+  const rawQr = await qrSvg(params.targetUrl);
+  const qr = extractQrInner(rawQr);
+
+  const input: ThemeInput = { ...params, width, height, primary, accent, background, qr, instructions };
+  const body =
+    params.theme === "modern-block" ? modernBlockTheme(input) : params.theme === "gold-frame" ? goldFrameTheme(input) : classicTheme(input);
+
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">
-  <rect width="${width}" height="${height}" fill="#FAF6EF" />
-  <rect x="4" y="4" width="${width - 8}" height="${height - 8}" fill="none" stroke="${accent}" stroke-width="0.4" />
-  <text x="${width / 2}" y="${height * 0.14}" text-anchor="middle" font-family="Georgia, serif" font-size="6" fill="${primary}">${escapeXml(params.title)}</text>
-  ${params.subtitle ? `<text x="${width / 2}" y="${height * 0.14 + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.2" fill="${accent}" letter-spacing="0.3">${escapeXml(params.subtitle)}</text>` : ""}
-  <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${viewBox}">${inner}</svg>
-  <text x="${width / 2}" y="${qrY + qrSizeMm + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.4" fill="${primary}">${escapeXml(instructions)}</text>
-  <text x="${width / 2}" y="${height - 6}" text-anchor="middle" font-family="sans-serif" font-size="2.6" fill="${accent}" letter-spacing="0.2">EINLADI.DE</text>
+  ${body}
 </svg>`;
 }

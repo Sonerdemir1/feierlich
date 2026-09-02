@@ -4,9 +4,20 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
-import { buildQrDesignSvg, printOrderPriceCents, type PrintSize } from "@/lib/qr-design";
+import { buildQrDesignSvg, printOrderPriceCents, type PrintSize, type QrTheme } from "@/lib/qr-design";
 import { stripe } from "@/lib/stripe";
 import { markPrintOrderPaid } from "@/lib/checkout-fulfillment";
+import type { QrTheme as DbQrTheme } from "@/generated/prisma/client";
+
+// Zwei Schreibweisen fuer dieselbe Sache: qr-design.ts nutzt lesbare
+// Bindestrich-Werte (fuer <select>-Optionen), die DB einen Prisma-Enum
+// (SCREAMING_CASE-Konvention wie die uebrigen Enums im Schema).
+const DB_THEME: Record<QrTheme, DbQrTheme> = { classic: "CLASSIC", "modern-block": "MODERN_BLOCK", "gold-frame": "GOLD_FRAME" };
+
+function themeFromForm(formData: FormData): QrTheme {
+  const raw = String(formData.get("theme") ?? "classic");
+  return raw === "modern-block" || raw === "gold-frame" ? raw : "classic";
+}
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -54,12 +65,14 @@ async function resolveTarget(eventId: string, slug: string, target: Target) {
 export async function emailQrDesign(eventId: string, formData: FormData) {
   const { event, session } = await requireOwnedEvent(eventId);
   const size: PrintSize = String(formData.get("size") ?? "A6") === "A5" ? "A5" : "A6";
+  const theme = themeFromForm(formData);
   const target = targetFromForm(formData);
   const resolved = await resolveTarget(eventId, event.slug, target);
   const colors = event.template ? JSON.parse(event.template.colors) : {};
 
   const svg = await buildQrDesignSvg({
     size,
+    theme,
     title: resolved.title,
     subtitle: resolved.subtitle,
     targetUrl: resolved.targetUrl,
@@ -97,6 +110,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
   const redirectBase = `/dashboard/events/${eventId}/seating`;
 
   const size: PrintSize = String(formData.get("size") ?? "A6") === "A5" ? "A5" : "A6";
+  const theme = themeFromForm(formData);
   const quantity = Math.max(1, Math.min(500, Number(formData.get("quantity") ?? 1) || 1));
   const target = targetFromForm(formData);
 
@@ -121,6 +135,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
       eventId,
       tableId: target.kind === "TABLE" ? target.tableId : null,
       size,
+      theme: DB_THEME[theme],
       quantity,
       priceCents,
       shippingName,

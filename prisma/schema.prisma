@@ -515,6 +515,12 @@ enum PrintSize {
   A5
 }
 
+enum QrTheme {
+  CLASSIC
+  MODERN_BLOCK
+  GOLD_FRAME
+}
+
 enum PrintOrderStatus {
   PENDING
   PAID
@@ -533,6 +539,7 @@ model PrintOrder {
   eventId               String
   tableId               String? // gesetzt, wenn es ein Tisch-QR ist; leer = allgemeiner Event-QR
   size                  PrintSize
+  theme                 QrTheme          @default(CLASSIC)
   quantity              Int              @default(1)
   priceCents            Int
   shippingName          String
