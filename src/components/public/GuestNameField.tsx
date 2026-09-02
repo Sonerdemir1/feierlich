@@ -14,15 +14,24 @@ export function GuestNameField({
   placeholder,
   required,
   style,
+  defaultValue,
 }: {
   name: string;
   placeholder: string;
   required?: boolean;
   style?: CSSProperties;
+  // Bekannter Name ueber den personalisierten Einladungslink (?g=<Token>)
+  // — hat Vorrang vor dem localStorage-Wert, der ja auch von einer
+  // anderen Person auf demselben Geraet stammen koennte.
+  defaultValue?: string;
 }) {
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (defaultValue) {
+      if (ref.current) ref.current.value = defaultValue;
+      return;
+    }
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved && ref.current) ref.current.value = saved;
@@ -30,7 +39,7 @@ export function GuestNameField({
       // localStorage kann in privaten Fenstern/mit blockierten Cookies
       // fehlschlagen — dann bleibt das Feld einfach leer, kein Problem.
     }
-  }, []);
+  }, [defaultValue]);
 
   return (
     <input

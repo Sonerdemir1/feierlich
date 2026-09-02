@@ -309,6 +309,14 @@ model Guest {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Personalisierter Einladungslink (/e/[slug]?g=<inviteToken>) — eigenes
+  // Token statt der Guest-id, damit es sich unabhaengig von der internen
+  // id neu vergeben liesse und in der URL nicht wie eine DB-id aussieht.
+  inviteToken   String    @unique @default(cuid())
+  firstOpenedAt DateTime?
+  lastOpenedAt  DateTime?
+  openCount     Int       @default(0)
+
   event     Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
   rsvp      RSVP?
   seat      Seat?

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DeleteGuestButton } from "@/components/dashboard/DeleteGuestButton";
+import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
+import { publicHost } from "@/lib/site";
 import type { Prisma } from "@/generated/prisma/client";
 
 const statusLabel: Record<string, string> = { YES: "Zusage", NO: "Absage", PENDING: "Offen" };
@@ -92,7 +94,7 @@ export default async function GuestListPage({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--line)", textAlign: "left" }}>
-                {["Name", "Status", "Personen", "Menü", "Kontakt", "Notizen", ""].map((h) => (
+                {["Name", "Status", "Personen", "Menü", "Kontakt", "Notizen", "Persönlicher Link", "Geöffnet", ""].map((h) => (
                   <th key={h} style={{ padding: "10px 8px", color: "var(--ink-faint)", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     {h}
                   </th>
@@ -114,6 +116,22 @@ export default async function GuestListPage({
                     <td style={{ padding: "10px 8px", color: "var(--ink-soft)" }}>{g.rsvp?.menuChoice ?? "—"}</td>
                     <td style={{ padding: "10px 8px", color: "var(--ink-soft)" }}>{g.email ?? g.phone ?? "—"}</td>
                     <td style={{ padding: "10px 8px", color: "var(--ink-soft)" }}>{g.notes ?? "—"}</td>
+                    <td style={{ padding: "10px 8px", whiteSpace: "nowrap" }}>
+                      <CopyLinkButton
+                        url={`https://${publicHost()}/e/${event.slug}?g=${g.inviteToken}`}
+                        className="btn btn-ghost"
+                        style={{ padding: "6px 10px", fontSize: 11 }}
+                      />
+                    </td>
+                    <td style={{ padding: "10px 8px", color: "var(--ink-soft)", fontSize: 12 }}>
+                      {g.firstOpenedAt ? (
+                        <span title={`${g.openCount}× aufgerufen`}>
+                          ✓ {new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" }).format(g.firstOpenedAt)}
+                        </span>
+                      ) : (
+                        "noch nicht"
+                      )}
+                    </td>
                     <td style={{ padding: "10px 8px", whiteSpace: "nowrap" }}>
                       <Link href={`/dashboard/events/${id}/guests/${g.id}/edit`} style={{ fontSize: 12, marginRight: 12 }}>
                         Bearbeiten

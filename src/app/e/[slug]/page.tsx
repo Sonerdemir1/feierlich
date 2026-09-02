@@ -89,6 +89,24 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     await recordEventView(event.id);
   }
 
+  // Personalisierter Einladungslink (?g=<inviteToken>, siehe Gästeliste im
+  // Dashboard) — bekannter Gast wird erkannt, Name vorausgefuellt, und der
+  // Aufruf wird als "geoeffnet" vermerkt (nur bei echten Gaesten, nicht
+  // wenn der Owner sich selbst die Vorschau ansieht).
+  const guestToken = typeof sp.g === "string" ? sp.g : undefined;
+  const linkedGuest = guestToken ? await prisma.guest.findFirst({ where: { inviteToken: guestToken, eventId: event.id } }) : null;
+  if (linkedGuest && !isOwner) {
+    await prisma.guest.update({
+      where: { id: linkedGuest.id },
+      data: {
+        openCount: { increment: 1 },
+        lastOpenedAt: new Date(),
+        firstOpenedAt: linkedGuest.firstOpenedAt ?? new Date(),
+      },
+    });
+  }
+  const guestDisplayName = linkedGuest ? `${linkedGuest.firstName}${linkedGuest.lastName ? ` ${linkedGuest.lastName}` : ""}` : undefined;
+
   const eventModules = await prisma.eventModule.findMany({ where: { eventId: event.id } });
   const enabled = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const modules = await prisma.module.findMany();
@@ -582,6 +600,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         <section id="rsvp" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px" }}>
             <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>Zusagen</div>
+            {guestDisplayName && (
+              <p style={{ fontSize: 13, textAlign: "center", opacity: 0.8, marginTop: -10, marginBottom: 20 }}>
+                Hallo {linkedGuest!.firstName}! Schön, dass ihr dabei seid.
+              </p>
+            )}
 
             {rsvpStatus === "success" ? (
               <p style={{ fontSize: 14, textAlign: "center", opacity: 0.85 }}>Danke für eure Rückmeldung!</p>
@@ -594,6 +617,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   name="name"
                   placeholder="Euer Name"
                   required
+                  defaultValue={guestDisplayName}
                   style={{ padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
                 />
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -646,6 +670,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 name="seatName"
                 placeholder="Euer Name"
                 required
+                defaultValue={guestDisplayName}
                 style={{ flex: 1, padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
               />
               <button type="submit" style={{ padding: "0 18px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
@@ -686,6 +711,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 <GuestNameField
                   name="uploaderName"
                   placeholder="Euer Name (optional)"
+                  defaultValue={guestDisplayName}
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
                 />
                 <FileField name="file" accept={mediaAccept} required label="Foto oder Video auswählen" colors={colors} />
@@ -730,6 +756,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   name="authorName"
                   placeholder="Euer Name"
                   required
+                  defaultValue={guestDisplayName}
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
                 />
                 <textarea
