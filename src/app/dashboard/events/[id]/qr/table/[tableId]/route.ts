@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { qrPng, qrSvg } from "@/lib/qr";
+import { qrPng, qrSvg, safeQrColorsFromEvent } from "@/lib/qr";
 
 // Eigene Route statt Erweiterung von /qr/[type]: ein Tisch-QR ist nicht
 // "ein QRCodeType pro Event" (die bestehende QRCode-Tabelle erzwingt genau
@@ -16,7 +16,7 @@ export async function GET(
   const session = await auth();
   if (!session?.user) return new Response("Nicht angemeldet.", { status: 401 });
 
-  const event = await prisma.event.findUnique({ where: { id } });
+  const event = await prisma.event.findUnique({ where: { id }, include: { template: true } });
   if (!event || event.ownerId !== session.user.id) return new Response("Nicht gefunden.", { status: 404 });
 
   const table = await prisma.table.findUnique({ where: { id: tableId } });
@@ -25,12 +25,16 @@ export async function GET(
   const url = new URL(request.url);
   const targetUrl = `${url.protocol}//${url.host}/e/${event.slug}?tisch=${tableId}#galerie`;
 
+  const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
+  const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
+  const colors = safeQrColorsFromEvent(activeColors.primary, activeColors.background);
+
   const format = url.searchParams.get("format") === "png" ? "png" : "svg";
   const download = url.searchParams.get("download") === "1";
   const filename = `qr-tisch-${table.name.toLowerCase().replace(/\s+/g, "-")}-${event.slug}.${format}`;
 
   if (format === "png") {
-    const buffer = await qrPng(targetUrl);
+    const buffer = await qrPng(targetUrl, colors);
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "image/png",
@@ -39,7 +43,7 @@ export async function GET(
     });
   }
 
-  const svg = await qrSvg(targetUrl);
+  const svg = await qrSvg(targetUrl, colors);
   return new Response(svg, {
     headers: {
       "Content-Type": "image/svg+xml",
