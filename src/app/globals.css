@@ -1188,6 +1188,41 @@ a.card:hover {
   outline: 2px solid var(--terracotta);
   outline-offset: 2px;
 }
+/* Klick-Bearbeiten direkt auf der Live-Vorschau im Dashboard-iframe
+   (siehe InlineEditableText.tsx) — dezenter gestrichelter Rahmen zeigt an,
+   dass Text hier bearbeitbar ist, ohne den echten Gast-Look zu verfaelschen
+   (nur der Owner im ?dashboardPreview=1-iframe sieht das ueberhaupt). */
+.einladi-inline-editable {
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 0 1px transparent;
+}
+.einladi-inline-editable:hover {
+  box-shadow: 0 0 0 1px currentColor;
+  opacity: 0.85;
+}
+.einladi-inline-editable:focus {
+  background: rgba(185, 151, 91, 0.16);
+  box-shadow: 0 0 0 2px var(--gold);
+  opacity: 1;
+}
+/* Chrome laesst nach dem Loeschen des letzten Zeichens in einem
+   contentEditable-Element oft ein einzelnes <br> zurueck — :empty greift
+   dann nicht mehr, daher zusaetzlich der :has()-Fall. */
+.einladi-inline-editable:empty::before,
+.einladi-inline-editable:has(> br:only-child)::before {
+  content: attr(data-placeholder);
+  opacity: 0.5;
+}
+.einladi-inline-editable[data-inline-status="saved"] {
+  background: rgba(143, 155, 110, 0.22);
+}
+.einladi-inline-editable[data-inline-status="error"] {
+  background: rgba(201, 126, 94, 0.25);
+}
+
 .customizer-tier-groups {
   display: flex;
   flex-direction: column;

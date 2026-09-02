@@ -13,6 +13,7 @@ import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
+import { InlineEditableText } from "@/components/public/InlineEditableText";
 import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
@@ -78,6 +79,10 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
   const isOwner = session?.user?.id === event.ownerId;
   if (event.status !== "PUBLISHED" && !isOwner) notFound();
+  // Nur im Dashboard-iframe (Design & Vorschau) UND fuer den Owner aktiv —
+  // echte Gaeste bekommen den Query-Param nie zu Gesicht, und selbst wenn,
+  // greift die isOwner-Pruefung.
+  const editMode = isOwner && sp.dashboardPreview === "1";
 
   if (!isOwner) {
     await prisma.event.update({ where: { id: event.id }, data: { viewCount: { increment: 1 } } });
@@ -263,23 +268,50 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               {event.eventType.name}
             </div>
             <div>
-              <div
-                style={{
-                  fontFamily: headingFont,
-                  fontStyle: headingItalic ? "italic" : "normal",
-                  textTransform: headingUppercase ? "uppercase" : "none",
-                  fontWeight: 600,
-                  fontSize: "clamp(21px, 5.5vw, 30px)",
-                  color: colors.primary,
-                  ...titleOverride,
-                }}
-              >
-                {event.title}
-              </div>
-              {event.subtitle && (
-                <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>
-                  {event.subtitle}
-                </p>
+              {editMode ? (
+                <InlineEditableText
+                  eventId={event.id}
+                  field="title"
+                  value={event.title}
+                  style={{
+                    fontFamily: headingFont,
+                    fontStyle: headingItalic ? "italic" : "normal",
+                    textTransform: headingUppercase ? "uppercase" : "none",
+                    fontWeight: 600,
+                    fontSize: "clamp(21px, 5.5vw, 30px)",
+                    color: colors.primary,
+                    ...titleOverride,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontFamily: headingFont,
+                    fontStyle: headingItalic ? "italic" : "normal",
+                    textTransform: headingUppercase ? "uppercase" : "none",
+                    fontWeight: 600,
+                    fontSize: "clamp(21px, 5.5vw, 30px)",
+                    color: colors.primary,
+                    ...titleOverride,
+                  }}
+                >
+                  {event.title}
+                </div>
+              )}
+              {editMode ? (
+                <InlineEditableText
+                  eventId={event.id}
+                  field="subtitle"
+                  value={event.subtitle ?? ""}
+                  placeholder="Untertitel hinzufügen…"
+                  style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}
+                />
+              ) : (
+                event.subtitle && (
+                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>
+                    {event.subtitle}
+                  </p>
+                )
               )}
             </div>
             <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>
@@ -296,19 +328,36 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           <div style={{ maxWidth: 320, margin: "0 auto" }}>
             <EnvelopeReveal images={envelopeImages}>
               <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontFamily: headingFont,
-                    fontStyle: headingItalic ? "italic" : "normal",
-                    textTransform: headingUppercase ? "uppercase" : "none",
-                    fontWeight: 600,
-                    fontSize: "clamp(24px, 5vw, 34px)",
-                    color: colors.primary,
-                    ...titleOverride,
-                  }}
-                >
-                  {event.title}
-                </div>
+                {editMode ? (
+                  <InlineEditableText
+                    eventId={event.id}
+                    field="title"
+                    value={event.title}
+                    style={{
+                      fontFamily: headingFont,
+                      fontStyle: headingItalic ? "italic" : "normal",
+                      textTransform: headingUppercase ? "uppercase" : "none",
+                      fontWeight: 600,
+                      fontSize: "clamp(24px, 5vw, 34px)",
+                      color: colors.primary,
+                      ...titleOverride,
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      fontFamily: headingFont,
+                      fontStyle: headingItalic ? "italic" : "normal",
+                      textTransform: headingUppercase ? "uppercase" : "none",
+                      fontWeight: 600,
+                      fontSize: "clamp(24px, 5vw, 34px)",
+                      color: colors.primary,
+                      ...titleOverride,
+                    }}
+                  >
+                    {event.title}
+                  </div>
+                )}
                 <div
                   style={{
                     marginTop: 10,
@@ -325,8 +374,18 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </div>
             </EnvelopeReveal>
           </div>
-          {event.subtitle && (
-            <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
+          {editMode ? (
+            <InlineEditableText
+              eventId={event.id}
+              field="subtitle"
+              value={event.subtitle ?? ""}
+              placeholder="Untertitel hinzufügen…"
+              style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}
+            />
+          ) : (
+            event.subtitle && (
+              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
+            )
           )}
         </>
       ) : (
@@ -334,21 +393,49 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
             {event.eventType.name}
           </div>
-          <h1
-            style={{
-              fontFamily: headingFont,
-              fontStyle: headingItalic ? "italic" : "normal",
-              textTransform: headingUppercase ? "uppercase" : "none",
-              fontWeight: 600,
-              fontSize: "clamp(34px, 6vw, 52px)",
-              margin: 0,
-              ...titleOverride,
-            }}
-          >
-            {event.title}
-          </h1>
-          {event.subtitle && (
-            <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
+          {editMode ? (
+            <InlineEditableText
+              eventId={event.id}
+              field="title"
+              value={event.title}
+              as="h1"
+              style={{
+                fontFamily: headingFont,
+                fontStyle: headingItalic ? "italic" : "normal",
+                textTransform: headingUppercase ? "uppercase" : "none",
+                fontWeight: 600,
+                fontSize: "clamp(34px, 6vw, 52px)",
+                margin: 0,
+                ...titleOverride,
+              }}
+            />
+          ) : (
+            <h1
+              style={{
+                fontFamily: headingFont,
+                fontStyle: headingItalic ? "italic" : "normal",
+                textTransform: headingUppercase ? "uppercase" : "none",
+                fontWeight: 600,
+                fontSize: "clamp(34px, 6vw, 52px)",
+                margin: 0,
+                ...titleOverride,
+              }}
+            >
+              {event.title}
+            </h1>
+          )}
+          {editMode ? (
+            <InlineEditableText
+              eventId={event.id}
+              field="subtitle"
+              value={event.subtitle ?? ""}
+              placeholder="Untertitel hinzufügen…"
+              style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}
+            />
+          ) : (
+            event.subtitle && (
+              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
+            )
           )}
           <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
           <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>
@@ -420,12 +507,24 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </div>
       )}
 
-      {event.description && (
+      {editMode ? (
         <section style={{ maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-          <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
-            {event.description}
-          </p>
+          <InlineEditableText
+            eventId={event.id}
+            field="description"
+            value={event.description ?? ""}
+            placeholder="Beschreibung hinzufügen…"
+            style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}
+          />
         </section>
+      ) : (
+        event.description && (
+          <section style={{ maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
+            <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
+              {event.description}
+            </p>
+          </section>
+        )
       )}
 
       {isModuleOn("location") && event.locationName && (

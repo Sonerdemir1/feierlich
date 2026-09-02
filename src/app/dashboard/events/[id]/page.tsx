@@ -31,6 +31,7 @@ import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
 import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
+import { LivePreviewFrame } from "@/components/dashboard/LivePreviewFrame";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -553,14 +554,13 @@ export default async function EventDetailPage({
             )}
           </div>
           <div style={{ flex: "1 1 360px", minWidth: 260 }}>
-            <div className="card" style={{ height: 480, overflow: "hidden" }}>
-              <iframe
-                key={`${event.templateId}-${event.colorOverride ?? "default"}-${event.styleJson ?? "default"}`}
-                title="Vorschau der Einladungsseite"
-                src={`/e/${event.slug}`}
-                style={{ width: "100%", height: "100%", border: "none" }}
-              />
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
+              Tipp: Titel, Untertitel und Beschreibung direkt in der Vorschau anklicken und bearbeiten.
             </div>
+            <LivePreviewFrame
+              src={`/e/${event.slug}?dashboardPreview=1`}
+              frameKey={`${event.templateId}-${event.colorOverride ?? "default"}-${event.styleJson ?? "default"}`}
+            />
           </div>
         </div>
       </div>
