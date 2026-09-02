@@ -10,6 +10,7 @@ import { validateImageFile, saveEventImage } from "@/lib/uploads";
 import { putObject, readObject } from "@/lib/storage";
 import { removeImageBackground } from "@/lib/background-removal";
 import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
+import { generateInvitationCopy } from "@/lib/ai-text";
 import { stripe } from "@/lib/stripe";
 import { markEventAddOnPaid } from "@/lib/checkout-fulfillment";
 
@@ -94,6 +95,18 @@ export async function createEvent(formData: FormData) {
   });
 
   redirect(`/dashboard/events/${event.id}`);
+}
+
+// Wird direkt (nicht per <form action>) aus NewEventWizard.tsx aufgerufen,
+// waehrend das Event noch gar nicht existiert — daher kein eventId/
+// AiTextAttempt-Kontingent wie beim spaeteren Text-Assistenten, nur ein
+// einfacher eingeloggt-Check. Gibt den Vorschlag direkt zurueck statt zu
+// redirecten, da der Aufrufer eine Client-Komponente ist.
+export async function suggestEventDescription(input: { names: string; eventType: string; keyDetails: string }) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Nicht angemeldet.");
+
+  return generateInvitationCopy({ names: input.names, eventType: input.eventType, tone: "herzlich-leger", keyDetails: input.keyDetails });
 }
 
 export async function uploadCoverImage(eventId: string, formData: FormData) {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { EventTypePicker } from "./EventTypePicker";
 import { TemplatePicker } from "./TemplatePicker";
-import { createEvent } from "@/app/dashboard/events/actions";
+import { createEvent, suggestEventDescription } from "@/app/dashboard/events/actions";
 import { PlaceAutocompleteInput } from "./PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 
@@ -15,17 +15,36 @@ const STEPS = ["Eventtyp", "Template", "Eventdaten"] as const;
 export function NewEventWizard({
   eventTypes,
   templates,
+  aiTextConfigured,
 }: {
   eventTypes: EventTypeOption[];
   templates: TemplateOption[];
+  aiTextConfigured: boolean;
 }) {
   const [step, setStep] = useState(0);
   const [eventTypeId, setEventTypeId] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [title, setTitle] = useState("");
   const [eventDate, setEventDate] = useState("");
+  const [description, setDescription] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const canAdvance = [Boolean(eventTypeId), Boolean(templateId), Boolean(title && eventDate)];
+
+  async function suggestDescription() {
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const eventTypeName = eventTypes.find((t) => t.id === eventTypeId)?.name ?? "";
+      const result = await suggestEventDescription({ names: title, eventType: eventTypeName, keyDetails: "" });
+      setDescription(result.description);
+    } catch {
+      setAiError("Der Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   return (
     <form action={createEvent}>
@@ -118,14 +137,33 @@ export function NewEventWizard({
               />
             )}
           </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Beschreibung (optional)
-            <textarea
-              name="description"
-              rows={3}
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5, fontFamily: "inherit" }}
-            />
-          </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+              Beschreibung (optional)
+              <textarea
+                name="description"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5, fontFamily: "inherit" }}
+              />
+            </label>
+            {aiTextConfigured && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={suggestDescription}
+                  disabled={aiLoading || !title}
+                  className="btn btn-ghost"
+                  style={{ padding: "7px 14px", fontSize: 11.5, opacity: !title ? 0.4 : 1 }}
+                >
+                  {aiLoading ? "Wird vorgeschlagen…" : "KI-Vorschlag"}
+                </button>
+                {!title && <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>Erst Titel eingeben</span>}
+              </div>
+            )}
+            {aiError && <p style={{ fontSize: 11.5, color: "#C9605C", margin: 0 }}>{aiError}</p>}
+          </div>
         </div>
       )}
 

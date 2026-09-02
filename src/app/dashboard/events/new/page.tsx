@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NewEventWizard } from "@/components/dashboard/NewEventWizard";
+import { aiTextConfigured } from "@/lib/ai-text";
 
 export default async function NewEventPage() {
   const [eventTypes, templates] = await Promise.all([
@@ -19,6 +20,7 @@ export default async function NewEventPage() {
       <NewEventWizard
         eventTypes={eventTypes.map((et) => ({ id: et.id, name: et.name, category: et.category }))}
         templates={templates.map((t) => ({ id: t.id, name: t.name, category: t.category, layoutKey: t.layoutKey }))}
+        aiTextConfigured={aiTextConfigured}
       />
     </div>
   );
