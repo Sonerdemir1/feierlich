@@ -1,20 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --ivory: #faf6ef;
-  --ivory-2: #f3ecdf;
-  --ink: #211c19;
-  --ink-soft: #5c5248;
-  --ink-faint: #8a7f6e;
-  --line: #e4d9c8;
-  --terracotta: #b2543a;
-  --terracotta-dark: #8f4029;
-  --gold: #b9975b;
-  --blush: #f0d9cc;
-  --sage: #8f9b6e;
+  /* Modernisierte, SaaS-artige Palette (Stripe/Linear-Referenz) — ersetzt
+     die vormals warme Gold/Elfenbein-Hochzeitsoptik unter denselben
+     Variablennamen, damit die komplette App (inline styles + .btn-Klassen
+     nutzen ausschliesslich diese Tokens) automatisch mitzieht. */
+  --ivory: #fcfcfe;
+  --ivory-2: #f4f4f8;
+  --ink: #14141f;
+  --ink-soft: #55566b;
+  --ink-faint: #8a8b9e;
+  --line: #e3e3ec;
+  --terracotta: #5046e5;
+  --terracotta-dark: #3f35c7;
+  --gold: #e5a32b;
+  --blush: #eef0ff;
+  --sage: #1aa463;
 
-  --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Work Sans", system-ui, sans-serif;
+  --radius: 10px;
+  --shadow-sm: 0 1px 2px rgba(20, 20, 31, 0.04), 0 1px 3px rgba(20, 20, 31, 0.06);
+  --shadow-md: 0 4px 16px rgba(20, 20, 31, 0.08);
+
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 * {
@@ -115,24 +123,48 @@ nav {
   align-items: center;
   gap: 8px;
   border: none;
+  border-radius: var(--radius);
   cursor: pointer;
   font-family: var(--font-body);
   text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 .btn-primary {
-  background: var(--ink);
-  color: var(--ivory);
+  background: var(--terracotta);
+  color: #ffffff;
   padding: 12px 24px;
   font-size: 13.5px;
   font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  background: var(--terracotta-dark);
 }
 .btn-ghost {
-  border: 1px solid var(--ink);
+  border: 1px solid var(--line);
   color: var(--ink);
   padding: 11px 23px;
   font-size: 13.5px;
   font-weight: 600;
-  background: none;
+  background: var(--ivory-2);
+}
+.btn-ghost:hover {
+  border-color: var(--ink-faint);
+}
+
+/* wiederverwendbare Karten-Flaeche — Radius + Schatten statt nackter
+   Kante. Wird schrittweise auf den einzelnen Seiten anstelle von
+   inline "border: 1px solid var(--line)"-Boxen eingesetzt. */
+.card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+a.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* hero */
@@ -187,7 +219,7 @@ nav {
   padding: 42px 30px;
   text-align: center;
   transform: rotate(-2.5deg);
-  box-shadow: 0 30px 60px -25px rgba(33, 28, 25, 0.35);
+  box-shadow: 0 30px 60px -25px rgba(20, 20, 31, 0.35);
 }
 .hero-card .name {
   font-family: var(--font-display);
@@ -986,7 +1018,7 @@ nav {
   border-radius: 24px;
   padding: 9px;
   background: var(--ivory-2);
-  box-shadow: 0 30px 60px -28px rgba(33, 28, 25, 0.3);
+  box-shadow: 0 30px 60px -28px rgba(20, 20, 31, 0.3);
 }
 .phone-inner {
   border-radius: 16px;
@@ -1026,14 +1058,17 @@ nav {
 }
 .price-card {
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 30px 26px;
-  background: var(--ivory-2);
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
 }
 .price-card.highlight {
-  border: 1.5px solid var(--ink);
+  border: 1.5px solid var(--terracotta);
   background: var(--ink);
   color: var(--ivory);
   position: relative;
+  box-shadow: var(--shadow-md);
 }
 .price-badge {
   position: absolute;
@@ -1058,7 +1093,7 @@ nav {
   min-height: 32px;
 }
 .price-card.highlight .tag {
-  color: #c9c1b8;
+  color: #a8a9c0;
 }
 .price-card .amount {
   font-family: var(--font-display);
@@ -1081,7 +1116,7 @@ nav {
   color: var(--ink-soft);
 }
 .price-card.highlight li {
-  color: #c9c1b8;
+  color: #a8a9c0;
 }
 
 /* footer */

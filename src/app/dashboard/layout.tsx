@@ -31,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         }}
       >
         <a href="/dashboard" className="logo">
-          <svg width="26" height="20" viewBox="0 0 28 22" fill="none" stroke="#B2543A" strokeWidth="1.4">
+          <svg width="26" height="20" viewBox="0 0 28 22" fill="none" stroke="var(--terracotta)" strokeWidth="1.4">
             <rect x="1" y="1" width="26" height="20" rx="1.5" />
             <path d="M1.5 2l12 9.5 12-9.5" />
           </svg>

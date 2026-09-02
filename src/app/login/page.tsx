@@ -20,7 +20,7 @@ export default function LoginPage() {
     >
       <div style={{ width: "100%", maxWidth: 380, border: "1px solid var(--line)", padding: "40px 32px", background: "var(--ivory-2)" }}>
         <Link href="/" className="logo" style={{ marginBottom: 28, display: "flex" }}>
-          <svg width="28" height="22" viewBox="0 0 28 22" fill="none" stroke="#B2543A" strokeWidth="1.4">
+          <svg width="28" height="22" viewBox="0 0 28 22" fill="none" stroke="var(--terracotta)" strokeWidth="1.4">
             <rect x="1" y="1" width="26" height="20" rx="1.5" />
             <path d="M1.5 2l12 9.5 12-9.5" />
           </svg>

@@ -57,11 +57,11 @@ function Check() {
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
     <a href="#" className="logo">
-      <svg width="28" height="22" viewBox="0 0 28 22" fill="none" stroke={dark ? "#B9975B" : "#B2543A"} strokeWidth="1.4">
+      <svg width="28" height="22" viewBox="0 0 28 22" fill="none" stroke={dark ? "var(--gold)" : "var(--terracotta)"} strokeWidth="1.4">
         <rect x="1" y="1" width="26" height="20" rx="1.5" />
         <path d="M1.5 2l12 9.5 12-9.5" />
       </svg>
-      <span style={dark ? { color: "#FAF6EF" } : undefined}>einladi</span>
+      <span style={dark ? { color: "var(--ivory)" } : undefined}>einladi</span>
     </a>
   );
 }

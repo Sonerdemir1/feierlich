@@ -1,17 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Work_Sans, Playfair_Display, Cinzel, Great_Vibes, Poppins } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, Playfair_Display, Cinzel, Great_Vibes, Poppins } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
 import { getLocale } from "@/lib/i18n";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
+// App-Chrom (Nav, Dashboard, Buttons) — moderne, geometrische Grotesk statt
+// der bisherigen Serife, passend zur neuen SaaS-Design-Sprache.
+const jakarta = Plus_Jakarta_Sans({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["500", "600", "700", "800"],
   style: ["normal", "italic"],
 });
 
-const workSans = Work_Sans({
+const inter = Inter({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -54,7 +56,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#211C19",
+  themeColor: "#14141F",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -62,7 +64,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang={locale}
-      className={`${cormorant.variable} ${workSans.variable} ${playfair.variable} ${cinzel.variable} ${greatVibes.variable} ${poppins.variable}`}
+      className={`${jakarta.variable} ${inter.variable} ${playfair.variable} ${cinzel.variable} ${greatVibes.variable} ${poppins.variable}`}
     >
       <body>
         {children}

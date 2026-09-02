@@ -49,7 +49,7 @@ const uploadErrorLabel: Record<string, string> = {
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div style={{ border: "1px solid var(--line)", background: "var(--ivory-2)", padding: "18px 20px" }}>
+    <div className="card" style={{ background: "var(--ivory-2)", padding: "18px 20px" }}>
       <div style={{ fontSize: 11, letterSpacing: "0.06em", color: "var(--ink-faint)", textTransform: "uppercase" }}>
         {label}
       </div>
@@ -156,7 +156,7 @@ export default async function EventDetailPage({
         <Tile label="QR-Codes" value="2" note="Eventseite · RSVP" />
       </div>
 
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Öffentliche Event-Seite</div>
           <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>{publicHost()}/e/{event.slug}</div>
@@ -172,7 +172,7 @@ export default async function EventDetailPage({
       </div>
 
       {/* Design & Vorschau */}
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Design &amp; Vorschau</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
           Farben anpassen — die Vorschau rechts aktualisiert sich nach dem Speichern sofort.
@@ -205,7 +205,7 @@ export default async function EventDetailPage({
             )}
           </div>
           <div style={{ flex: "1 1 360px", minWidth: 260 }}>
-            <div style={{ border: "1px solid var(--line)", height: 480, overflow: "hidden" }}>
+            <div className="card" style={{ height: 480, overflow: "hidden" }}>
               <iframe
                 key={event.colorOverride ?? "default"}
                 title="Vorschau der Einladungsseite"
@@ -218,7 +218,7 @@ export default async function EventDetailPage({
       </div>
 
       {/* Titelbild */}
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 14 }}>Titelbild</div>
         {event.coverImage && (
           <div style={{ marginBottom: 14, maxWidth: 320 }}>
@@ -288,7 +288,7 @@ export default async function EventDetailPage({
       </div>
 
       {/* Module */}
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Module für dieses Event</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
           Nur aktivierte Module erscheinen später auf der Event-Seite.
@@ -336,7 +336,7 @@ export default async function EventDetailPage({
 
       {/* Zusatzpakete */}
       {otherAddOns.length > 0 && (
-        <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+        <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Zusatzpakete</div>
           <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
             Unabhängig vom gewählten Einladungs-Paket dazubuchbar.
@@ -387,7 +387,7 @@ export default async function EventDetailPage({
       )}
 
       {/* QR-Codes */}
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 20 }}>
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>QR-Codes</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
           Rohe QR-Codes zum direkten Download. Gestaltete Tisch-/Aufsteller-Karten mit Design-Auswahl (klassisch,
@@ -426,7 +426,7 @@ export default async function EventDetailPage({
       </div>
 
       {/* Veroeffentlichen */}
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 32, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Veröffentlichen</div>
           <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
@@ -456,8 +456,8 @@ export default async function EventDetailPage({
         {aiTextConfigured && (
           <Link
             href={`/dashboard/events/${event.id}/text`}
+            className="card"
             style={{
-              border: "1px solid var(--line)",
               background: "var(--ivory-2)",
               padding: "16px 18px",
               fontSize: 13,
@@ -474,8 +474,8 @@ export default async function EventDetailPage({
         )}
         <Link
           href={`/dashboard/events/${event.id}/guests`}
+          className="card"
           style={{
-            border: "1px solid var(--line)",
             background: "var(--ivory-2)",
             padding: "16px 18px",
             fontSize: 13,
@@ -491,8 +491,8 @@ export default async function EventDetailPage({
         </Link>
         <Link
           href={`/dashboard/events/${event.id}/seating`}
+          className="card"
           style={{
-            border: "1px solid var(--line)",
             background: "var(--ivory-2)",
             padding: "16px 18px",
             fontSize: 13,
@@ -508,8 +508,8 @@ export default async function EventDetailPage({
         </Link>
         <Link
           href={`/dashboard/events/${event.id}/billing`}
+          className="card"
           style={{
-            border: "1px solid var(--line)",
             background: "var(--ivory-2)",
             padding: "16px 18px",
             fontSize: 13,
@@ -539,8 +539,8 @@ export default async function EventDetailPage({
         </Link>
         <Link
           href={`/dashboard/events/${event.id}/memories`}
+          className="card"
           style={{
-            border: "1px solid var(--line)",
             background: "var(--ivory-2)",
             padding: "16px 18px",
             fontSize: 13,
