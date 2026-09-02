@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
@@ -9,6 +10,7 @@ import { getGalleryCategories } from "@/lib/gallery-templates-data";
 import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { getLocale } from "@/lib/i18n";
 import { homepageCopy } from "@/lib/translations/homepage";
+import { packageSlug } from "@/lib/packages";
 
 // Ohne dies versucht `next build`, diese Seite bei jedem Deploy statisch
 // vorzurendern und braucht dafuer eine live erreichbare Datenbank zur
@@ -311,6 +313,9 @@ export default async function Home() {
                     </li>
                   ))}
                 </ul>
+                <Link href={`/preise/${packageSlug(pkg.key)}`} className="price-card-details">
+                  Alle Funktionen ansehen →
+                </Link>
               </div>
             );
           })}
