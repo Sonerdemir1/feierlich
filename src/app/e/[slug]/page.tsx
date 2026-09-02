@@ -14,6 +14,7 @@ import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { fontOptionById } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
+import { googleCalendarUrl } from "@/lib/ics";
 import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -173,6 +174,15 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     .map(([id, v]) => ({ id, firstName: v.firstName, count: v.count }))
     .sort((a, b) => a.firstName.localeCompare(b.firstName, "de"));
 
+  const eventLocationText = [event.locationName, event.locationAddress].filter(Boolean).join(", ") || undefined;
+  const calendarUrl = googleCalendarUrl({
+    title: event.title,
+    description: event.description ?? `${event.eventType.name} · einladi`,
+    location: eventLocationText,
+    date: event.eventDate,
+    time: event.eventTime,
+  });
+
   const uploadErrorLabel: Record<string, string> = {
     "no-file": "Bitte eine Datei auswählen.",
     "bad-type": "Nur JPG, PNG, WEBP, GIF, MP4, MOV oder WEBM sind erlaubt.",
@@ -324,6 +334,35 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           <Countdown targetIso={event.eventDate.toISOString()} accent={colors.accent} />
         </div>
       )}
+
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 24 }}>
+        <a
+          href={`/e/${event.slug}/ics`}
+          style={{
+            padding: "9px 16px",
+            fontSize: 12,
+            border: `1px solid ${colors.accent}88`,
+            color: colors.primary,
+            textDecoration: "none",
+          }}
+        >
+          In Kalender speichern
+        </a>
+        <a
+          href={calendarUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: "9px 16px",
+            fontSize: 12,
+            border: `1px solid ${colors.accent}88`,
+            color: colors.primary,
+            textDecoration: "none",
+          }}
+        >
+          Google Kalender
+        </a>
+      </div>
     </div>
   );
 
