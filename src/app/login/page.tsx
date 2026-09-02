@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signIn } from "@/auth";
+import { loginWithPassword } from "./actions";
 
 export default function LoginPage() {
   async function login(formData: FormData) {
@@ -53,6 +54,35 @@ export default function LoginPage() {
             Anmelde-Link senden
           </button>
         </form>
+
+        <details style={{ marginTop: 20 }}>
+          <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+            Stattdessen mit Passwort anmelden
+          </summary>
+          <p style={{ fontSize: 12, color: "var(--ink-faint)", margin: "10px 0" }}>
+            Nur falls du im Konto bereits ein Passwort festgelegt hast.
+          </p>
+          <form action={loginWithPassword} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="deine@email.de"
+              style={{ padding: "12px 13px", border: "1px solid #D8CBB5", background: "var(--ivory)", fontSize: 13 }}
+            />
+            <input
+              type="password"
+              name="password"
+              required
+              placeholder="Passwort"
+              autoComplete="current-password"
+              style={{ padding: "12px 13px", border: "1px solid #D8CBB5", background: "var(--ivory)", fontSize: 13 }}
+            />
+            <button type="submit" className="btn btn-ghost" style={{ justifyContent: "center", padding: 12 }}>
+              Anmelden
+            </button>
+          </form>
+        </details>
       </div>
     </main>
   );

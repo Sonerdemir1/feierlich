@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -10,8 +11,14 @@ const statusLabel: Record<string, string> = {
 
 export default async function DashboardPage() {
   const session = await auth();
+  // Normalerweise schon durch das Layout abgefangen (redirect bei fehlender
+  // Session) — trotzdem hier zusaetzlich abgesichert, statt sich per
+  // session!.user auf die Nicht-Null-Behauptung zu verlassen (fuehrte zu
+  // einem echten Absturz: "Cannot read properties of null").
+  if (!session?.user) redirect("/login");
+
   const events = await prisma.event.findMany({
-    where: { ownerId: session!.user.id },
+    where: { ownerId: session.user.id },
     include: { eventType: true, template: true },
     orderBy: { createdAt: "desc" },
   });

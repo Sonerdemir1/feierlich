@@ -29,6 +29,11 @@ model User {
   name          String?
   image         String?
   role          UserRole  @default(CUSTOMER)
+  // Optional — der Anmelde-Link per E-Mail bleibt der Standardweg, ein
+  // Passwort ist eine zusaetzliche, vom Kunden selbst im Konto aktivierte
+  // Option fuer schnelleren Login. "salt:hash" (crypto.scrypt, siehe
+  // src/lib/password.ts) — kein neues npm-Paket noetig.
+  passwordHash  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

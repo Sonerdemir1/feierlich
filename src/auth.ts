@@ -44,6 +44,16 @@ const emailProvider = Nodemailer({
   },
 });
 
+// Kein Credentials-Provider hier: Auth.js erzwingt fuer "credentials"-Typ
+// Provider technisch IMMER eine JWT-Session (siehe @auth/core/lib/actions/
+// callback), unabhaengig von der hier global gesetzten "database"-Strategie
+// — auth() liest bei "database" aber ausschliesslich per Adapter aus der
+// Session-Tabelle, das JWT-Cookie eines Credentials-Logins waere fuer den
+// Rest der App unsichtbar (eingehend getestet: Login "gelingt", direkt
+// danach ist man trotzdem ausgeloggt). Der Passwort-Login (siehe
+// /login/actions.ts) legt deshalb bewusst manuell eine echte Session-Zeile
+// per Adapter an, statt ueber signIn("credentials", ...) zu gehen — bleibt
+// dadurch fuer den Rest der App ununterscheidbar vom Anmelde-Link.
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: tolerantAdapter(PrismaAdapter(prisma)),
   // Ohne dies lehnt Auth.js in production ausserhalb von Vercel/Cloudflare
@@ -56,7 +66,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // Einladung ueber Wochen/Monate hinweg immer wieder — jedes Mal per
   // E-Mail-Link neu anmelden zu muessen ("muss einfacher sein"), ist bei
   // einem Hochzeits-/Feier-Tool unnoetige Reibung, kein Sicherheitsrisiko
-  // wie bei sensibleren Anwendungen.
+  // wie bei sensibleren Anwendungen. Siehe auch SESSION_MAX_AGE_SECONDS in
+  // src/lib/db-session.ts — muss mit diesem Wert uebereinstimmen.
   session: { strategy: "database", maxAge: 60 * 24 * 60 * 60 },
   pages: {
     signIn: "/login",

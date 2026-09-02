@@ -48,7 +48,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Partner-Bereich
             </a>
           )}
-          <span style={{ fontSize: 13, color: "var(--ink-soft)" }}>{session.user.email}</span>
+          <a href="/dashboard/account" style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+            {session.user.email}
+          </a>
           <form action={logout}>
             <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
               Abmelden
