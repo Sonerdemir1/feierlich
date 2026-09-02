@@ -23,6 +23,17 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
+      // Ausnahme fuer die oeffentliche Event-Seite: der Design-Editor
+      // (dashboard/events/[id]/design) bettet sie in ein <iframe> als
+      // Live-Vorschau ein — SAMEORIGIN statt DENY erlaubt genau das
+      // (nur die eigene Seite darf sich selbst einbetten), fremde Seiten
+      // koennen weiterhin nicht per Clickjacking-Iframe einbetten. Muss
+      // NACH der allgemeinen Regel stehen, damit sie fuer diesen Pfad
+      // gewinnt.
+      {
+        source: "/e/:slug*",
+        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
     ];
   },
 };
