@@ -186,8 +186,53 @@ export function SharePreview() {
   );
 }
 
+// Echte (lizenzfreie) Beispielfotos statt einfarbiger Platzhalter-Kacheln —
+// dieselben Bilder, die auch als Kartenvorschau-Hintergruende dienen
+// (PHOTO_BACKGROUND in gallery-templates.ts), hier als Ausschnitt in der
+// Galerie-Kachel. Zwei davon zusaetzlich mit Video-Play-Icon markiert,
+// passend zur "12 Videos"-Angabe darunter — keine echten Gaesterfotos
+// (waeren personenbezogen), sondern nur eine plausiblere Illustration.
+const GALLERY_TILES: { src: string; video?: boolean }[] = [
+  { src: "/images/templates/wedding-aisle-classic.jpg" },
+  { src: "/images/templates/rose-tulip-bouquet.jpg", video: true },
+  { src: "/images/templates/grand-hall-dramatic.jpg" },
+  { src: "/images/templates/fern-greenery.jpg" },
+  { src: "/images/templates/party-balloons.jpg", video: true },
+  { src: "/images/templates/modern-lounge-warm.jpg" },
+];
+
+function PlayBadge() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(20,16,13,0.18)",
+      }}
+    >
+      <div
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: "50%",
+          background: "rgba(20,16,13,0.55)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="#FAF6EF">
+          <path d="M6 4l15 8-15 8V4z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 export function GalleryPreview() {
-  const colors = ["#D9C9AE", "#C97E5E", "#E4D9C8", "#8F9B6E", "#B9975B", "#D9C9AE"];
   return (
     <div style={{ width: "100%", fontFamily: "var(--font-body)", color: "#2A2420" }}>
       <header style={{ padding: "22px 22px 4px" }}>
@@ -197,8 +242,19 @@ export function GalleryPreview() {
         <div style={{ fontSize: 11, color: "#5C5248", marginTop: 3 }}>86 Fotos · 12 Videos · 34 Grüße</div>
       </header>
       <div style={{ padding: "14px 22px 4px", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
-        {colors.map((c, i) => (
-          <div key={i} style={{ aspectRatio: "1", background: c }} />
+        {GALLERY_TILES.map((tile, i) => (
+          <div
+            key={i}
+            style={{
+              position: "relative",
+              aspectRatio: "1",
+              backgroundImage: `url(${tile.src})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          >
+            {tile.video && <PlayBadge />}
+          </div>
         ))}
       </div>
       <section style={{ marginTop: 22, padding: "26px 22px", background: "#211C19" }}>
