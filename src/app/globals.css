@@ -543,127 +543,186 @@ a.card:hover {
   white-space: nowrap;
 }
 
-/* customizer — erscheint direkt neben/unter der angeklickten Vorlage,
-   volle Rasterbreite, keine Anmeldung noetig. */
-/* tpl-overlay — Vollbild-Vorschau statt Inline-Panel im Raster: klicken
-   oeffnet die Karte gross und animiert, wie bei einer dedizierten
-   Vorschau-Seite. Schwebende Leiste unten bleibt beim Scrollen sichtbar
-   (das Formular scrollt intern innerhalb der Buehne, nicht die Seite). */
-.tpl-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(18, 15, 12, 0.92);
-  display: flex;
-  flex-direction: column;
-  animation: tplOverlayFade 0.25s ease;
+/* Design-Studio (/gestalten/[templateId]) — eigene Seite statt Overlay auf
+   der Startseite: Kartenvorschau links (sticky auf Desktop), Bearbeiten-
+   Abschnitte rechts mit vollem Viewport statt eines schmalen festen
+   Panels. Unter --studio-break stapelt sich alles einspaltig. */
+:root {
+  --studio-break: 900px;
 }
-@keyframes tplOverlayFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.studio-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 28px 100px;
 }
-.tpl-overlay-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 2;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(250, 246, 239, 0.3);
-  background: rgba(250, 246, 239, 0.08);
-  color: var(--ivory);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-.tpl-overlay-stage {
-  flex: 1;
+.studio-top {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 40px;
-  padding: 64px 24px;
-  overflow-y: auto;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--line);
 }
-.tpl-overlay-card-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.tpl-overlay-card-anim {
-  animation: tplCardOpen 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-@keyframes tplCardOpen {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.tpl-overlay-form {
-  width: min(100%, 380px);
-  max-height: calc(100vh - 220px);
-  overflow-y: auto;
-  background: var(--ivory-2);
-  border: 1px solid var(--line);
-  padding: 24px;
-  animation: tplFormSlide 0.3s ease;
-}
-@keyframes tplFormSlide {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.tpl-overlay-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
-  background: rgba(250, 246, 239, 0.06);
-  border-top: 1px solid rgba(250, 246, 239, 0.14);
-}
-.tpl-overlay-bar button {
-  border: 1px solid rgba(250, 246, 239, 0.3);
-  background: none;
-  color: var(--ivory);
+.studio-top-cat {
   font-size: 12.5px;
-  font-family: var(--font-body);
-  padding: 10px 16px;
-  cursor: pointer;
-}
-.tpl-overlay-bar-primary {
-  background: var(--terracotta) !important;
-  border-color: var(--terracotta) !important;
+  color: var(--ink-faint);
   font-weight: 600;
 }
-@media (max-width: 640px) {
-  .tpl-overlay-stage {
-    padding: 48px 16px;
-    gap: 20px;
-  }
-  .tpl-overlay-bar span,
-  .tpl-overlay-bar button {
-    font-size: 11.5px;
-    padding: 9px 10px;
-  }
+.studio-back {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  white-space: nowrap;
 }
-@media (prefers-reduced-motion: reduce) {
-  .tpl-overlay,
-  .tpl-overlay-card-anim,
-  .tpl-overlay-form {
-    animation: none;
+.studio-back:hover {
+  color: var(--ink);
+}
+.studio-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) 1fr;
+  gap: 56px;
+  align-items: start;
+}
+.studio-card-col {
+  display: flex;
+  justify-content: center;
+}
+.studio-card-sticky {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.studio-card-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+.studio-card-cta .btn {
+  width: 100%;
+}
+.studio-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+  font-size: 12px;
+}
+.studio-nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+.studio-nav a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.studio-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.studio-section {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 26px 28px;
+}
+.studio-section h4 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.studio-section-intro {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.studio-section .customizer-form {
+  margin-top: 14px;
+}
+.studio-cta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.studio-alt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+.studio-alt-tile {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.studio-alt-tile:hover {
+  border-color: var(--ink);
+  box-shadow: var(--shadow-md);
+}
+.studio-alt-tile span {
+  display: block;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+}
+.studio-mobile-cta {
+  display: none;
+}
+@media (max-width: 900px) {
+  .studio-page {
+    padding: 20px 18px 96px;
+  }
+  .studio-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .studio-card-sticky {
+    position: static;
+  }
+  .studio-card-cta {
+    display: none;
+  }
+  .studio-section {
+    padding: 20px 18px;
+  }
+  .studio-top {
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .studio-mobile-cta {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(250, 246, 239, 0.96);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(6px);
+  }
+  .studio-mobile-cta .btn {
+    width: 100%;
   }
 }
 
@@ -1052,9 +1111,9 @@ a.card:hover {
   flex-direction: column;
   gap: 6px;
 }
-.customizer-field label.customizer-toggle {
+.customizer-toggle {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   font-size: 12.5px;
   color: var(--ink-soft);
@@ -1066,8 +1125,27 @@ a.card:hover {
   border-radius: var(--radius);
   transition: background-color 0.12s ease;
 }
-.customizer-field label.customizer-toggle:hover {
+.customizer-toggle:hover {
   background: var(--ivory-2);
+}
+.customizer-toggle .customizer-switch {
+  margin-top: 1px;
+}
+.customizer-toggle-text {
+  padding-top: 1px;
+}
+.customizer-toggle-text strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.customizer-toggle-text small {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-faint);
+  line-height: 1.4;
+  margin-top: 2px;
 }
 /* Native Checkbox bleibt fuer Tastatur/Screenreader vorhanden, aber
    unsichtbar — .customizer-switch daneben ist die eigentliche, sichtbare

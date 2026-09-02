@@ -3,7 +3,9 @@ import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
 import { HeroStory } from "@/components/marketing/HeroStory";
-import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { TemplateGallery } from "@/components/marketing/TemplateGallery";
+import { categorySlug, categoryLabel } from "@/lib/gallery-templates";
+import { getGalleryCategories } from "@/lib/gallery-templates-data";
 import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { getLocale } from "@/lib/i18n";
 import { homepageCopy } from "@/lib/translations/homepage";
@@ -14,57 +16,7 @@ import { homepageCopy } from "@/lib/translations/homepage";
 // Postgres-Containers) schlaegt das sonst fehl.
 export const dynamic = "force-dynamic";
 
-const TURKISH_CATEGORIES = new Set(["Düğün", "Kına Gecesi", "Nişan", "Sünnet"]);
-
-function defaultTextForCategory(category: string): string {
-  if (TURKISH_CATEGORIES.has(category)) return "Ayşe & Emre";
-  if (category === "Verspielt") return "Mia wird 5";
-  if (category === "Business Modern") return "Jahresempfang 2026";
-  return "Anna & Lukas";
-}
-
-// Lizenzfreie Foto-Hintergruende (Pexels-Lizenz, kommerziell nutzbar ohne
-// Zuschreibung) je layoutKey. `tint` ist die Vorlagenfarbe als "r,g,b" —
-// der dunkle Verlauf ueber dem Foto wird daraus gebaut, damit Bosporus-
-// Nachtfoto und Iznik-Fliesenmuster farblich zur jeweiligen Vorlage passen
-// statt immer denselben Ton zu haben.
-const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
-  "kina-kirmizi": { src: "/images/templates/iznik-floral.jpg", tint: "122,20,40" },
-  "kraliyet-moru": { src: "/images/templates/iznik-floral.jpg", tint: "46,26,71" },
-  // Sünnet zeigt keine echten Zeremonie-Fotos (Kinder) — stattdessen dasselbe
-  // Iznik-Fliesenmuster wie Kına/Nişan, nur blau statt rot/lila getönt.
-  "sehzade-mavisi": { src: "/images/templates/iznik-floral.jpg", tint: "14,47,90" },
-  "minimal-ivory": { src: "/images/templates/wedding-aisle-classic.jpg", tint: "250,246,239" },
-  "botanico": { src: "/images/templates/fern-greenery.jpg", tint: "243,236,223" },
-  "roman-script": { src: "/images/templates/rose-tulip-bouquet.jpg", tint: "240,217,204" },
-  "gold-line": { src: "/images/templates/grand-hall-dramatic.jpg", tint: "33,28,25" },
-  "konfetti": { src: "/images/templates/party-balloons.jpg", tint: "255,244,227" },
-  "klarblau": { src: "/images/templates/modern-lounge-warm.jpg", tint: "22,35,59" },
-};
-
-function defaultEventLabelForCategory(category: string): string {
-  if (category === "Düğün") return "DÜĞÜN DAVETİYESİ";
-  if (category === "Kına Gecesi") return "KINA GECESİ";
-  if (category === "Nişan") return "NİŞAN DAVETİYESİ";
-  if (category === "Sünnet") return "SÜNNET DAVETİYESİ";
-  if (category === "Verspielt") return "GEBURTSTAGSPARTY";
-  if (category === "Business Modern") return "JAHRESEMPFANG";
-  return "HOCHZEITSEINLADUNG";
-}
-
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
-
-// Muss exakt zur gleichnamigen Funktion in TemplateGallery.tsx passen (beide
-// erzeugen dieselben Anker-IDs) — bewusst dupliziert statt geteilt, gleiches
-// Muster wie die anderen lokalen `slugify`-Helfer im Projekt.
-function categorySlug(category: string): string {
-  return category
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 function Check() {
   return (
@@ -87,9 +39,9 @@ function Logo({ dark = false }: { dark?: boolean }) {
 }
 
 export default async function Home() {
-  const [locale, templates, packages, modules, photoVideoAddOn] = await Promise.all([
+  const [locale, galleryCategories, packages, modules, photoVideoAddOn] = await Promise.all([
     getLocale(),
-    prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } }),
+    getGalleryCategories(),
     prisma.package.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.module.findMany(),
     prisma.addOn.findUnique({ where: { key: "photo-video-collection" } }),
@@ -97,42 +49,7 @@ export default async function Home() {
   const t = homepageCopy[locale];
 
   const moduleNameByKey = new Map(modules.map((m) => [m.key, m.name]));
-
-  const templatesByCategory = new Map<string, typeof templates>();
-  for (const t of templates) {
-    const list = templatesByCategory.get(t.category) ?? [];
-    list.push(t);
-    templatesByCategory.set(t.category, list);
-  }
-
-  const categorySubtitle: Record<string, string> = {
-    Zeitlos: "Klar, reduziert, langlebig",
-    Botanisch: "Zarte Linien, natürliche Formen",
-    Romantisch: "Weich, fließend, persönlich",
-    Statement: "Dunkel, klar, selbstbewusst",
-    Düğün: "Für den großen Tag – opulent oder elegant",
-    "Kına Gecesi": "Für die Henna-Nacht – opulent oder elegant",
-    Nişan: "Für die Verlobung – opulent oder elegant",
-    Sünnet: "Für das Fest – opulent oder elegant",
-    Verspielt: "Fröhlich, bunt, verspielt",
-    "Business Modern": "Klar, professionell, zeitgemäß",
-  };
-
-  const galleryCategories: GalleryCategory[] = [...templatesByCategory.entries()].map(([category, items]) => ({
-    category,
-    subtitle: categorySubtitle[category] ?? "",
-    items: items.map((t) => ({
-      id: t.id,
-      name: t.name,
-      layoutKey: t.layoutKey,
-      priceCents: t.priceCents,
-      colors: JSON.parse(t.colors) as { primary: string; accent: string; background: string },
-      defaultText: defaultTextForCategory(category),
-      defaultEventLabel: defaultEventLabelForCategory(category),
-      photoBackground: PHOTO_BACKGROUND[t.layoutKey] ?? null,
-      cardImageUrl: t.previewUrl,
-    })),
-  }));
+  const templateCount = galleryCategories.reduce((n, c) => n + c.items.length, 0);
 
   return (
     <>
@@ -182,7 +99,7 @@ export default async function Home() {
               {t.hero.chipAi}
             </span>
             <span className="hero-chip" style={{ bottom: 44, left: 0 }}>
-              🎨 {templates.length} {t.nav.templates}
+              🎨 {templateCount} {t.nav.templates}
             </span>
           </div>
         </div>
@@ -197,8 +114,12 @@ export default async function Home() {
             // sondern echte Kartendesigns (cardImageUrl) — die Karte selbst
             // eignet sich als Kachel-Hintergrund genauso gut.
             const cardImage = items.find((i) => i.cardImageUrl)?.cardImageUrl;
+            // Kına Gecesi/Nişan/Sünnet teilen sich dasselbe Iznik-Fliesenfoto
+            // (nur per `tint` unterschieden) — ohne den Farbwasch hier sehen
+            // alle drei Kacheln identisch aus. Der Wasch macht sie auf einen
+            // Blick unterscheidbar, wie auf der echten Kartenvorschau auch.
             const tileBg = photo
-              ? { backgroundImage: `url(${photo.src})` }
+              ? { backgroundImage: `linear-gradient(rgba(${photo.tint},0.45), rgba(${photo.tint},0.45)), url(${photo.src})` }
               : cardImage
                 ? { backgroundImage: `url(${cardImage})` }
                 : { background: "var(--ivory-2)" };
@@ -209,7 +130,7 @@ export default async function Home() {
                 className="cat-nav-tile"
                 style={tileBg}
               >
-                <span>{category}</span>
+                <span>{categoryLabel(category, locale)}</span>
               </a>
             );
           })}
@@ -222,7 +143,7 @@ export default async function Home() {
         <div className="stats-grid">
           {t.stats.map((s, i) => (
             <div className="stats-item" key={i}>
-              <div className="stats-num">{i === 0 ? templates.length : s.num}</div>
+              <div className="stats-num">{i === 0 ? templateCount : s.num}</div>
               <div className="stats-label">{s.label}</div>
             </div>
           ))}
@@ -270,12 +191,12 @@ export default async function Home() {
 
       <section className="templates reveal" id="vorlagen">
         <div className="templates-head">
-          <div className="eyebrow">{templates.length} {t.nav.templates}</div>
+          <div className="eyebrow">{templateCount} {t.nav.templates}</div>
           <h2>{t.vorlagen.heading}</h2>
           <p>{t.vorlagen.desc}</p>
         </div>
 
-        <TemplateGallery categories={galleryCategories} />
+        <TemplateGallery categories={galleryCategories} locale={locale} />
       </section>
 
       <section className="feature reveal" id="editor">
