@@ -9,6 +9,7 @@ import { GuestNameField } from "@/components/public/GuestNameField";
 import { FileField } from "@/components/public/FileField";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
+import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { fontOptionById } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
@@ -156,6 +157,152 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   };
   const mediaAccept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm";
 
+  // Hero-Inhalt (Anlass-Label, Titel/Datum in ihren drei Varianten,
+  // Countdown) einmal vorberechnet — envelopeImages-Vorlagen (echte
+  // Umschlag-Fotografie) zeigen ihn direkt, alle anderen erst nach der
+  // generischen CSS-Umschlag-Animation (siehe EnvelopeOpen).
+  const heroInner = (
+    <div style={applyOrnamentFrame ? { position: "relative", padding: "22px 18px" } : undefined}>
+      {applyOrnamentFrame && (
+        <>
+          <div style={{ position: "absolute", inset: 0, border: `1px solid ${colors.accent}` }} />
+          <div style={{ position: "absolute", inset: 6, border: `1px solid ${colors.accent}66` }} />
+          <CornerMotif color={colors.accent} corner="tl" />
+          <CornerMotif color={colors.accent} corner="tr" />
+          <CornerMotif color={colors.accent} corner="bl" />
+          <CornerMotif color={colors.accent} corner="br" />
+        </>
+      )}
+      {cardImageUrl ? (
+        <div style={{ position: "relative", maxWidth: 380, margin: "0 auto" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Kartengrafik mit variablem Seitenverhaeltnis je Design, kein fixes next/image-Format */}
+          <img
+            src={cardImageUrl}
+            alt=""
+            style={{ width: "100%", height: "auto", display: "block", borderRadius: "var(--radius)", boxShadow: "var(--shadow-md)" }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: `${textZone.top}% ${textZone.right}% ${textZone.bottom}% ${textZone.left}%`,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              // Verteilt Anlass-Label / Name-Gruppe / Datum ueber die
+              // gesamte verfuegbare Hoehe der Sicherheitszone, statt sie
+              // eng zusammenzudraengen — nutzt den Freiraum, den jede
+              // Karte unterschiedlich viel mitbringt.
+              justifyContent: "space-evenly",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent }}>
+              {event.eventType.name}
+            </div>
+            <div>
+              <div
+                style={{
+                  fontFamily: headingFont,
+                  fontStyle: headingItalic ? "italic" : "normal",
+                  textTransform: headingUppercase ? "uppercase" : "none",
+                  fontWeight: 600,
+                  fontSize: "clamp(21px, 5.5vw, 30px)",
+                  color: colors.primary,
+                  ...titleOverride,
+                }}
+              >
+                {event.title}
+              </div>
+              {event.subtitle && (
+                <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>
+                  {event.subtitle}
+                </p>
+              )}
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>
+              {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+              {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+            </div>
+          </div>
+        </div>
+      ) : envelopeImages ? (
+        <>
+          <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
+            {event.eventType.name}
+          </div>
+          <div style={{ maxWidth: 320, margin: "0 auto" }}>
+            <EnvelopeReveal images={envelopeImages}>
+              <div style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontFamily: headingFont,
+                    fontStyle: headingItalic ? "italic" : "normal",
+                    textTransform: headingUppercase ? "uppercase" : "none",
+                    fontWeight: 600,
+                    fontSize: "clamp(24px, 5vw, 34px)",
+                    color: colors.primary,
+                    ...titleOverride,
+                  }}
+                >
+                  {event.title}
+                </div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    fontSize: 11.5,
+                    letterSpacing: "0.06em",
+                    color: colors.primary,
+                    opacity: 0.8,
+                    ...dateOverride,
+                  }}
+                >
+                  {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+                  {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+                </div>
+              </div>
+            </EnvelopeReveal>
+          </div>
+          {event.subtitle && (
+            <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
+          )}
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
+            {event.eventType.name}
+          </div>
+          <h1
+            style={{
+              fontFamily: headingFont,
+              fontStyle: headingItalic ? "italic" : "normal",
+              textTransform: headingUppercase ? "uppercase" : "none",
+              fontWeight: 600,
+              fontSize: "clamp(34px, 6vw, 52px)",
+              margin: 0,
+              ...titleOverride,
+            }}
+          >
+            {event.title}
+          </h1>
+          {event.subtitle && (
+            <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
+          )}
+          <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
+          <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>
+            {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
+            {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
+          </div>
+        </>
+      )}
+
+      {isModuleOn("countdown") && (
+        <div style={{ marginTop: 32 }}>
+          <Countdown targetIso={event.eventDate.toISOString()} accent={colors.accent} />
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <main style={{ background: colors.background, minHeight: "100vh", color: colors.primary, fontFamily: "var(--font-body)" }}>
       {isOwner && event.status !== "PUBLISHED" && (
@@ -165,145 +312,13 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       <section style={{ padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
-        <div style={applyOrnamentFrame ? { position: "relative", padding: "22px 18px" } : undefined}>
-        {applyOrnamentFrame && (
-          <>
-            <div style={{ position: "absolute", inset: 0, border: `1px solid ${colors.accent}` }} />
-            <div style={{ position: "absolute", inset: 6, border: `1px solid ${colors.accent}66` }} />
-            <CornerMotif color={colors.accent} corner="tl" />
-            <CornerMotif color={colors.accent} corner="tr" />
-            <CornerMotif color={colors.accent} corner="bl" />
-            <CornerMotif color={colors.accent} corner="br" />
-          </>
-        )}
-        {cardImageUrl ? (
-          <div style={{ position: "relative", maxWidth: 380, margin: "0 auto" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Kartengrafik mit variablem Seitenverhaeltnis je Design, kein fixes next/image-Format */}
-            <img
-              src={cardImageUrl}
-              alt=""
-              style={{ width: "100%", height: "auto", display: "block", borderRadius: "var(--radius)", boxShadow: "var(--shadow-md)" }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                inset: `${textZone.top}% ${textZone.right}% ${textZone.bottom}% ${textZone.left}%`,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                // Verteilt Anlass-Label / Name-Gruppe / Datum ueber die
-                // gesamte verfuegbare Hoehe der Sicherheitszone, statt sie
-                // eng zusammenzudraengen — nutzt den Freiraum, den jede
-                // Karte unterschiedlich viel mitbringt.
-                justifyContent: "space-evenly",
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent }}>
-                {event.eventType.name}
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontFamily: headingFont,
-                    fontStyle: headingItalic ? "italic" : "normal",
-                    textTransform: headingUppercase ? "uppercase" : "none",
-                    fontWeight: 600,
-                    fontSize: "clamp(21px, 5.5vw, 30px)",
-                    color: colors.primary,
-                    ...titleOverride,
-                  }}
-                >
-                  {event.title}
-                </div>
-                {event.subtitle && (
-                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>
-                    {event.subtitle}
-                  </p>
-                )}
-              </div>
-              <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>
-                {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-                {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-              </div>
-            </div>
-          </div>
-        ) : envelopeImages ? (
-          <>
-            <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
-              {event.eventType.name}
-            </div>
-            <div style={{ maxWidth: 320, margin: "0 auto" }}>
-              <EnvelopeReveal images={envelopeImages}>
-                <div style={{ textAlign: "center" }}>
-                  <div
-                    style={{
-                      fontFamily: headingFont,
-                      fontStyle: headingItalic ? "italic" : "normal",
-                      textTransform: headingUppercase ? "uppercase" : "none",
-                      fontWeight: 600,
-                      fontSize: "clamp(24px, 5vw, 34px)",
-                      color: colors.primary,
-                      ...titleOverride,
-                    }}
-                  >
-                    {event.title}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      fontSize: 11.5,
-                      letterSpacing: "0.06em",
-                      color: colors.primary,
-                      opacity: 0.8,
-                      ...dateOverride,
-                    }}
-                  >
-                    {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-                    {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-                  </div>
-                </div>
-              </EnvelopeReveal>
-            </div>
-            {event.subtitle && (
-              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
-            )}
-          </>
+        {envelopeImages ? (
+          heroInner
         ) : (
-          <>
-            <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
-              {event.eventType.name}
-            </div>
-            <h1
-              style={{
-                fontFamily: headingFont,
-                fontStyle: headingItalic ? "italic" : "normal",
-                textTransform: headingUppercase ? "uppercase" : "none",
-                fontWeight: 600,
-                fontSize: "clamp(34px, 6vw, 52px)",
-                margin: 0,
-                ...titleOverride,
-              }}
-            >
-              {event.title}
-            </h1>
-            {event.subtitle && (
-              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
-            )}
-            <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
-            <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>
-              {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-              {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-            </div>
-          </>
+          <EnvelopeOpen background={colors.background} accent={colors.accent} primary={colors.primary}>
+            {heroInner}
+          </EnvelopeOpen>
         )}
-
-        {isModuleOn("countdown") && (
-          <div style={{ marginTop: 32 }}>
-            <Countdown targetIso={event.eventDate.toISOString()} accent={colors.accent} />
-          </div>
-        )}
-        </div>
       </section>
 
       {event.coverImage && (

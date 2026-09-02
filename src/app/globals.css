@@ -1605,3 +1605,96 @@ footer p {
   .story-beat { transition: opacity 0.3s ease; transform: none; }
   .story-progress-track.active .story-progress-fill { animation: none; }
 }
+
+/* Generische Umschlag-Oeffnungs-Animation (EnvelopeOpen.tsx) — Farben
+   kommen inline von der jeweiligen Vorlage, hier nur Form + Bewegung. */
+.envelope-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  perspective: 1200px;
+}
+.envelope-box {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.envelope-body {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  border: 1px solid;
+  box-shadow: var(--shadow-md);
+}
+.envelope-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 54%;
+  transform-origin: top center;
+  transform: rotateX(0deg);
+  transition: transform 0.7s cubic-bezier(0.45, 0, 0.2, 1);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  border-radius: 6px 6px 0 0;
+  z-index: 2;
+}
+.envelope-box.is-opening .envelope-flap {
+  transform: rotateX(180deg);
+}
+.envelope-seal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  box-shadow: var(--shadow-sm);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.envelope-box.is-opening .envelope-seal {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4);
+}
+.envelope-hint {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 16px;
+  opacity: 0.75;
+  animation: envelope-hint-pulse 1.8s ease-in-out infinite;
+}
+.envelope-content {
+  opacity: 0;
+  transform: translateY(10px) scale(0.97);
+  transition: opacity 0.5s ease 0.32s, transform 0.5s ease 0.32s;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.envelope-wrap.is-open .envelope-content {
+  position: static;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+@keyframes envelope-hint-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .envelope-flap, .envelope-seal, .envelope-content { transition: none; }
+  .envelope-hint { animation: none; }
+}
