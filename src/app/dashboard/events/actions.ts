@@ -64,8 +64,10 @@ export async function createEvent(formData: FormData) {
   const eventTime = String(formData.get("eventTime") ?? "").trim() || null;
   const locationName = String(formData.get("locationName") ?? "").trim() || null;
   const locationAddress = String(formData.get("locationAddress") ?? "").trim() || null;
-  const locationLat = Number(formData.get("locationLat") ?? "") || null;
-  const locationLng = Number(formData.get("locationLng") ?? "") || null;
+  const locationLatRaw = formData.get("locationLat");
+  const locationLngRaw = formData.get("locationLng");
+  const locationLat = locationLatRaw ? Number(locationLatRaw) : null;
+  const locationLng = locationLngRaw ? Number(locationLngRaw) : null;
   const description = String(formData.get("description") ?? "").trim() || null;
 
   if (!title || !eventTypeId || !templateId || !eventDate) {
