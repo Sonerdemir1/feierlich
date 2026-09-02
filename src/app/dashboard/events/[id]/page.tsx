@@ -17,6 +17,7 @@ import {
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured } from "@/lib/ai-text";
+import { FileField } from "@/components/public/FileField";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -230,8 +231,14 @@ export default async function EventDetailPage({
             />
           </div>
         )}
-        <form action={uploadCoverImage.bind(null, event.id)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif" required style={{ fontSize: 13 }} />
+        <form action={uploadCoverImage.bind(null, event.id)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", maxWidth: 320 }}>
+          <FileField
+            name="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            required
+            label="Bild auswählen"
+            colors={{ primary: "var(--ink)", accent: "var(--terracotta)", background: "var(--ivory)" }}
+          />
           <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
             {event.coverImage ? "Bild ersetzen" : "Bild hochladen"}
           </button>
@@ -302,28 +309,35 @@ export default async function EventDetailPage({
               return (
                 <label
                   key={m.id}
+                  className="card"
                   style={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     gap: 9,
                     fontSize: 13,
                     color: isGated ? "var(--ink-faint)" : "var(--ink-soft)",
-                    padding: "8px 10px",
-                    border: "1px solid var(--line)",
+                    padding: "10px 12px",
                     background: "var(--ivory-2)",
                   }}
                 >
-                  <input type="checkbox" name="modules" value={m.key} defaultChecked={checked} disabled={isGated} />
-                  {m.name}
-                  {isGated && gatingAddOn ? (
-                    <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--terracotta-dark)", fontWeight: 600, whiteSpace: "nowrap" }}>
-                      Zusatzpaket · {(gatingAddOn.priceCents / 100).toFixed(2)} €
-                    </span>
-                  ) : (
-                    m.isPremium && (
-                      <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--gold)", fontWeight: 600 }}>PREMIUM</span>
-                    )
-                  )}
+                  <input type="checkbox" name="modules" value={m.key} defaultChecked={checked} disabled={isGated} style={{ marginTop: 2 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontWeight: 600, color: isGated ? "var(--ink-faint)" : "var(--ink)" }}>{m.name}</span>
+                      {isGated && gatingAddOn ? (
+                        <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--terracotta-dark)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                          Zusatzpaket · {(gatingAddOn.priceCents / 100).toFixed(2)} €
+                        </span>
+                      ) : (
+                        m.isPremium && (
+                          <span style={{ marginLeft: "auto", fontSize: 9.5, color: "var(--gold)", fontWeight: 600 }}>PREMIUM</span>
+                        )
+                      )}
+                    </div>
+                    {m.description && (
+                      <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginTop: 3, lineHeight: 1.4 }}>{m.description}</div>
+                    )}
+                  </div>
                 </label>
               );
             })}

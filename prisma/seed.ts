@@ -52,23 +52,23 @@ const eventTypes = [
 // im Code, aber welche Module ein Event nutzt ist vollstaendig
 // datengetrieben (siehe EventModule).
 const modules = [
-  { key: 'countdown', name: 'Countdown', category: 'Basis' },
-  { key: 'location', name: 'Location & Google Maps', category: 'Basis' },
-  { key: 'agenda', name: 'Ablauf', category: 'Basis' },
-  { key: 'dresscode', name: 'Dresscode', category: 'Basis' },
-  { key: 'social-media', name: 'Social Media', category: 'Basis' },
-  { key: 'rsvp', name: 'RSVP', category: 'Gäste' },
-  { key: 'guest-list', name: 'Gästeliste', category: 'Gäste' },
-  { key: 'seating', name: 'Sitzplan', category: 'Gäste' },
-  { key: 'menu', name: 'Digitale Menükarte', category: 'Gäste' },
-  { key: 'wishlist', name: 'Wunschliste', category: 'Gäste' },
-  { key: 'gallery', name: 'Foto- & Videogalerie', category: 'Gäste' },
-  { key: 'guestbook', name: 'Gästebuch', category: 'Gäste' },
-  { key: 'music-requests', name: 'Musikwünsche', category: 'Gäste' },
-  { key: 'thank-you-card', name: 'Digitale Dankeskarte', category: 'Premium' },
-  { key: 'audio-invitation', name: 'Audio-Einladung', category: 'Premium', isPremium: true },
-  { key: 'video-invitation', name: 'Video-Einladung', category: 'Premium', isPremium: true },
-  { key: 'check-in', name: 'Event Check-in', category: 'Business', isPremium: true },
+  { key: 'countdown', name: 'Countdown', category: 'Basis', description: 'Countdown-Timer bis zum Event auf der Einladungsseite.' },
+  { key: 'location', name: 'Location & Google Maps', category: 'Basis', description: 'Adresse mit Karte und Wegbeschreibung für die Gäste.' },
+  { key: 'agenda', name: 'Ablauf', category: 'Basis', description: 'Zeitlicher Ablaufplan des Events (z. B. Sektempfang, Trauung, Feier).' },
+  { key: 'dresscode', name: 'Dresscode', category: 'Basis', description: 'Hinweis zum gewünschten Dresscode für die Gäste.' },
+  { key: 'social-media', name: 'Social Media', category: 'Basis', description: 'Hashtag-/Social-Media-Hinweis für Gäste-Posts.' },
+  { key: 'rsvp', name: 'RSVP', category: 'Gäste', description: 'Gäste sagen online direkt zu oder ab — inklusive Personenanzahl und Nachricht an euch. Antworten seht ihr gesammelt in der Gästeliste.' },
+  { key: 'guest-list', name: 'Gästeliste', category: 'Gäste', description: 'Übersicht aller eingeladenen Gäste und ihres Zusage-Status.' },
+  { key: 'seating', name: 'Sitzplan', category: 'Gäste', description: 'Tische anlegen und Gäste zuordnen — inklusive Sitzplatz-Suche für Gäste.' },
+  { key: 'menu', name: 'Digitale Menükarte', category: 'Gäste', description: 'Menüauswahl, die Gäste direkt bei der Zusage mit angeben.' },
+  { key: 'wishlist', name: 'Wunschliste', category: 'Gäste', description: 'Geschenkewunschliste für die Gäste.' },
+  { key: 'gallery', name: 'Foto- & Videogalerie', category: 'Gäste', description: 'Gäste laden eigene Fotos/Videos hoch, die in einer gemeinsamen Galerie erscheinen.' },
+  { key: 'guestbook', name: 'Gästebuch', category: 'Gäste', description: 'Gäste hinterlassen Text- oder Videonachrichten für euch.' },
+  { key: 'music-requests', name: 'Musikwünsche', category: 'Gäste', description: 'Gäste können Musikwünsche für die Feier einreichen.' },
+  { key: 'thank-you-card', name: 'Digitale Dankeskarte', category: 'Premium', description: 'Digitale Dankeskarte, die ihr nach dem Event an eure Gäste verschicken könnt.' },
+  { key: 'audio-invitation', name: 'Audio-Einladung', category: 'Premium', isPremium: true, description: 'Sprachnachricht als persönliche Einladung.' },
+  { key: 'video-invitation', name: 'Video-Einladung', category: 'Premium', isPremium: true, description: 'Videobotschaft als persönliche Einladung.' },
+  { key: 'check-in', name: 'Event Check-in', category: 'Business', isPremium: true, description: 'Gäste beim Eintreffen per QR-Code einchecken.' },
 ];
 
 // Preis-Pakete: Startwerte, spaeter ueber das Admin-Dashboard aenderbar
@@ -305,7 +305,7 @@ async function main() {
   for (const [i, m] of modules.entries()) {
     await prisma.module.upsert({
       where: { key: m.key },
-      update: { name: m.name, category: m.category, isPremium: m.isPremium ?? false, sortOrder: i },
+      update: { name: m.name, category: m.category, description: m.description, isPremium: m.isPremium ?? false, sortOrder: i },
       create: { ...m, isPremium: m.isPremium ?? false, sortOrder: i },
     });
   }

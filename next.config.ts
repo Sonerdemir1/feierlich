@@ -14,8 +14,14 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Erster Versuch (zwei ueberlappende Regeln, DENY + SAMEORIGIN fuer
+      // denselben Pfad) hat NICHT funktioniert — Next.js haengt bei
+      // ueberlappenden source-Mustern beide Werte an denselben Header an,
+      // der Browser sieht dann zwei X-Frame-Options-Werte und blockt
+      // weiterhin. Fix: die beiden Regeln schliessen sich jetzt per
+      // Regex gegenseitig aus, jeder Pfad matcht nur noch genau eine.
       {
-        source: "/:path*",
+        source: "/:path((?!e/).*)",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
@@ -23,16 +29,19 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
-      // Ausnahme fuer die oeffentliche Event-Seite: der Design-Editor
-      // (dashboard/events/[id]/design) bettet sie in ein <iframe> als
-      // Live-Vorschau ein — SAMEORIGIN statt DENY erlaubt genau das
-      // (nur die eigene Seite darf sich selbst einbetten), fremde Seiten
-      // koennen weiterhin nicht per Clickjacking-Iframe einbetten. Muss
-      // NACH der allgemeinen Regel stehen, damit sie fuer diesen Pfad
-      // gewinnt.
+      // Oeffentliche Event-Seite: die Haupt-Event-Seite im Dashboard
+      // bettet sie in ein <iframe> als Live-Design-Vorschau ein —
+      // SAMEORIGIN statt DENY erlaubt genau das (nur die eigene Seite
+      // darf sich selbst einbetten), fremde Seiten koennen weiterhin
+      // nicht per Clickjacking-Iframe einbetten.
       {
         source: "/e/:slug*",
-        headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
       },
     ];
   },
