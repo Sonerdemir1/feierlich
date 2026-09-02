@@ -502,8 +502,34 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     </div>
   );
 
+  // Ganzseitiger Hintergrund, der das gewaehlte Kartendesign aufgreift —
+  // vorher stand die eigentliche Kartengrafik als kleine Box in einer
+  // flachen Farbflaeche, Rand links/rechts wirkte leer. Direkt als
+  // Hintergrund von <main> selbst (statt ein separates fixed-Element mit
+  // negativem z-index — das laesst sich zuverlaessig hinter jeglichen
+  // unpositionierten Inhalt stacken, ohne von CSS-Stacking-Kontext-Regeln
+  // eines Vorfahren ausgehebelt zu werden). Bei Vorlagen mit echter
+  // Kartengrafik (cardImageUrl) wird sie grossflaechig, mit der
+  // Vorlagenfarbe abgetoent, eingeblendet. Vorlagen ohne Kartengrafik
+  // (z. B. schlichte Business-Designs) bekommen ein dezentes Vignette in
+  // der Akzentfarbe, statt komplett flach zu wirken.
+  const pageBackground = cardImageUrl
+    ? `linear-gradient(${colors.background}D9, ${colors.background}D9), url(${cardImageUrl})`
+    : `radial-gradient(120% 90% at 50% 0%, ${colors.accent}26, transparent 65%)`;
+
   return (
-    <main style={{ background: colors.background, minHeight: "100vh", color: colors.primary, fontFamily: "var(--font-body)" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        color: colors.primary,
+        fontFamily: "var(--font-body)",
+        backgroundColor: colors.background,
+        backgroundImage: pageBackground,
+        backgroundSize: cardImageUrl ? "cover" : undefined,
+        backgroundPosition: cardImageUrl ? "center" : undefined,
+        backgroundAttachment: cardImageUrl ? "fixed" : undefined,
+      }}
+    >
       {isOwner && event.status !== "PUBLISHED" && (
         <div style={{ background: "#211C19", color: "#FAF6EF", textAlign: "center", padding: "8px 16px", fontSize: 12 }}>
           Vorschau — dieses Event ist noch nicht veröffentlicht. Nur du siehst diesen Hinweis.
