@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
-import { markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
+import { markOrderPaid, markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
 
 export default async function BillingSuccessPage({
   params,
@@ -51,28 +51,10 @@ export default async function BillingSuccessPage({
     const orderId = checkoutSession.metadata?.orderId;
     if (orderId) {
       const order = await prisma.order.findUnique({ where: { id: orderId } });
-      if (order && order.eventId === id && order.status !== "PAID") {
+      if (order && order.eventId === id) {
         const paymentIntentId =
-          typeof checkoutSession.payment_intent === "string"
-            ? checkoutSession.payment_intent
-            : checkoutSession.payment_intent?.id;
-
-        await prisma.$transaction([
-          prisma.order.update({
-            where: { id: order.id },
-            data: { status: "PAID", stripePaymentIntentId: paymentIntentId ?? null },
-          }),
-          prisma.payment.create({
-            data: {
-              orderId: order.id,
-              amountCents: order.amountCents,
-              currency: order.currency,
-              status: "SUCCEEDED",
-              stripePaymentId: paymentIntentId ?? checkoutSession.id,
-              paidAt: new Date(),
-            },
-          }),
-        ]);
+          typeof checkoutSession.payment_intent === "string" ? checkoutSession.payment_intent : (checkoutSession.payment_intent?.id ?? null);
+        await markOrderPaid(order.id, paymentIntentId);
       }
     }
   }

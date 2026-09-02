@@ -8,6 +8,37 @@ import { sendEmail } from "./email";
 // koennen fuer dieselbe Session laufen — die Statusprüfung vor dem Update
 // verhindert doppelte Verarbeitung (z.B. doppelte Benachrichtigungsmail).
 
+// Vorher inline dupliziert in Webhook UND Success-Seite — jetzt an einer
+// Stelle, damit die Rabattcode-Verbrauchszaehlung nicht zweimal gepflegt
+// werden muss.
+export async function markOrderPaid(orderId: string, paymentIntentId: string | null) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order || order.status === "PAID") return;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({
+      where: { id: order.id },
+      data: { status: "PAID", stripePaymentIntentId: paymentIntentId },
+    });
+    await tx.payment.create({
+      data: {
+        orderId: order.id,
+        amountCents: order.amountCents,
+        currency: order.currency,
+        status: "SUCCEEDED",
+        stripePaymentId: paymentIntentId ?? `manual-${order.id}`,
+        paidAt: new Date(),
+      },
+    });
+    if (order.discountCode) {
+      await tx.discountCode.updateMany({
+        where: { code: order.discountCode },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+  });
+}
+
 export async function markEventAddOnPaid(eventAddOnId: string, paymentIntentId: string | null) {
   const row = await prisma.eventAddOn.findUnique({ where: { id: eventAddOnId } });
   if (!row || row.status === "PAID") return;

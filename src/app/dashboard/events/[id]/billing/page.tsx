@@ -33,6 +33,7 @@ export default async function BillingPage({
 
   const cancelled = sp.cancelled === "1";
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
+  const free = sp.free === "1";
 
   return (
     <div>
@@ -54,6 +55,16 @@ export default async function BillingPage({
       {errorKey === "stripe-not-configured" && (
         <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
           Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.
+        </div>
+      )}
+      {errorKey === "discount-invalid" && (
+        <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Rabattcode ungültig oder abgelaufen.
+        </div>
+      )}
+      {free && (
+        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
+          Kostenlos freigeschaltet — viel Freude mit eurer Einladung!
         </div>
       )}
 
@@ -92,8 +103,15 @@ export default async function BillingPage({
                   <li key={f}>{f}</li>
                 ))}
               </ul>
-              <form action={startCheckout.bind(null, event.id)} style={{ marginTop: "auto" }}>
+              <form action={startCheckout.bind(null, event.id)} style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
                 <input type="hidden" name="packageId" value={pkg.id} />
+                {!isCurrent && (
+                  <input
+                    name="discountCode"
+                    placeholder="Rabattcode (optional)"
+                    style={{ padding: "8px 10px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12 }}
+                  />
+                )}
                 <button
                   type="submit"
                   className={isCurrent ? "btn btn-ghost" : "btn btn-primary"}

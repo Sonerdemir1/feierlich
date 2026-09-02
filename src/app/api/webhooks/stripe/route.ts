@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
-import { markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
+import { markOrderPaid, markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
 
 // Zweiter, robusterer Bestaetigungspfad neben der Success-Seite: greift auch
 // dann, wenn der Kunde den Tab schliesst, bevor Stripe zurueck-redirected.
@@ -43,27 +42,7 @@ export async function POST(req: Request) {
 
       if (kind === "order") {
         const orderId = checkoutSession.metadata?.orderId;
-        if (orderId) {
-          const order = await prisma.order.findUnique({ where: { id: orderId } });
-          if (order && order.status !== "PAID") {
-            await prisma.$transaction([
-              prisma.order.update({
-                where: { id: order.id },
-                data: { status: "PAID", stripePaymentIntentId: paymentIntentId ?? null },
-              }),
-              prisma.payment.create({
-                data: {
-                  orderId: order.id,
-                  amountCents: order.amountCents,
-                  currency: order.currency,
-                  status: "SUCCEEDED",
-                  stripePaymentId: paymentIntentId ?? checkoutSession.id,
-                  paidAt: new Date(),
-                },
-              }),
-            ]);
-          }
-        }
+        if (orderId) await markOrderPaid(orderId, paymentIntentId ?? null);
       } else if (kind === "eventAddOn") {
         const eventAddOnId = checkoutSession.metadata?.eventAddOnId;
         if (eventAddOnId) await markEventAddOnPaid(eventAddOnId, paymentIntentId ?? null);

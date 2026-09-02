@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
+import { markOrderPaid } from "@/lib/checkout-fulfillment";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -15,12 +16,28 @@ async function requireOwnedEvent(eventId: string) {
   return { session, event };
 }
 
+// Prueft einen eingegebenen Rabattcode und liefert den rabattierten
+// Endpreis — wirft nie, gibt bei Ungueltigkeit stattdessen null zurueck
+// (Aufrufer entscheidet, wie er das kommuniziert).
+async function applyDiscount(rawCode: string, priceCents: number): Promise<{ amountCents: number; code: string } | null> {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return { amountCents: priceCents, code: "" };
+
+  const discount = await prisma.discountCode.findUnique({ where: { code } });
+  if (!discount || !discount.active) return null;
+  if (discount.expiresAt && discount.expiresAt < new Date()) return null;
+  if (discount.maxUses !== null && discount.usedCount >= discount.maxUses) return null;
+
+  const amountCents =
+    discount.type === "PERCENT"
+      ? Math.round(priceCents * (1 - discount.value / 100))
+      : Math.max(0, priceCents - discount.value);
+
+  return { amountCents: Math.max(0, amountCents), code };
+}
+
 export async function startCheckout(eventId: string, formData: FormData) {
   const { session, event } = await requireOwnedEvent(eventId);
-
-  if (!stripe) {
-    redirect(`/dashboard/events/${eventId}/billing?error=stripe-not-configured`);
-  }
 
   const packageId = String(formData.get("packageId") ?? "");
   const pkg = await prisma.package.findUnique({ where: { id: packageId } });
@@ -33,22 +50,42 @@ export async function startCheckout(eventId: string, formData: FormData) {
     redirect(`/dashboard/events/${eventId}/billing`);
   }
 
+  const discountInput = String(formData.get("discountCode") ?? "");
+  const discountResult = await applyDiscount(discountInput, pkg.priceCents);
+  if (!discountResult) {
+    redirect(`/dashboard/events/${eventId}/billing?error=discount-invalid`);
+  }
+  const { amountCents, code: appliedCode } = discountResult;
+
   const user = await prisma.user.findUnique({ where: { id: session.user!.id } });
 
   const order = existingOrder
     ? await prisma.order.update({
         where: { id: existingOrder.id },
-        data: { packageId: pkg.id, amountCents: pkg.priceCents, status: "PENDING" },
+        data: { packageId: pkg.id, amountCents, status: "PENDING", discountCode: appliedCode || null },
       })
     : await prisma.order.create({
         data: {
           userId: session.user!.id,
           packageId: pkg.id,
           eventId: event.id,
-          amountCents: pkg.priceCents,
+          amountCents,
           partnerId: user?.partnerId ?? null,
+          discountCode: appliedCode || null,
         },
       });
+
+  // 100%-Rabatt (z.B. Freikarten fuer Messen) — kein Stripe-Aufruf noetig,
+  // direkt als bezahlt erfuellen, gleicher idempotenter Helper wie der
+  // Stripe-Pfad (zaehlt den Code-Verbrauch mit).
+  if (amountCents === 0) {
+    await markOrderPaid(order.id, null);
+    redirect(`/dashboard/events/${eventId}/billing?free=1`);
+  }
+
+  if (!stripe) {
+    redirect(`/dashboard/events/${eventId}/billing?error=stripe-not-configured`);
+  }
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -63,7 +100,7 @@ export async function startCheckout(eventId: string, formData: FormData) {
             name: `einladi – Paket ${pkg.name}`,
             description: `Event: ${event.title}`,
           },
-          unit_amount: pkg.priceCents,
+          unit_amount: amountCents,
         },
         quantity: 1,
       },

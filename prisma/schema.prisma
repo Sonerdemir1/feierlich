@@ -706,6 +706,26 @@ model Order {
   payments Payment[]
 }
 
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+// Katalog gueltiger Rabattcodes — Order.discountCode speichert nur den
+// angewandten Code-String, die eigentliche Gueltigkeits-/Nutzungspruefung
+// laeuft ueber diese Tabelle (Lookup per code in startCheckout()).
+model DiscountCode {
+  id        String       @id @default(cuid())
+  code      String       @unique // normalisiert: Grossbuchstaben, getrimmt
+  type      DiscountType
+  value     Int // PERCENT: 0-100, FIXED: Cent-Betrag
+  maxUses   Int? // null = unbegrenzt
+  usedCount Int          @default(0)
+  expiresAt DateTime?
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+}
+
 model Subscription {
   id                   String    @id @default(cuid())
   userId               String
