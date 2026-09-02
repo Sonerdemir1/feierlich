@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { buildQrDesignSvg, printOrderPriceCents, type PrintSize, type QrTheme } from "@/lib/qr-design";
+import { safeQrColorsFromEvent } from "@/lib/qr";
 import { stripe } from "@/lib/stripe";
 import { markPrintOrderPaid } from "@/lib/checkout-fulfillment";
 import type { QrTheme as DbQrTheme } from "@/generated/prisma/client";
@@ -68,7 +69,12 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
   const theme = themeFromForm(formData);
   const target = targetFromForm(formData);
   const resolved = await resolveTarget(eventId, event.slug, target);
-  const colors = event.template ? JSON.parse(event.template.colors) : {};
+  const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
+  const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
+  // Gleicher Kontrast-Schutz wie bei der Live-Vorschau (design-preview/route.ts)
+  // — sonst waere bei dunklen Vorlagen (helle Schrift auf dunklem Vorlagen-
+  // hintergrund) der Titel auf dem hellen Kartenhintergrund unsichtbar.
+  const { dark: safePrimary, light: safeBackground } = safeQrColorsFromEvent(activeColors.primary, activeColors.background);
 
   const svg = await buildQrDesignSvg({
     size,
@@ -76,8 +82,9 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
     title: resolved.title,
     subtitle: resolved.subtitle,
     targetUrl: resolved.targetUrl,
-    primary: colors.primary,
-    accent: colors.accent,
+    primary: safePrimary,
+    accent: activeColors.accent,
+    background: safeBackground,
   });
 
   const to = session.user!.email!;

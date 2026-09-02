@@ -4,7 +4,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createTable, deleteTable, assignGuestToTable, suggestSeating, applySeatingSuggestion, discardSeatingSuggestion } from "./actions";
 import { emailQrDesign, createPrintOrder } from "../qr/actions";
-import { PRINT_SIZE_MM, PRINT_PRICE_CENTS, PRINT_QUANTITY_TIERS, QR_THEMES } from "@/lib/qr-design";
+import { PRINT_QUANTITY_TIERS } from "@/lib/qr-design";
+import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { aiSeatingConfigured, type SeatingAssignment } from "@/lib/ai-seating";
 
 export default async function SeatingPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/seating">) {
@@ -133,28 +134,9 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
         <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 16 }}>
           Mengenrabatt: {PRINT_QUANTITY_TIERS.slice().reverse().map((t) => t.label).join(" · ")}
         </div>
-        <form action={createPrintOrder.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
-            <select name="tableId" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }}>
-              <option value="">Allgemeine Einladungsseite</option>
-              {tables.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-            <select name="size" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }}>
-              {(Object.keys(PRINT_SIZE_MM) as Array<keyof typeof PRINT_SIZE_MM>).map((size) => (
-                <option key={size} value={size}>
-                  {PRINT_SIZE_MM[size].label} — {(PRINT_PRICE_CENTS[size] / 100).toFixed(2)} € /Stück
-                </option>
-              ))}
-            </select>
-            <select name="theme" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }}>
-              {QR_THEMES.map((theme) => (
-                <option key={theme.id} value={theme.id}>{theme.label}</option>
-              ))}
-            </select>
-            <input name="quantity" type="number" min={1} max={500} defaultValue={1} style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 80 }} />
-          </div>
+        <form action={createPrintOrder.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 620 }}>
+          <QrPrintDesignFields eventId={id} tables={tables.map((t) => ({ id: t.id, name: t.name }))} />
+          <input name="quantity" type="number" min={1} max={500} defaultValue={1} style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 80 }} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
             <input name="shippingName" placeholder="Name" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
             <input name="shippingStreet" placeholder="Straße & Hausnummer" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
