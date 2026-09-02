@@ -816,8 +816,28 @@ a.card:hover {
     grid-template-columns: 1fr;
     gap: 28px;
   }
+  /* Bisher hier auf position:static geschaltet — die Karte scrollte beim
+     Bearbeiten (z.B. Schriftgroesse ganz unten in "Schrift & Farbe")
+     komplett aus dem Bild, man sah waehrend der Anpassung keine Vorschau
+     mehr. Jetzt bleibt eine kompakte, hoehenbegrenzte Vorschau oben
+     sichtbar, waehrend darunter durch die Formularfelder gescrollt wird. */
   .studio-card-sticky {
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--ivory);
+    padding: 14px 0 10px;
+    box-shadow: 0 8px 16px -10px rgba(33, 28, 25, 0.22);
+  }
+  .customizer-card {
+    max-width: 210px;
+    max-height: 38vh;
+    overflow: hidden;
+    /* Weiches Ausblenden statt hartem Schnitt — sonst wuerden RSVP-/
+       Sitzplan-/Galerie-Bloecke bei aktivierten Funktionen mitten im
+       Abschnitt abgeschnitten wirken. */
+    mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
   }
   .studio-card-cta {
     display: none;
