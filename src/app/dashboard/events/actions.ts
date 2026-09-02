@@ -11,6 +11,7 @@ import { putObject, readObject } from "@/lib/storage";
 import { removeImageBackground } from "@/lib/background-removal";
 import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { stripe } from "@/lib/stripe";
+import { markEventAddOnPaid } from "@/lib/checkout-fulfillment";
 
 const REFERRAL_COOKIE = "ref_partner";
 
@@ -148,9 +149,7 @@ export async function removeCoverImageBackground(eventId: string) {
 // Das Kontingent fuer generateAiDesignForCover() greift erst, sobald der
 // Webhook/die Success-Seite den Status auf PAID setzt.
 export async function startAddOnCheckout(eventId: string, formData: FormData) {
-  const { event } = await requireOwnedEvent(eventId);
-
-  if (!stripe) redirect(`/dashboard/events/${eventId}?error=stripe-not-configured`);
+  const { session, event } = await requireOwnedEvent(eventId);
 
   const addOnKey = String(formData.get("addOnKey") ?? "");
   const addOn = await prisma.addOn.findUnique({ where: { key: addOnKey } });
@@ -163,6 +162,17 @@ export async function startAddOnCheckout(eventId: string, formData: FormData) {
   });
 
   if (eventAddOn.status === "PAID") redirect(`/dashboard/events/${eventId}`);
+
+  // ADMIN-Testkonten (siehe publishEvent) sollen Zusatzpakete freischalten
+  // koennen, ohne echtes Geld ueber Stripe zu bewegen — sonst gibt es
+  // keine Moeglichkeit, kostenpflichtige Features gefahrlos durchzutesten.
+  if (session.user.role === "ADMIN") {
+    await markEventAddOnPaid(eventAddOn.id, "test-admin-bypass");
+    revalidatePath(`/dashboard/events/${eventId}`);
+    redirect(`/dashboard/events/${eventId}`);
+  }
+
+  if (!stripe) redirect(`/dashboard/events/${eventId}?error=stripe-not-configured`);
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 

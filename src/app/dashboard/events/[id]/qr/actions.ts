@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { buildQrDesignSvg, printOrderPriceCents, type PrintSize } from "@/lib/qr-design";
 import { stripe } from "@/lib/stripe";
+import { markPrintOrderPaid } from "@/lib/checkout-fulfillment";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -91,10 +92,9 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
 // schon beim Anlegen, sonst wuerde jeder abgebrochene Checkout eine
 // "neuer Auftrag"-Mail ausloesen.
 export async function createPrintOrder(eventId: string, formData: FormData) {
-  const { event } = await requireOwnedEvent(eventId);
+  const { event, session } = await requireOwnedEvent(eventId);
 
   const redirectBase = `/dashboard/events/${eventId}/seating`;
-  if (!stripe) redirect(`${redirectBase}?printError=stripe-not-configured`);
 
   const size: PrintSize = String(formData.get("size") ?? "A6") === "A5" ? "A5" : "A6";
   const quantity = Math.max(1, Math.min(500, Number(formData.get("quantity") ?? 1) || 1));
@@ -129,6 +129,15 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
       shippingCity,
     },
   });
+
+  // ADMIN-Testkonten sollen Druckaufträge durchtesten koennen, ohne echtes
+  // Geld ueber Stripe zu bewegen (gleiches Muster wie startAddOnCheckout).
+  if (session.user.role === "ADMIN") {
+    await markPrintOrderPaid(printOrder.id, "test-admin-bypass");
+    redirect(`${redirectBase}`);
+  }
+
+  if (!stripe) redirect(`${redirectBase}?printError=stripe-not-configured`);
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
