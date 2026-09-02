@@ -55,12 +55,36 @@ export default async function TextAssistantPage({ params, searchParams }: PagePr
           <form action={generateInvitationText.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480 }}>
             <input name="names" placeholder="Namen der Feiernden, z. B. Ayşe & Emre" defaultValue={event.title} required style={fieldStyle} />
             <input name="eventType" placeholder="Anlass, z. B. Hochzeit / Kına-Abend" required style={fieldStyle} />
-            <select name="tone" defaultValue="herzlich-leger" style={fieldStyle}>
-              <option value="herzlich-leger">Herzlich & leger</option>
-              <option value="klassisch-elegant">Klassisch & elegant</option>
-              <option value="festlich-opulent">Festlich & opulent</option>
-              <option value="modern-minimal">Modern & minimal</option>
-            </select>
+            <div>
+              <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>Stil/Ton</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  { value: "herzlich-leger", label: "Herzlich & leger" },
+                  { value: "klassisch-elegant", label: "Klassisch & elegant" },
+                  { value: "festlich-opulent", label: "Festlich & opulent" },
+                  { value: "modern-minimal", label: "Modern & minimal" },
+                  { value: "emotional-bewegend", label: "Emotional & bewegend" },
+                ].map((tone, i) => (
+                  <label
+                    key={tone.value}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12.5,
+                      color: "var(--ink-soft)",
+                      padding: "8px 12px",
+                      border: "1px solid var(--line)",
+                      background: "var(--ivory-2)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input type="radio" name="tone" value={tone.value} defaultChecked={i === 0} />
+                    {tone.label}
+                  </label>
+                ))}
+              </div>
+            </div>
             <textarea
               name="keyDetails"
               placeholder="Wichtige Details (optional) — z. B. Ort, Datum, Motto, besondere Wünsche"
