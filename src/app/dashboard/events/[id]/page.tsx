@@ -263,7 +263,7 @@ export default async function EventDetailPage({
           <div style={{ flex: "1 1 360px", minWidth: 260 }}>
             <div className="card" style={{ height: 480, overflow: "hidden" }}>
               <iframe
-                key={`${event.colorOverride ?? "default"}-${event.styleJson ?? "default"}`}
+                key={`${event.templateId}-${event.colorOverride ?? "default"}-${event.styleJson ?? "default"}`}
                 title="Vorschau der Einladungsseite"
                 src={`/e/${event.slug}`}
                 style={{ width: "100%", height: "100%", border: "none" }}
