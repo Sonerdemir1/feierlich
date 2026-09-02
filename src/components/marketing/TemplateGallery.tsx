@@ -26,6 +26,18 @@ export type GalleryCategory = {
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
+// Muss exakt zur gleichnamigen Funktion in src/app/page.tsx passen (beide
+// erzeugen dieselben Anker-IDs) — bewusst dupliziert statt geteilt, gleiches
+// Muster wie die anderen lokalen `slugify`-Helfer im Projekt.
+function categorySlug(category: string): string {
+  return category
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 type FontOption = { id: string; label: string; cssVar: string; italic?: boolean; uppercase?: boolean };
 
 const FONT_OPTIONS: FontOption[] = [
@@ -271,8 +283,16 @@ export function TemplateGallery({ categories }: { categories: GalleryCategory[] 
 
   return (
     <>
+      <div className="tpl-filter-row">
+        {categories.map(({ category }) => (
+          <a key={category} href={`#cat-${categorySlug(category)}`} className="tpl-filter-pill">
+            {category}
+          </a>
+        ))}
+      </div>
+
       {categories.map(({ category, subtitle, items }) => (
-        <div className="cat" key={category}>
+        <div className="cat" key={category} id={`cat-${categorySlug(category)}`}>
           <div className="cat-head">
             <h3>{category}</h3>
             <span className="cat-sub">{subtitle}</span>

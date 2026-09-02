@@ -190,9 +190,9 @@ a.card:hover {
 }
 .hero h1 {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(38px, 5vw, 58px);
-  line-height: 1.06;
+  font-weight: 700;
+  font-size: clamp(42px, 5.5vw, 64px);
+  line-height: 1.04;
   color: var(--ink);
 }
 .hero-sub {
@@ -211,6 +211,32 @@ a.card:hover {
 .hero-visual {
   display: flex;
   justify-content: center;
+  position: relative;
+}
+
+/* schwebende Fakten-Chips um den Hero-Mockup — Optik angelehnt an die
+   "Live-Aktivitaet"-Chips bei davetiye.pro, Inhalt aber bewusst wahr und
+   statisch (Vorlagenanzahl aus geladenen Daten, keine Live-Nutzerzahlen —
+   dafuer fehlt einladi noch die ehrliche Datengrundlage). */
+.hero-chip {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .hero-chip {
+    display: none;
+  }
 }
 .hero-card {
   width: 100%;
@@ -239,6 +265,58 @@ a.card:hover {
   font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--ink-soft);
+}
+
+/* Kategorie-Schnellnavigation direkt unter dem Hero — Foto-Kacheln statt
+   Text-Links, verlinken per Anker zur jeweiligen Kategorie in der
+   Vorlagen-Galerie (Muster: davetli.com, edijitaldavetiye.com). */
+.cat-nav {
+  padding: 8px 28px 64px;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.cat-nav-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+}
+.cat-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+.cat-nav-tile {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  background-size: cover;
+  background-position: center;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.cat-nav-tile:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.cat-nav-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.55) 100%);
+}
+.cat-nav-tile span {
+  position: relative;
+  z-index: 1;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 /* stats */
@@ -345,6 +423,34 @@ a.card:hover {
   line-height: 1.65;
   color: var(--ink-soft);
 }
+/* Kategorie-Pill-Leiste ueber der Galerie — reine Anker-Navigation, kein
+   Sortier-/Filter-State (dafuer fehlt einladi noch die Datengrundlage,
+   siehe Plan), Muster: edijitaldavetiye.com Kategorie-Pills. */
+.tpl-filter-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 40px;
+}
+.tpl-filter-pill {
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 16px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.tpl-filter-pill:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
 .cat {
   margin-bottom: 46px;
 }
@@ -371,6 +477,7 @@ a.card:hover {
 }
 .tpl {
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   background: none;
   cursor: pointer;
   text-align: left;
@@ -380,11 +487,15 @@ a.card:hover {
   display: block;
   width: 100%;
   position: relative;
-  transition: border-color 0.15s;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 .tpl:hover,
 .tpl.is-open {
   border-color: var(--ink);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 .tpl-open-hint {
   position: absolute;

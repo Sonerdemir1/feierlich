@@ -94,7 +94,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
   switch (layoutKey) {
     case "minimal-ivory":
       return (
-        <div className="tpl-prev" style={{ background: "#FAF6EF" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(250,246,239,0.35) 0%, rgba(250,246,239,0.68) 55%, rgba(250,246,239,0.9) 100%), url(/images/templates/wedding-aisle-classic.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontWeight: 600, fontSize: 12, letterSpacing: "0.18em" }}>ANNA</div>
           <div style={{ fontSize: 9, color: "#B2543A", margin: "6px 0" }}>&amp;</div>
           <div style={{ fontWeight: 600, fontSize: 12, letterSpacing: "0.18em" }}>LUKAS</div>
@@ -135,19 +143,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "botanico":
       return (
-        <div className="tpl-prev" style={{ background: "#F3ECDF" }}>
-          <svg
-            width="30"
-            height="30"
-            viewBox="0 0 34 34"
-            style={{ position: "absolute", top: 10, left: 10 }}
-            fill="none"
-            stroke="#8F9B6E"
-            strokeWidth="1.3"
-          >
-            <path d="M2 32C2 20 10 10 24 6" />
-            <path d="M8 22C11 22 14 19 14 15" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(243,236,223,0.3) 0%, rgba(243,236,223,0.62) 55%, rgba(243,236,223,0.88) 100%), url(/images/templates/fern-greenery.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#8F4029" }}>
             A &amp; L
           </div>
@@ -199,7 +203,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "roman-script":
       return (
-        <div className="tpl-prev" style={{ background: "#F0D9CC" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(240,217,204,0.3) 0%, rgba(240,217,204,0.62) 55%, rgba(240,217,204,0.88) 100%), url(/images/templates/rose-tulip-bouquet.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div
             style={{
               fontFamily: "var(--font-display)",
@@ -252,7 +264,16 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "gold-line":
       return (
-        <div className="tpl-prev" style={{ background: "#211C19", padding: 16 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(33,28,25,0.45) 0%, rgba(33,28,25,0.72) 55%, rgba(33,28,25,0.92) 100%), url(/images/templates/grand-hall-dramatic.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            padding: 16,
+          }}
+        >
           <div
             style={{
               border: "1px solid #B9975B",
@@ -484,7 +505,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "sehzade-mavisi":
       return (
-        <div className="tpl-prev" style={{ background: "#0E2F5A" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(14,47,90,0.55) 0%, rgba(14,47,90,0.78) 55%, rgba(14,47,90,0.94) 100%), url(/images/templates/iznik-floral.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ position: "absolute", inset: 7, border: "1px solid #D4AF3799" }} />
           <NazarScatter />
           <CornerMotif color="#D4AF37" corner="tl" />
@@ -618,28 +647,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "konfetti":
       return (
-        <div className="tpl-prev" style={{ background: "#FFF4E3" }}>
-          {[
-            [16, 14],
-            [140, 20],
-            [26, 132],
-            [130, 128],
-            [70, 10],
-            [80, 140],
-          ].map(([cx, cy], i) => (
-            <div
-              key={i}
-              style={{
-                position: "absolute",
-                left: cx,
-                top: cy,
-                width: 6,
-                height: 6,
-                borderRadius: i % 2 ? 2 : "50%",
-                background: i % 3 === 0 ? "#F2A65A" : i % 3 === 1 ? "#3A2E4A" : "#8F9B6E",
-              }}
-            />
-          ))}
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(255,244,227,0.25) 0%, rgba(255,244,227,0.55) 55%, rgba(255,244,227,0.85) 100%), url(/images/templates/party-balloons.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#3A2E4A" }}>
             Mia wird 5
           </div>
@@ -673,9 +689,18 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "klarblau":
       return (
-        <div className="tpl-prev" style={{ background: "#F4F7FC", padding: 16 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(22,35,59,0.45) 0%, rgba(22,35,59,0.75) 55%, rgba(22,35,59,0.94) 100%), url(/images/templates/modern-lounge-warm.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            padding: 16,
+          }}
+        >
           <div style={{ width: "100%", height: 2, background: "#2F6FED", marginBottom: 12 }} />
-          <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: "0.04em", color: "#16233B" }}>JAHRESEMPFANG 2026</div>
+          <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: "0.04em", color: "#FAFBFF" }}>JAHRESEMPFANG 2026</div>
           <div style={{ width: "100%", height: 2, background: "#2F6FED", marginTop: 12 }} />
         </div>
       );

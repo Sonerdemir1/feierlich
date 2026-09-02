@@ -32,6 +32,15 @@ const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
   "altin-sedef": { src: "/images/templates/bosphorus-night.jpg", tint: "92,15,31" },
   "kina-kirmizi": { src: "/images/templates/iznik-floral.jpg", tint: "122,20,40" },
   "kraliyet-moru": { src: "/images/templates/iznik-floral.jpg", tint: "46,26,71" },
+  // Sünnet zeigt keine echten Zeremonie-Fotos (Kinder) — stattdessen dasselbe
+  // Iznik-Fliesenmuster wie Kına/Nişan, nur blau statt rot/lila getönt.
+  "sehzade-mavisi": { src: "/images/templates/iznik-floral.jpg", tint: "14,47,90" },
+  "minimal-ivory": { src: "/images/templates/wedding-aisle-classic.jpg", tint: "250,246,239" },
+  "botanico": { src: "/images/templates/fern-greenery.jpg", tint: "243,236,223" },
+  "roman-script": { src: "/images/templates/rose-tulip-bouquet.jpg", tint: "240,217,204" },
+  "gold-line": { src: "/images/templates/grand-hall-dramatic.jpg", tint: "33,28,25" },
+  "konfetti": { src: "/images/templates/party-balloons.jpg", tint: "255,244,227" },
+  "klarblau": { src: "/images/templates/modern-lounge-warm.jpg", tint: "22,35,59" },
 };
 
 function defaultEventLabelForCategory(category: string): string {
@@ -45,6 +54,18 @@ function defaultEventLabelForCategory(category: string): string {
 }
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+
+// Muss exakt zur gleichnamigen Funktion in TemplateGallery.tsx passen (beide
+// erzeugen dieselben Anker-IDs) — bewusst dupliziert statt geteilt, gleiches
+// Muster wie die anderen lokalen `slugify`-Helfer im Projekt.
+function categorySlug(category: string): string {
+  return category
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 function Check() {
   return (
@@ -154,7 +175,35 @@ export default async function Home() {
                 <GalleryPreview />
               </div>
             </div>
+            <span className="hero-chip" style={{ top: 28, left: -6 }}>
+              {t.hero.chipBilingual}
+            </span>
+            <span className="hero-chip" style={{ top: "48%", right: -22 }}>
+              {t.hero.chipAi}
+            </span>
+            <span className="hero-chip" style={{ bottom: 44, left: 0 }}>
+              🎨 {templates.length} {t.nav.templates}
+            </span>
           </div>
+        </div>
+      </section>
+
+      <section className="cat-nav reveal">
+        <div className="cat-nav-heading">{t.catNav.heading}</div>
+        <div className="cat-nav-grid">
+          {galleryCategories.map(({ category, items }) => {
+            const photo = items.find((i) => i.photoBackground)?.photoBackground;
+            return (
+              <a
+                key={category}
+                href={`#cat-${categorySlug(category)}`}
+                className="cat-nav-tile"
+                style={photo ? { backgroundImage: `url(${photo.src})` } : { background: "var(--ivory-2)" }}
+              >
+                <span>{category}</span>
+              </a>
+            );
+          })}
         </div>
       </section>
 
@@ -348,6 +397,13 @@ export default async function Home() {
           {t.footer.tagline}
           <br />
           [KONTAKT E-MAIL] · © 2026 einladi
+        </p>
+        {/* Pflicht-Namensnennung fuer die 3 neuen Kategorie-Fotos mit
+            CC-BY/CC-BY-SA-Lizenz (nicht attributionsfrei wie Pexels) —
+            die anderen Fotos auf der Seite sind CC0 und brauchen das nicht. */}
+        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 10 }}>
+          Foto-Nachweise: Farn-Nahaufnahme © Cyron Ray Macey (CC BY 2.0) · Luftballons © D. Sharon Pruitt (CC BY 2.0)
+          · Lounge © Basile Morin (CC BY-SA 4.0), via Wikimedia Commons.
         </p>
       </footer>
     </>

@@ -13,7 +13,10 @@ export const homepageCopy = {
       sub: "Jedes Gästefoto, jedes Video, jede Nachricht landet an einem Ort — sofort sichtbar, für immer gesichert. Dazu, wenn ihr wollt: eine passende digitale Einladung im selben Design.",
       ctaPrimary: "Fotos & Videos sammeln",
       ctaSecondary: "Auch Einladung gestalten",
+      chipBilingual: "🇩🇪 Deutsch & 🇹🇷 Türkçe",
+      chipAi: "✨ KI-Textvorschläge",
     },
+    catNav: { heading: "Wählt euren Anlass" },
     stats: [
       { label: "Designs zur Auswahl" },
       { num: "0€", label: "Zum Ausprobieren, ohne Konto" },
@@ -82,7 +85,10 @@ export const homepageCopy = {
       sub: "Her misafir fotoğrafı, her video, her mesaj tek bir yerde toplanır — anında görünür, sonsuza dek güvende. İsterseniz aynı tasarımda dijital bir davetiye de ekleyin.",
       ctaPrimary: "Fotoğraf & Video Toplayın",
       ctaSecondary: "Davetiye de Tasarlayın",
+      chipBilingual: "🇩🇪 Almanca & 🇹🇷 Türkçe",
+      chipAi: "✨ Yapay zekâ öneri metni",
     },
+    catNav: { heading: "Etkinlik türünüzü seçin" },
     stats: [
       { label: "Seçebileceğiniz Tasarım" },
       { num: "0€", label: "Üyeliksiz, ücretsiz denemek için" },
