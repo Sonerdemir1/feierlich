@@ -4,6 +4,9 @@ import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
 import { HeroStory } from "@/components/marketing/HeroStory";
 import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
+import { getLocale } from "@/lib/i18n";
+import { homepageCopy } from "@/lib/translations/homepage";
 
 // Ohne dies versucht `next build`, diese Seite bei jedem Deploy statisch
 // vorzurendern und braucht dafuer eine live erreichbare Datenbank zur
@@ -64,12 +67,14 @@ function Logo({ dark = false }: { dark?: boolean }) {
 }
 
 export default async function Home() {
-  const [templates, packages, modules, photoVideoAddOn] = await Promise.all([
+  const [locale, templates, packages, modules, photoVideoAddOn] = await Promise.all([
+    getLocale(),
     prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } }),
     prisma.package.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.module.findMany(),
     prisma.addOn.findUnique({ where: { key: "photo-video-collection" } }),
   ]);
+  const t = homepageCopy[locale];
 
   const moduleNameByKey = new Map(modules.map((m) => [m.key, m.name]));
 
@@ -115,31 +120,31 @@ export default async function Home() {
       <nav>
         <Logo />
         <div className="nav-links">
-          <a href="#erinnerungen">Fotos &amp; Gästebuch</a>
-          <a href="#vorlagen">Vorlagen</a>
-          <a href="#preise">Preise</a>
-          <a href="/dashboard">Anmelden</a>
+          <a href="#erinnerungen">{t.nav.gallery}</a>
+          <a href="#vorlagen">{t.nav.templates}</a>
+          <a href="#preise">{t.nav.pricing}</a>
+          <a href="/dashboard">{t.nav.login}</a>
         </div>
-        <a href="/dashboard" className="btn btn-primary">
-          Fotos &amp; Videos sammeln
-        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <LanguageSwitcher locale={locale} redirectTo="/" />
+          <a href="/dashboard" className="btn btn-primary">
+            {t.nav.cta}
+          </a>
+        </div>
       </nav>
 
       <section className="hero reveal">
         <div className="hero-grid">
           <div className="hero-copy">
-            <div className="eyebrow">Fotos, Videos &amp; Gästebuch — digital gesammelt</div>
-            <h1>Eure Erinnerungen. Nicht verstreut auf fremden Handys.</h1>
-            <p className="hero-sub">
-              Jedes Gästefoto, jedes Video, jede Nachricht landet an einem Ort — sofort sichtbar, für immer
-              gesichert. Dazu, wenn ihr wollt: eine passende digitale Einladung im selben Design.
-            </p>
+            <div className="eyebrow">{t.hero.eyebrow}</div>
+            <h1>{t.hero.title}</h1>
+            <p className="hero-sub">{t.hero.sub}</p>
             <div className="hero-cta">
               <a href="#preise" className="btn btn-primary">
-                Fotos &amp; Videos sammeln
+                {t.hero.ctaPrimary}
               </a>
               <a href="#vorlagen" className="btn btn-ghost">
-                Auch Einladung gestalten
+                {t.hero.ctaSecondary}
               </a>
             </div>
           </div>
@@ -157,74 +162,43 @@ export default async function Home() {
 
       <section className="stats reveal">
         <div className="stats-grid">
-          <div className="stats-item">
-            <div className="stats-num">{templates.length}</div>
-            <div className="stats-label">Designs zur Auswahl</div>
-          </div>
-          <div className="stats-item">
-            <div className="stats-num">0€</div>
-            <div className="stats-label">Zum Ausprobieren, ohne Konto</div>
-          </div>
-          <div className="stats-item">
-            <div className="stats-num">5&nbsp;Min.</div>
-            <div className="stats-label">Bis eure Seite live ist</div>
-          </div>
-          <div className="stats-item">
-            <div className="stats-num">1</div>
-            <div className="stats-label">Link für Einladung, QR-Code &amp; Tischkarte</div>
-          </div>
+          {t.stats.map((s, i) => (
+            <div className="stats-item" key={i}>
+              <div className="stats-num">{i === 0 ? templates.length : s.num}</div>
+              <div className="stats-label">{s.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="how reveal" id="wie">
         <div className="how-head">
-          <div className="eyebrow">Drei Schritte</div>
-          <h2>So funktioniert&apos;s</h2>
+          <div className="eyebrow">{t.how.eyebrow}</div>
+          <h2>{t.how.heading}</h2>
         </div>
         <div className="how-grid">
-          <div>
-            <div className="how-num">01</div>
-            <h3>Eventtyp &amp; Vorlage wählen</h3>
-            <p>Ob Hochzeit, Geburtstag oder Firmenevent – passende Designs in mehreren Stimmungen.</p>
-          </div>
-          <div>
-            <div className="how-num">02</div>
-            <h3>Personalisieren</h3>
-            <p>Daten, Farben, Module an- oder ausschalten: alles mit Live-Vorschau, in wenigen Minuten fertig.</p>
-          </div>
-          <div>
-            <div className="how-num">03</div>
-            <h3>Veröffentlichen &amp; teilen</h3>
-            <p>Ein Link für eure Gäste, ein passender QR-Code für den Tisch – im selben Design.</p>
-          </div>
+          {t.how.steps.map((step, i) => (
+            <div key={i}>
+              <div className="how-num">{String(i + 1).padStart(2, "0")}</div>
+              <h3>{step.title}</h3>
+              <p>{step.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       <section className="feature reveal" id="erinnerungen">
         <div className="feature-copy">
-          <div className="eyebrow">Fotos, Videos &amp; Gästebuch</div>
-          <h2>Alles, was eure Gäste festhalten — an einem Ort</h2>
-          <p className="feature-desc">
-            Gästefotos laufen automatisch in einer gemeinsamen Wand zusammen, dazu ein Video-Gästebuch für
-            persönliche Botschaften. Ihr entscheidet vor der Veröffentlichung, was sichtbar wird.
-          </p>
+          <div className="eyebrow">{t.erinnerungen.eyebrow}</div>
+          <h2>{t.erinnerungen.heading}</h2>
+          <p className="feature-desc">{t.erinnerungen.desc}</p>
           <div className="feature-points">
-            <div>
-              <Check />
-              Foto- &amp; Videowand ohne App-Zwang, direkt über den Browser
-            </div>
-            <div>
-              <Check />
-              Video-Gästebuch, bis 60 Sekunden
-            </div>
-            <div>
-              <Check />
-              Eigener QR-Code je Tisch — Uploads direkt vom Platz
-            </div>
-            <div>
-              <Check />
-              Personen-Tagging, damit jeder seine eigenen Fotos wiederfindet
-            </div>
+            {t.erinnerungen.points.map((point, i) => (
+              <div key={i}>
+                <Check />
+                {point}
+              </div>
+            ))}
           </div>
         </div>
         <div className="frame-wrap">
@@ -238,9 +212,9 @@ export default async function Home() {
 
       <section className="templates reveal" id="vorlagen">
         <div className="templates-head">
-          <div className="eyebrow">{templates.length} Vorlagen</div>
-          <h2>Für jede Stimmung die richtige</h2>
-          <p>Bewusst kuratiert statt endlos – in Kategorien, damit ihr schnell findet, was zu euch passt.</p>
+          <div className="eyebrow">{templates.length} {t.nav.templates}</div>
+          <h2>{t.vorlagen.heading}</h2>
+          <p>{t.vorlagen.desc}</p>
         </div>
 
         <TemplateGallery categories={galleryCategories} />
@@ -248,24 +222,16 @@ export default async function Home() {
 
       <section className="feature reveal" id="editor">
         <div className="feature-copy">
-          <div className="eyebrow">Editor</div>
-          <h2>Gestalten in Echtzeit</h2>
-          <p className="feature-desc">
-            Daten, Farbe, Schrift, Foto – alles mit sofortiger Vorschau. Probiert die Akzentfarbe links direkt aus.
-          </p>
+          <div className="eyebrow">{t.editor.eyebrow}</div>
+          <h2>{t.editor.heading}</h2>
+          <p className="feature-desc">{t.editor.desc}</p>
           <div className="feature-points">
-            <div>
-              <Check />
-              Live-Vorschau reagiert direkt auf Eingaben
-            </div>
-            <div>
-              <Check />
-              Module pro Event einzeln an- oder ausschalten
-            </div>
-            <div>
-              <Check />
-              Passend für jeden Eventtyp, nicht nur Hochzeiten
-            </div>
+            {t.editor.points.map((point, i) => (
+              <div key={i}>
+                <Check />
+                {point}
+              </div>
+            ))}
           </div>
         </div>
         <div className="frame-wrap">
@@ -279,24 +245,16 @@ export default async function Home() {
 
       <section className="feature reveal">
         <div className="feature-copy">
-          <div className="eyebrow">Event-Webseite</div>
-          <h2>Eine eigene Seite für euer Event</h2>
-          <p className="feature-desc">
-            Aus der Einladung wird eine eigene Event-Webseite: Countdown, Anfahrt, Ablauf und Zusage in einem Fluss.
-          </p>
+          <div className="eyebrow">{t.eventpage.eyebrow}</div>
+          <h2>{t.eventpage.heading}</h2>
+          <p className="feature-desc">{t.eventpage.desc}</p>
           <div className="feature-points">
-            <div>
-              <Check />
-              Anfahrt inklusive Kartenvorschau
-            </div>
-            <div>
-              <Check />
-              Zeitstrahl mit allen Programmpunkten
-            </div>
-            <div>
-              <Check />
-              RSVP direkt mit Menüwahl
-            </div>
+            {t.eventpage.points.map((point, i) => (
+              <div key={i}>
+                <Check />
+                {point}
+              </div>
+            ))}
           </div>
         </div>
         <div className="frame-wrap">
@@ -310,21 +268,16 @@ export default async function Home() {
 
       <section className="feature reveal">
         <div className="feature-copy">
-          <div className="eyebrow">Teilen &amp; Drucken</div>
-          <h2>Vom Scan zum Tisch</h2>
-          <p className="feature-desc">
-            Der Link teilt sich wie gewohnt – die Tischkarte ist der eigentliche Clou: automatisch im gewählten
-            Design erzeugt, druckfertig, mit eigenem QR-Code je Tisch.
-          </p>
+          <div className="eyebrow">{t.share.eyebrow}</div>
+          <h2>{t.share.heading}</h2>
+          <p className="feature-desc">{t.share.desc}</p>
           <div className="feature-points">
-            <div>
-              <Check />
-              Teilen per WhatsApp oder Link
-            </div>
-            <div>
-              <Check />
-              Tischkarte im selben Design wie die Einladung
-            </div>
+            {t.share.points.map((point, i) => (
+              <div key={i}>
+                <Check />
+                {point}
+              </div>
+            ))}
           </div>
         </div>
         <div className="frame-wrap">
@@ -338,42 +291,32 @@ export default async function Home() {
 
       <section className="pricing reveal" id="preise">
         <div className="pricing-head">
-          <div className="eyebrow">Preise</div>
-          <h2>Nur Erinnerungen sammeln — oder die ganze Einladung</h2>
+          <div className="eyebrow">{t.pricing.eyebrow}</div>
+          <h2>{t.pricing.heading}</h2>
         </div>
 
         {photoVideoAddOn && (
           <div style={{ maxWidth: 420, margin: "0 auto 44px" }}>
             <div className="price-card highlight">
-              <div className="price-badge">EIGENSTÄNDIG BUCHBAR</div>
+              <div className="price-badge">{t.pricing.addOnBadge}</div>
               <h3 style={{ marginTop: 6 }}>{photoVideoAddOn.name}</h3>
-              <div className="tag">Ganz ohne Einladung buchbar — nur Fotos, Videos &amp; Gästebuch</div>
+              <div className="tag">{t.pricing.addOnTag}</div>
               <div className="amount">{eur.format(photoVideoAddOn.priceCents / 100)}</div>
               <ul>
-                <li>
-                  <Check />
-                  Unbegrenzte Foto- &amp; Video-Uploads
-                </li>
-                <li>
-                  <Check />
-                  Video-Gästebuch inklusive
-                </li>
-                <li>
-                  <Check />
-                  Personen-Tagging
-                </li>
-                <li>
-                  <Check />
-                  Unabhängig vom gewählten Paket, auch ohne Einladung
-                </li>
+                {t.pricing.addOnFeatures.map((feature, i) => (
+                  <li key={i}>
+                    <Check />
+                    {feature}
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
         )}
 
         <div className="pricing-head" style={{ marginTop: 12 }}>
-          <div className="eyebrow">Oder: die ganze Einladung</div>
-          <h2 style={{ fontSize: "clamp(20px, 2.4vw, 26px)" }}>Für jeden Anlass die passende Stufe</h2>
+          <div className="eyebrow">{t.pricing.eyebrow2}</div>
+          <h2 style={{ fontSize: "clamp(20px, 2.4vw, 26px)" }}>{t.pricing.heading2}</h2>
         </div>
         <div className="price-grid">
           {packages.map((pkg) => {
@@ -381,7 +324,7 @@ export default async function Home() {
             const highlight = pkg.key === "PREMIUM_PLUS";
             return (
               <div className={`price-card${highlight ? " highlight" : ""}`} key={pkg.id}>
-                {highlight && <div className="price-badge">BELIEBTESTE WAHL</div>}
+                {highlight && <div className="price-badge">{t.pricing.popularBadge}</div>}
                 <h3 style={highlight ? { marginTop: 6 } : undefined}>{pkg.name}</h3>
                 <div className="tag">{pkg.description}</div>
                 <div className="amount">{eur.format(pkg.priceCents / 100)}</div>
@@ -402,8 +345,7 @@ export default async function Home() {
       <footer>
         <Logo />
         <p>
-          Fotos, Videos &amp; Gästebuch digital sammeln — plus digitale Einladungen und Event-Webseiten für
-          Hochzeiten, Geburtstage, Familienfeiern und Business-Events.
+          {t.footer.tagline}
           <br />
           [KONTAKT E-MAIL] · © 2026 einladi
         </p>

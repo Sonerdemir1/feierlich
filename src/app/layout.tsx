@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Work_Sans, Playfair_Display, Cinzel, Great_Vibes, Poppins } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
+import { getLocale } from "@/lib/i18n";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -56,10 +57,11 @@ export const viewport: Viewport = {
   themeColor: "#211C19",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
     <html
-      lang="de"
+      lang={locale}
       className={`${cormorant.variable} ${workSans.variable} ${playfair.variable} ${cinzel.variable} ${greatVibes.variable} ${poppins.variable}`}
     >
       <body>
