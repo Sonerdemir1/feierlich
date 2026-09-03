@@ -3,26 +3,23 @@
 import { useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
 
 // docs/MOTION.md §2 "Kamerafahrten beim Scrollen" — ersetzt RevealAnimator
 // (Fade-and-slide-up) auf der Startseite: Abschnitte werden per
 // scrub-gebundenem scale(1.08→1)+opacity(0→1) erreicht, "als bewege sich
-// die Kamera nach vorn" statt dass sich Inhalt nach oben schiebt. Lenis
-// sorgt fuer das weiche Scrollen, das ScrollTrigger dafuer braucht.
+// die Kamera nach vorn" statt dass sich Inhalt nach oben schiebt.
+//
+// Bewusst OHNE Lenis: das kuenstliche Ueber-Zeit-Glaetten jedes
+// Scroll-Impulses (frueher `duration: 1.2`) machte die ganze Seite spuerbar
+// traege ("extrem langsam" laut Nutzer-Feedback) — Scrollen fuehlte sich
+// gedaempft statt direkt an. ScrollTrigger braucht Lenis nicht, es
+// funktioniert genauso gut mit nativem Scroll — dadurch reagiert die Seite
+// wieder 1:1 auf Maus-/Trackpad-Input, die Kamerafahrten bleiben erhalten.
 export function MotionScrollCamera() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     gsap.registerPlugin(ScrollTrigger);
-
-    const lenis = new Lenis({ duration: 1.2 });
-    function raf(time: number) {
-      lenis.raf(time);
-      ScrollTrigger.update();
-    }
-    gsap.ticker.add(raf);
-    gsap.ticker.lagSmoothing(0);
 
     const sections = gsap.utils.toArray<HTMLElement>(".motion-home .reveal");
     const tweens = sections.map((el) =>
@@ -55,8 +52,6 @@ export function MotionScrollCamera() {
     return () => {
       tweens.forEach((t) => t.scrollTrigger?.kill());
       inTriggers.forEach((t) => t.kill());
-      gsap.ticker.remove(raf);
-      lenis.destroy();
     };
   }, []);
 
