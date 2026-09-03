@@ -21,7 +21,7 @@ import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
 import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
-import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry, submitMusicRequest } from "./actions";
+import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -110,7 +110,9 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // Aufruf wird als "geoeffnet" vermerkt (nur bei echten Gaesten, nicht
   // wenn der Owner sich selbst die Vorschau ansieht).
   const guestToken = typeof sp.g === "string" ? sp.g : undefined;
-  const linkedGuest = guestToken ? await prisma.guest.findFirst({ where: { inviteToken: guestToken, eventId: event.id } }) : null;
+  const linkedGuest = guestToken
+    ? await prisma.guest.findFirst({ where: { inviteToken: guestToken, eventId: event.id }, include: { checkIn: true } })
+    : null;
   if (linkedGuest && !isOwner) {
     await prisma.guest.update({
       where: { id: linkedGuest.id },
@@ -612,6 +614,40 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     ? `linear-gradient(${colors.background}D9, ${colors.background}D9), url(${cardImageUrl})`
     : `radial-gradient(120% 90% at 50% 0%, ${colors.accent}26, transparent 65%)`;
 
+  // Personal-Ansicht am Eingang (dedizierter CHECK_IN-QR-Code, siehe
+  // qr/[type]/route.ts) — bewusst eine eigene, schlanke Seite statt
+  // innerhalb des vollen Gaeste-Layouts: Personal an der Tuer ist nicht im
+  // Dashboard eingeloggt, braucht nur die Namenssuche, nichts sonst von
+  // der Einladungsseite.
+  if (sp.checkin === "staff") {
+    if (!isModuleOn("check-in")) notFound();
+    const result = typeof sp.result === "string" ? sp.result : undefined;
+    return (
+      <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: colors.background, color: colors.primary, padding: 24 }}>
+        <div style={{ maxWidth: 360, width: "100%", border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 18 }}>Check-in — {event.title}</div>
+          {result && (
+            <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
+              {result === "notfound" ? "Kein Gast mit diesem Namen gefunden." : `${decodeURIComponent(result)} ist eingecheckt.`}
+            </p>
+          )}
+          <form action={checkInGuestByName.bind(null, event.id, event.slug)} style={{ display: "flex", gap: 8 }}>
+            <input
+              name="checkinName"
+              placeholder="Name des Gasts"
+              required
+              autoFocus
+              style={{ flex: 1, padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
+            />
+            <button type="submit" style={{ padding: "0 18px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Einchecken
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main
       style={{
@@ -723,6 +759,31 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>
               {weather.tempMaxC}° / {weather.tempMinC}°
             </div>
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("check-in") && linkedGuest && (
+        <section style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 48px" }}>
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
+            {linkedGuest.checkIn ? (
+              <>
+                <div style={{ fontSize: 22, marginBottom: 8, color: colors.accent }}>✓</div>
+                <div style={{ fontFamily: headingFont, fontSize: 16 }}>
+                  Eingecheckt um{" "}
+                  {new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit" }).format(linkedGuest.checkIn.checkedInAt)}
+                </div>
+              </>
+            ) : (
+              <form action={confirmCheckIn.bind(null, event.id, event.slug, linkedGuest.id)}>
+                <button
+                  type="submit"
+                  style={{ width: "100%", padding: 16, background: colors.accent, color: colors.background, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Jetzt einchecken
+                </button>
+              </form>
+            )}
           </div>
         </section>
       )}

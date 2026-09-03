@@ -25,6 +25,7 @@ import {
 import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { deleteMusicRequest } from "./music-requests-actions";
+import { checkInGuest } from "./checkin-actions";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -116,7 +117,7 @@ export default async function EventDetailPage({
     include: {
       eventType: true,
       template: true,
-      guests: { include: { rsvp: true } },
+      guests: { include: { rsvp: true, checkIn: true } },
       coverImage: true,
       envelopeVideo: true,
       backgroundMusic: true,
@@ -1115,6 +1116,31 @@ export default async function EventDetailPage({
                 </form>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Check-in-Übersicht */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Check-in-Übersicht</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          {event.guests.filter((g) => g.checkIn).length} von {event.guests.length} Gästen eingecheckt — Gäste checken
+          sich selbst über ihren persönlichen Link oder den Check-in-QR-Code am Eingang ein.
+        </div>
+        {event.guests.filter((g) => !g.checkIn).length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {event.guests
+              .filter((g) => !g.checkIn)
+              .map((g) => (
+                <form key={g.id} action={checkInGuest.bind(null, event.id, g.id)}>
+                  <button
+                    type="submit"
+                    style={{ fontSize: 11.5, padding: "6px 10px", border: "1px solid var(--line)", background: "var(--ivory-2)", color: "var(--ink-soft)", cursor: "pointer" }}
+                  >
+                    {g.firstName} {g.lastName ?? ""} manuell einchecken
+                  </button>
+                </form>
+              ))}
           </div>
         )}
       </div>

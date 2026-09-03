@@ -1,12 +1,19 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { qrPng, qrSvg, safeQrColorsFromEvent } from "@/lib/qr";
+import type { QRCodeType } from "@/generated/prisma/client";
 
-// Nur Typen mit echtem Ziel — Sitzplatz/Menue/Gaestebuch/Musikwuensche/
-// Bilder-Upload/Check-in kommen erst mit ihren jeweiligen Phasen (9/10/13/14/21).
 const SUPPORTED: Record<string, (slug: string) => string> = {
   EVENT_PAGE: (slug) => `/e/${slug}`,
   RSVP: (slug) => `/e/${slug}#rsvp`,
+  SEATING: (slug) => `/e/${slug}#sitzplatz`,
+  MENU: (slug) => `/e/${slug}#menu`,
+  GUESTBOOK: (slug) => `/e/${slug}#gaestebuch`,
+  MUSIC_REQUEST: (slug) => `/e/${slug}#musikwuensche`,
+  GALLERY_UPLOAD: (slug) => `/e/${slug}#galerie`,
+  // Eigene, schlanke Personal-Ansicht statt eines Ankers auf der vollen
+  // Gaeste-Seite — siehe der "?checkin=staff"-Zweig in e/[slug]/page.tsx.
+  CHECK_IN: (slug) => `/e/${slug}?checkin=staff`,
 };
 
 export async function GET(
@@ -31,9 +38,9 @@ export async function GET(
   const colors = safeQrColorsFromEvent(activeColors.primary, activeColors.background);
 
   await prisma.qRCode.upsert({
-    where: { eventId_type: { eventId: id, type: type as "EVENT_PAGE" | "RSVP" } },
+    where: { eventId_type: { eventId: id, type: type as QRCodeType } },
     update: { targetUrl },
-    create: { eventId: id, type: type as "EVENT_PAGE" | "RSVP", targetUrl },
+    create: { eventId: id, type: type as QRCodeType, targetUrl },
   });
 
   const format = url.searchParams.get("format") === "png" ? "png" : "svg";

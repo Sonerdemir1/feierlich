@@ -195,3 +195,39 @@ export async function submitMusicRequest(eventId: string, slug: string, formData
   revalidatePath(`/e/${slug}`);
   redirect(`/e/${slug}?music=success#musikwuensche`);
 }
+
+// Gast bestaetigt den eigenen Check-in ueber seinen persoenlichen Link
+// (?g=<inviteToken>) — das Personal an der Tuer scannt das QR-Bild dieses
+// Links mit der normalen Handy-Kamera, landet hier, tippt einmal.
+export async function confirmCheckIn(eventId: string, slug: string, guestId: string) {
+  const guest = await prisma.guest.findUnique({ where: { id: guestId } });
+  if (!guest || guest.eventId !== eventId) redirect(`/e/${slug}`);
+
+  // @@unique auf guestId in CheckIn — bereits-eingecheckt-Fall einfach
+  // ignorieren statt einen Fehler zu zeigen (z.B. doppelt gescannt).
+  await prisma.checkIn.upsert({
+    where: { guestId },
+    update: {},
+    create: { eventId, guestId },
+  });
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?g=${guest.inviteToken}`);
+}
+
+// Ausweichweg fuers Personal ohne den persoenlichen Link des Gasts zur
+// Hand (z.B. Gast hat sein Handy nicht dabei) — Namenssuche, gleiches
+// Muster wie findSeat(), nur ueber den dedizierten CHECK_IN-QR-Code
+// erreichbar (?checkin=staff), nicht an isOwner gekoppelt.
+export async function checkInGuestByName(eventId: string, slug: string, formData: FormData) {
+  const name = String(formData.get("checkinName") ?? "").trim().slice(0, 80);
+  if (!name) redirect(`/e/${slug}?checkin=staff`);
+
+  const guest = await prisma.guest.findFirst({ where: { eventId, firstName: { contains: name } } });
+  if (!guest) redirect(`/e/${slug}?checkin=staff&result=notfound`);
+
+  await prisma.checkIn.upsert({ where: { guestId: guest.id }, update: {}, create: { eventId, guestId: guest.id } });
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?checkin=staff&result=${encodeURIComponent(guest.firstName)}`);
+}
