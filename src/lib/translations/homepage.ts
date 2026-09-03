@@ -72,6 +72,17 @@ export const homepageCopy = {
       heading2: "Für jeden Anlass die passende Stufe",
       popularBadge: "BELIEBTESTE WAHL",
     },
+    // Nur belegbare Fakten — bewusst keine erfundenen Nutzerzahlen/
+    // Bewertungen (siehe Kommentar bei .hero-chip), passend zur restlichen
+    // ehrlichen Datengrundlage der Seite.
+    trust: {
+      items: [
+        { icon: "shield", label: "Sichere Zahlung", desc: "Verschlüsselt über Stripe." },
+        { icon: "eu", label: "DSGVO-konform", desc: "Eure Daten liegen auf Servern in der EU." },
+        { icon: "receipt", label: "Kein Abo", desc: "Einmalzahlung pro Paket, keine versteckten Kosten." },
+        { icon: "mail", label: "Persönlicher Support", desc: "Fragen gehen direkt an uns — keine Warteschleife." },
+      ],
+    },
     footer: {
       tagline:
         "Fotos, Videos & Gästebuch digital sammeln — plus digitale Einladungen und Event-Webseiten für Hochzeiten, Geburtstage, Familienfeiern und Business-Events.",
@@ -143,6 +154,14 @@ export const homepageCopy = {
       eyebrow2: "Ya da: tüm davetiye",
       heading2: "Her etkinlik için doğru seviye",
       popularBadge: "EN ÇOK TERCİH EDİLEN",
+    },
+    trust: {
+      items: [
+        { icon: "shield", label: "Güvenli Ödeme", desc: "Stripe üzerinden şifreli." },
+        { icon: "eu", label: "GDPR Uyumlu", desc: "Verileriniz AB sunucularında saklanır." },
+        { icon: "receipt", label: "Abonelik Yok", desc: "Pakete göre tek seferlik ödeme, gizli ücret yok." },
+        { icon: "mail", label: "Kişisel Destek", desc: "Sorularınız doğrudan bize ulaşır — bekleme yok." },
+      ],
     },
     footer: {
       tagline:

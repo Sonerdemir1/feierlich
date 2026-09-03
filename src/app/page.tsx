@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { prisma } from "@/lib/prisma";
 import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
@@ -27,6 +28,41 @@ function Check() {
     </svg>
   );
 }
+
+const TRUST_ICONS: Record<string, ReactNode> = {
+  shield: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" />
+      <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  eu: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v18M3 12h18" strokeOpacity="0.35" />
+      <circle cx="12" cy="6.3" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="16.2" cy="8.4" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="17.7" cy="12" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="16.2" cy="15.6" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="17.7" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="7.8" cy="15.6" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="6.3" cy="12" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="7.8" cy="8.4" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  receipt: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M6 3h12v18l-2.5-1.5L13 21l-1-1.5-1 1.5-2.5-1.5L6 21V3z" strokeLinejoin="round" />
+      <path d="M9 8h6M9 12h6" strokeLinecap="round" />
+    </svg>
+  ),
+  mail: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+      <path d="M3.5 6.5L12 13l8.5-6.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+};
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -264,6 +300,18 @@ export default async function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="trust-bar reveal">
+        {t.trust.items.map((item, i) => (
+          <div className="trust-item" key={i}>
+            <span className="trust-item-icon">{TRUST_ICONS[item.icon]}</span>
+            <div>
+              <div className="trust-item-label">{item.label}</div>
+              <div className="trust-item-desc">{item.desc}</div>
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="pricing reveal" id="preise">
