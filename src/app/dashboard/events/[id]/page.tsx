@@ -36,6 +36,7 @@ import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { LivePreviewFrame } from "@/components/dashboard/LivePreviewFrame";
+import { AutoSubmitForm } from "@/components/dashboard/AutoSubmitForm";
 import { EinladiKiChat } from "@/components/dashboard/EinladiKiChat";
 import { einladiKiConfigured } from "@/lib/einladi-ki";
 import { SocialGraphicPreview } from "@/components/dashboard/SocialGraphicPreview";
@@ -447,11 +448,11 @@ export default async function EventDetailPage({
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Design &amp; Vorschau</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Farben, Schriftart &amp; Verzierungen anpassen — die Vorschau rechts aktualisiert sich nach dem Speichern sofort.
+          Farben, Schriftart &amp; Verzierungen anpassen — jede Änderung speichert automatisch, die Vorschau rechts aktualisiert sich sofort.
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
           <div style={{ flex: "0 0 260px", minWidth: 240 }}>
-            <form action={saveDesign.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <AutoSubmitForm action={saveDesign.bind(null, event.id)}>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
                 Primär (Text)
                 <input type="color" name="primary" defaultValue={activeColors.primary} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
@@ -550,10 +551,8 @@ export default async function EventDetailPage({
                 </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5 }}>
-                Speichern
-              </button>
-            </form>
+              <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>Änderungen werden automatisch gespeichert.</span>
+            </AutoSubmitForm>
             {(hasColorOverride || hasStyleOverride) && (
               <form action={resetDesign.bind(null, event.id)} style={{ marginTop: 8 }}>
                 <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12, width: "100%" }}>
