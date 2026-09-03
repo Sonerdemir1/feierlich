@@ -424,16 +424,17 @@ a {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Ohne dies springt ein Klick auf einen Nav-Anker (#preise, #vorlagen, ...)
-     die Seite instant weiter — Sections dazwischen werden dabei komplett
-     uebersprungen, ohne dass der IntersectionObserver in RevealAnimator.tsx
-     sie je als sichtbar registriert (kein Zwischen-Frame mit Ueberschneidung),
-     sie blieben dauerhaft bei opacity:0 haengen. Smooth-Scroll erzeugt
-     genug Zwischenschritte, damit jede .reveal-Section auf dem Weg dorthin
-     regulaer ausgeloest wird. */
-  html {
-    scroll-behavior: smooth;
-  }
+  /* KEIN `html { scroll-behavior: smooth }` mehr: war fuer das inzwischen
+     ersetzte RevealAnimator/IntersectionObserver-System noetig (Zwischen-
+     Frames beim Anker-Sprung, damit .reveal-Sections unterwegs ausgeloest
+     wurden). MotionScrollCamera.tsx loest .in jetzt per ScrollTrigger anhand
+     der tatsaechlichen Scroll-Position aus, unabhaengig davon, wie dorthin
+     gescrollt wurde — die Regel war nur noch totes Gewicht. Schlimmer: sie
+     kollidierte mit Lenis' eigenem RAF-gesteuertem Smooth-Scroll (zwei
+     Systeme, die beide die Scroll-Position interpolieren), genau das
+     erzeugte das zaehe, haengende Scrollgefuehl.
+     https://nextjs.org/docs/messages/missing-data-scroll-behavior wies im
+     Dev-Log ebenfalls schon darauf hin. */
 
   .reveal {
     opacity: 0;
