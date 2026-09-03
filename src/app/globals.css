@@ -26,24 +26,29 @@
   --font-body: "Inter", system-ui, sans-serif;
 }
 
-/* docs/MOTION.md — Farbwelt "Tinte & Kerzenlicht", NUR fuer die Startseite/
-   Galerie (siehe Geltungsbereich §0 der Spezifikation). CSS-Variablen
-   ueberschreiben hier lokal --ink/--gold/--sage fuer alle Nachfahren von
-   .motion-home — der Rest der App (Dashboard, echte Einladungsseiten)
-   bleibt auf der warmen Palette oben unberuehrt, da Custom Properties nur
-   innerhalb des Scopes kaskadieren. */
+/* docs/MOTION.md — Farbwelt "Tinte & Kerzenlicht" (helle Fassung), fuer die
+   gesamte Startseite (siehe Geltungsbereich §0). --ivory/--ivory-2 werden
+   hier bewusst auf --porcelain/--linen aliasiert statt jede einzelne
+   bestehende Section-Regel (.stats/.how/.feature/.templates/.pricing/
+   footer ...) anzufassen — die referenzieren schon ueberall --ivory/
+   --ivory-2 als Flaechenfarbe, der Alias skinnt sie automatisch mit.
+   --terracotta bleibt bewusst unberuehrt (Marken-Aktionsfarbe, nicht Teil
+   der Motion-Palette). Der Rest der App (Dashboard, echte Einladungs-
+   seiten) bleibt ausserhalb von .motion-home unberuehrt. */
 .motion-home {
-  --ink: #14121c;
-  --ink-deep: #0c0a12;
-  --parchment: #f2e9da;
-  --gold: #c9a15c;
+  --porcelain: #faf8f5;
+  --linen: #efe8de;
+  --ink: #1a1723;
+  --gold: #9a7534;
   --henna: #8e2c3b;
   --sage: #6c7a63;
   --branch-accent: var(--henna);
+  --ivory: var(--porcelain);
+  --ivory-2: var(--linen);
 
   position: relative;
-  background: var(--ink);
-  color: var(--parchment);
+  background: var(--porcelain);
+  color: var(--ink);
   font-family: var(--font-karla), system-ui, sans-serif;
   overflow-x: clip;
 }
@@ -54,28 +59,15 @@
   font-weight: 400;
   font-variation-settings: "opsz" 72, "SOFT" 30, "WONK" 1;
 }
-/* Grain + Vignette: als letzte Kinder von .motion-home statt Pseudo-
-   Elemente, damit sie unabhaengig von der Stacking-Order der Sections
-   zuverlaessig obenauf liegen (position:fixed + spaete DOM-Position),
-   ohne dass jede Section einen eigenen z-index braucht. */
-.motion-grain {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  pointer-events: none;
-  opacity: 0.035;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.motion-vignette {
-  position: fixed;
-  inset: 0;
-  z-index: 49;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 45%, var(--ink-deep) 130%);
-}
+/* Kein Grain-Overlay, keine Vignette (siehe docs/MOTION.md §1) — beide
+   legten sich seitenweit ueber Text und Kartenvorschauen und machten sie
+   streckenweise unlesbar. Flaechen bleiben flaechig. */
 
-/* Hero-Umschlag-Sequenz — Timings/Kurven exakt aus docs/MOTION.md §2. */
+/* Hero-Umschlag-Sequenz (aktuell ungenutzt, siehe src/components/
+   MotionHero.tsx) — Timings/Kurven aus einer frueheren Fassung von
+   docs/MOTION.md §2, bewusst nicht geloescht, falls dafuer spaeter ein
+   passender Ort gefunden wird. Auf der Startseite selbst nicht mehr
+   eingebunden. */
 .motion-nav {
   position: fixed;
   top: 0;
@@ -88,12 +80,12 @@
   max-width: 1160px;
   margin: 0 auto;
   padding: 20px 28px;
-  background: color-mix(in srgb, var(--ink-deep) 72%, transparent);
+  background: color-mix(in srgb, var(--ink) 78%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
 }
 .motion-nav .nav-links a {
-  color: color-mix(in srgb, var(--parchment) 82%, transparent);
+  color: color-mix(in srgb, var(--porcelain) 82%, transparent);
 }
 .motion-nav .nav-links a:hover {
   color: var(--gold);
@@ -109,9 +101,32 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  /* Start dunkel (--ink), wechselt parallel zum Kartenausgleiten (+600ms,
+     1200ms, gleiche Kurve) zu --porcelain — "das Licht kommt mit der
+     Karte" (MOTION.md §2). */
+  background: var(--ink);
+  transition: background-color 1200ms cubic-bezier(0.22, 1, 0.36, 1) 600ms;
+}
+.motion-hero[data-phase="opening"],
+.motion-hero[data-phase="open"] {
+  background: var(--porcelain);
+}
+.motion-hero-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.35) 130%);
+  opacity: 1;
+  transition: opacity 1200ms cubic-bezier(0.22, 1, 0.36, 1) 600ms;
+}
+[data-phase="opening"] .motion-hero-vignette,
+[data-phase="open"] .motion-hero-vignette {
+  opacity: 0;
 }
 .motion-hero-scene {
   position: relative;
+  z-index: 2;
   width: min(340px, 82vw);
   height: min(74vh, 580px);
   perspective: 1400px;
@@ -138,9 +153,9 @@
   inset: 0;
   z-index: 1;
   border-radius: 6px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 12%, var(--ink)) 0%, var(--ink-deep) 75%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 15%, var(--ink)) 0%, var(--ink) 100%);
   border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 30px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 4px rgba(60, 40, 20, 0.1), 0 30px 60px rgba(60, 40, 20, 0.06);
 }
 .motion-flap {
   position: absolute;
@@ -150,7 +165,7 @@
   height: 54%;
   z-index: 3;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
-  background: linear-gradient(165deg, color-mix(in srgb, var(--gold) 20%, var(--ink)), var(--ink-deep));
+  background: linear-gradient(165deg, color-mix(in srgb, var(--gold) 25%, var(--ink)), var(--ink));
   transform-origin: top center;
   transform-style: preserve-3d;
   backface-visibility: hidden;
@@ -180,7 +195,7 @@
   animation: motionSealPulse 2400ms ease-in-out infinite;
 }
 .motion-seal:focus-visible {
-  outline: 2px solid var(--parchment);
+  outline: 2px solid var(--porcelain);
   outline-offset: 4px;
 }
 [data-phase="opening"] .motion-seal,
@@ -202,9 +217,9 @@
   border-radius: 3px;
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.05'/%3E%3C/svg%3E"),
-    var(--parchment);
+    var(--linen);
   color: var(--ink);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 30px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 4px rgba(60, 40, 20, 0.1), 0 30px 60px rgba(60, 40, 20, 0.06);
   opacity: 0;
   transform: translate(-50%, 12%);
 }
@@ -270,25 +285,17 @@
 .motion-hero-copy .hero-cta {
   justify-content: center;
 }
-.motion-btn-ghost {
-  background: transparent !important;
-  border-color: color-mix(in srgb, var(--gold) 55%, transparent) !important;
-  color: var(--parchment) !important;
-}
-.motion-btn-ghost:hover {
-  border-color: var(--gold) !important;
-}
-
 .motion-hero-hint {
   position: absolute;
   bottom: 48px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 2;
   font-family: var(--font-karla), sans-serif;
   font-size: 12px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--parchment) 70%, transparent);
+  color: color-mix(in srgb, var(--porcelain) 70%, transparent);
 }
 
 @keyframes motionSealPulse {
@@ -377,6 +384,15 @@
   .motion-ornament path {
     transition: none;
   }
+  /* §2: bei reduced-motion ist der Hero von Anfang an hell, kein
+     Dunkel-Start und kein Helligkeitswechsel. */
+  .motion-hero {
+    background: var(--porcelain) !important;
+    transition: none !important;
+  }
+  .motion-hero-vignette {
+    display: none !important;
+  }
 }
 
 * {
@@ -429,6 +445,17 @@ a {
   .reveal.in {
     opacity: 1;
     transform: none;
+  }
+
+  /* docs/MOTION.md §2 "Kamerafahrten beim Scrollen" — auf der Startseite
+     uebernimmt MotionScrollCamera.tsx (GSAP ScrollTrigger, scrub:1) die
+     Section-Reveals per scale(1.08→1)+opacity statt des obigen
+     Fade-and-slide-up. Transition hier aus, GSAP setzt Inline-Styles;
+     ohne das wuerden beide Systeme gegeneinander animieren. Kein .in noetig
+     — GSAP scrubbt direkt am Scrollfortschritt statt eine Klasse zu setzen. */
+  .motion-home .reveal {
+    transition: none;
+    transform: scale(1.08);
   }
 
   .hero-card-fade {

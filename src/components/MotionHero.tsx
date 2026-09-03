@@ -56,6 +56,7 @@ export function MotionHero({ names }: { names: string }) {
 
   return (
     <section className="motion-hero" data-phase={phase}>
+      <div className="motion-hero-vignette" aria-hidden="true" />
       <div className="motion-hero-scene">
         {/* Landschaft-Umschlag (echte Proportionen 3:2) mit Dreiecks-Klappe
             per clip-path — gleiche bewaehrte Technik wie EnvelopeOpen.tsx

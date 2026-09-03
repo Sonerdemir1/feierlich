@@ -17,15 +17,15 @@ Die Konkurrenz sieht aus wie ein Druckerei-Katalog. Einladi soll sich anfühlen 
 
 ## 1. Gestalterische Richtung: "Tinte & Kerzenlicht"
 
-Kein Weiß-auf-Weiß-Katalog, kein Creme-Beige mit Terrakotta-Akzent, keine Karten-Kacheln mit gleichem Radius und grauem Schatten. Die Seite ist dunkel, warm und tief – wie ein Saal kurz vor dem ersten Tanz. Das Papier leuchtet, der Rest tritt zurück.
+Kein Weiß-auf-Weiß-Katalog, kein Creme-Beige mit Terrakotta-Akzent, keine Karten-Kacheln mit gleichem Radius und grauem Schatten. Die Seite ist hell, warm und weich – wie Porzellan im Tageslicht. `--ink` ist Textfarbe und ausschließlich der Startzustand des Hero, nicht die Grundfläche der Seite.
 
 ### Farben
 
 ```
---ink:        #14121C   /* Tiefe Tinte, fast schwarz mit Violettstich – Grundfläche */
---ink-deep:   #0C0A12   /* Vignette, Ränder, Schattenzonen */
---parchment:  #F2E9DA   /* Papier – nur dort, wo wirklich Karte ist */
---gold:       #C9A15C   /* Prägung, Linien, Siegel. Sparsam. */
+--porcelain:  #FAF8F5   /* Grundfläche der gesamten Seite */
+--linen:      #EFE8DE   /* Zweite Flächenfarbe, Abschnittswechsel, Karten-Untergrund */
+--ink:        #1A1723   /* Textfarbe; als Fläche ausschließlich der Hero-Startzustand */
+--gold:       #9A7534   /* Prägung, Linien, Siegel. Sparsam. */
 --henna:      #8E2C3B   /* Akzent für türkische Kategorien */
 --sage:       #6C7A63   /* Akzent für botanisch/deutsche Kategorien */
 ```
@@ -47,57 +47,21 @@ Verboten: ein einzelnes Wort in der Überschrift farbig oder kursiv hervorheben.
 
 Jede Fläche hat eine Materialität, keine flachen Farbblöcke:
 
-- Papier: leichte Faser-Textur als `background-image`, dazu ein `box-shadow` mit zwei Ebenen (nah/hart, fern/weich), damit die Karte über der Fläche schwebt statt aufgeklebt zu sein.
-- Grain-Overlay über der gesamten Seite: SVG `feTurbulence`, Opacity 0.035, `mix-blend-mode: overlay`, `pointer-events: none`.
-- Vignette an den Rändern des Viewports, radialer Verlauf zu `--ink-deep`.
+- Papier: leichte Faser-Textur als `background-image`, dazu ein `box-shadow` mit zwei Ebenen (nah/hart, fern/weich), damit die Karte über der Fläche schwebt statt aufgeklebt zu sein. Schatten sind warm und weich, nie schwarz: nah `rgba(60, 40, 20, .10)`, fern `rgba(60, 40, 20, .06)`.
 - Gold-Prägung: animierter Verlauf unter `background-clip: text`, 6 s Loop, sehr langsam. Nur auf einem Element pro Bildschirm.
+- **Keine Vignette, kein Grain-Overlay.** Kein Effekt darf über Text oder Kartenvorschauen liegen. Kontrast von Fließtext zu Hintergrund mindestens 4.5:1.
 
 ---
 
 ## 2. Startseite
 
-### Aufbau
-
-```
-┌─────────────────────────────────┐
-│                                 │
-│      [ geschlossener Umschlag ] │   Vollbild, 100dvh
-│         mit Siegel              │   dunkel, Vignette
-│                                 │
-│   "Öffnen"  (kleiner Hinweis)   │
-└─────────────────────────────────┘
-        ↓ Tap / Scroll
-┌─────────────────────────────────┐
-│   Karte fährt heraus, Namen     │
-│   schreiben sich, Ornament      │
-│   zeichnet sich                 │
-└─────────────────────────────────┘
-        ↓ weiter scrollen
-┌─────────────────────────────────┐
-│   Was Einladi kann              │   drei Momente, nicht drei Kacheln
-│   (RSVP · Fotowand · Tischkarten)│
-└─────────────────────────────────┘
-        ↓
-┌─────────────────────────────────┐
-│   Galerie-Einstieg              │
-└─────────────────────────────────┘
-```
-
-### Die Hero-Sequenz (der einzige große Motion-Moment der Seite)
-
-Ablauf beim ersten Tap bzw. beim ersten Scroll-Impuls:
-
-| Phase | Dauer | Was passiert |
-|---|---|---|
-| 0 ms | – | Siegel pulsiert dezent: `scale 1 → 1.03 → 1`, 2400 ms, `ease-in-out`, endlos. Der einzige Loop auf der Seite. |
-| Tap | 500 ms | Siegel: `scale 1 → 1.08 → 0`, `rotate -12deg`, `cubic-bezier(0.34, 1.56, 0.64, 1)`. Bruchstück-Partikel optional, maximal 6. |
-| +200 ms | 1200 ms | Umschlagklappe: `rotateX 0 → -168deg`, `transform-origin: top center`, Elternelement `perspective: 1400px`, `cubic-bezier(0.22, 1, 0.36, 1)`. Der Schlagschatten unter der Klappe wandert synchron mit. |
-| +600 ms | 900 ms | Karte gleitet heraus: `translateY 12% → -4%`, `filter: blur(6px) → blur(0)`, gleiche Kurve. |
-| +1300 ms | – | Namen erscheinen buchstabenweise: 45 ms Stagger, `translateY 20px → 0`, `opacity 0 → 1`, `cubic-bezier(0.16, 1, 0.3, 1)`. |
-| +1300 ms | 1600 ms | Ornament-SVG zeichnet sich per `stroke-dasharray`/`stroke-dashoffset`. |
-| +1600 ms | – | Kamerafahrt: die Szene skaliert langsam `1 → 1.04` über 8 s und driftet 2 % nach oben. Das ist die "Kamera", nicht ein Effekt pro Element. |
-
-Nach Abschluss ist der Ton-Schalter sichtbar (siehe §4).
+> Rückbau (siehe Git-Historie): Die vormals hier beschriebene Umschlag-Hero-Sequenz
+> (geschlossener Umschlag mit Siegel, Tap-zum-Öffnen, Karte gleitet heraus,
+> Hintergrund hellt von `--ink` nach `--porcelain` auf) war eine Fehlannahme über
+> die bestehende Seite und wurde entfernt. Der Hero zeigt wieder seine
+> ursprüngliche Positionierung: Überschrift, Absatztext, zwei CTA-Buttons, Telefon-
+> Vorschau. Die zugehörige Komponente liegt unbenutzt in `src/components/
+> MotionHero.tsx`, falls dafür später ein passender Ort gefunden wird.
 
 ### Kamerafahrten beim Scrollen
 
@@ -116,7 +80,7 @@ Die Galerie ist der Ort, an dem heute der Eindruck kippt. Sie darf kein Raster g
 ### Konzept: Karten als physische Objekte
 
 - Jede Vorlage liegt leicht gedreht (`rotate` zwischen `-1.8deg` und `1.8deg`, aus der Template-ID deterministisch abgeleitet, nicht zufällig pro Render – sonst springt es beim Re-Render).
-- Zwei Schattenebenen: `0 2px 4px rgba(0,0,0,.4)` und `0 30px 60px rgba(0,0,0,.5)`.
+- Zwei Schattenebenen, warm statt schwarz (siehe §1 Material): `0 2px 4px rgba(60,40,20,.10)` und `0 30px 60px rgba(60,40,20,.06)`.
 - Unterschiedliche Höhen je nach Kartenformat (Hochkant, Quadrat, Panorama). Ein Masonry-Layout, kein starres Grid.
 - Ecken: die Karte hat den Radius ihres eigenen Papierformats (2–4 px), nicht den Radius des UI. Unterschiedliche Radien für unterschiedliche Dinge ist gewollt.
 
