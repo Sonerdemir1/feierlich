@@ -21,7 +21,7 @@ import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
 import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
-import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "./actions";
+import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry, submitMusicRequest } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -209,6 +209,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const galleryError = typeof sp.galleryError === "string" ? sp.galleryError : undefined;
   const guestbookStatus = typeof sp.guestbook === "string" ? sp.guestbook : undefined;
   const guestbookError = typeof sp.guestbookError === "string" ? sp.guestbookError : undefined;
+  const musicStatus = typeof sp.music === "string" ? sp.music : undefined;
+  const musicError = typeof sp.musicError === "string" ? sp.musicError : undefined;
 
   const [galleryItems, guestbookEntries, wishlistItems, menuItems] = await Promise.all([
     isModuleOn("gallery")
@@ -266,6 +268,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     "bad-type": "Nur JPG, PNG, WEBP, GIF, MP4, MOV oder WEBM sind erlaubt.",
     "too-large": "Datei ist zu groß (max. 8 MB für Fotos, 100 MB für Videos).",
     "no-name": "Bitte gib deinen Namen an.",
+    "no-song": "Bitte Song und Interpret angeben.",
   };
   const mediaAccept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm";
 
@@ -941,6 +944,53 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 <FileField name="file" accept={mediaAccept} label="Foto oder Video anhängen (optional)" colors={colors} />
                 <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                   Nachricht senden
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("music-requests") && (
+        <section id="musikwuensche" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
+            Musikwünsche
+          </div>
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px" }}>
+            {musicStatus === "success" ? (
+              <p style={{ fontSize: 13.5, textAlign: "center" }}>Danke für euren Musikwunsch!</p>
+            ) : (
+              <form action={submitMusicRequest.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {musicError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[musicError]}</p>}
+                <GuestNameField
+                  name="guestName"
+                  placeholder="Euer Name"
+                  required
+                  defaultValue={guestDisplayName}
+                  style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
+                />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <input
+                    name="song"
+                    placeholder="Song"
+                    required
+                    style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, flex: "1 1 140px", minWidth: 0 }}
+                  />
+                  <input
+                    name="artist"
+                    placeholder="Interpret"
+                    required
+                    style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, flex: "1 1 140px", minWidth: 0 }}
+                  />
+                </div>
+                <textarea
+                  name="message"
+                  placeholder="Nachricht (optional)"
+                  rows={2}
+                  style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
+                />
+                <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  Wunsch senden
                 </button>
               </form>
             )}

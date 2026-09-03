@@ -24,6 +24,7 @@ import {
 } from "../actions";
 import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
+import { deleteMusicRequest } from "./music-requests-actions";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -131,7 +132,7 @@ export default async function EventDetailPage({
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
   const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, menuItems] =
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, menuItems, musicRequests] =
     await Promise.all([
       prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.eventModule.findMany({ where: { eventId: id } }),
@@ -145,6 +146,7 @@ export default async function EventDetailPage({
       prisma.table.findMany({ where: { eventId: id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.wishlistItem.findMany({ where: { eventId: id }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] }),
       prisma.menuItem.findMany({ where: { eventId: id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] }),
+      prisma.musicRequest.findMany({ where: { eventId: id }, orderBy: { createdAt: "desc" } }),
     ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const gatedKeys = await gatedModuleKeys(id);
@@ -1073,6 +1075,48 @@ export default async function EventDetailPage({
             </div>
           );
         })}
+      </div>
+
+      {/* Musikwünsche */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+          Musikwünsche {musicRequests.length > 0 && `(${musicRequests.length})`}
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Nur für euch sichtbar — Gäste reichen Wünsche ein, ohne die Liste anderer zu sehen.
+        </div>
+        {musicRequests.length === 0 ? (
+          <p style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Noch keine Musikwünsche.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {musicRequests.map((r) => (
+              <div
+                key={r.id}
+                style={{
+                  border: "1px solid var(--line)",
+                  background: "var(--ivory-2)",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 10,
+                  fontSize: 13,
+                }}
+              >
+                <span>
+                  <strong>{r.guestName}</strong> — {r.song} · {r.artist}
+                  {r.message && <span style={{ color: "var(--ink-faint)" }}> ({r.message})</span>}
+                </span>
+                <form action={deleteMusicRequest.bind(null, event.id, r.id)}>
+                  <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                    Entfernen
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Social-Grafik */}

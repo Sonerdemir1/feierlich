@@ -176,3 +176,22 @@ export async function submitGuestbookEntry(eventId: string, slug: string, formDa
   revalidatePath(`/e/${slug}`);
   redirect(`/e/${slug}?guestbook=success#gaestebuch`);
 }
+
+// Anders als Gaestebuch/Galerie werden Musikwuensche nie oeffentlich an
+// andere Gaeste zurueckgegeben (siehe Sektion in page.tsx) — deshalb kein
+// ModerationStatus noetig, Loeschen im Dashboard ist der einzige (und
+// ausreichende) Hebel, da nur der Organisator die Liste je zu sehen bekommt.
+export async function submitMusicRequest(eventId: string, slug: string, formData: FormData) {
+  const guestName = String(formData.get("guestName") ?? "").trim().slice(0, 80);
+  const song = String(formData.get("song") ?? "").trim().slice(0, 160);
+  const artist = String(formData.get("artist") ?? "").trim().slice(0, 160);
+  const message = String(formData.get("message") ?? "").trim().slice(0, 500) || null;
+
+  if (!guestName) redirect(`/e/${slug}?musicError=no-name#musikwuensche`);
+  if (!song || !artist) redirect(`/e/${slug}?musicError=no-song#musikwuensche`);
+
+  await prisma.musicRequest.create({ data: { eventId, guestName, song, artist, message } });
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?music=success#musikwuensche`);
+}
