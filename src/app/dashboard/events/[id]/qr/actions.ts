@@ -123,7 +123,10 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
 export async function createPrintOrder(eventId: string, formData: FormData) {
   const { event, session } = await requireOwnedEvent(eventId);
 
-  const redirectBase = `/dashboard/events/${eventId}/seating`;
+  // Liegt auf der Event-Hauptseite (nicht mehr /seating) — Kartendesign und
+  // Sitzplan sind zwei getrennte Anliegen, die Design-Vorschau soll ohne
+  // Unterseiten-Wechsel erreichbar sein.
+  const redirectBase = `/dashboard/events/${eventId}`;
 
   const size: PrintSize = sizeFromForm(formData);
   const theme = themeFromForm(formData);
@@ -136,12 +139,12 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
   const shippingCity = String(formData.get("shippingCity") ?? "").trim().slice(0, 120);
 
   if (!shippingName || !shippingStreet || !shippingZip || !shippingCity) {
-    redirect(`${redirectBase}?printError=missing-address`);
+    redirect(`${redirectBase}?error=missing-address`);
   }
 
   if (target.kind === "TABLE") {
     const table = await prisma.table.findFirst({ where: { id: target.tableId, eventId } });
-    if (!table) redirect(`${redirectBase}?printError=table-not-found`);
+    if (!table) redirect(`${redirectBase}?error=table-not-found`);
   }
 
   const priceCents = printOrderPriceCents(size, quantity);
@@ -168,7 +171,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
     redirect(`${redirectBase}`);
   }
 
-  if (!stripe) redirect(`${redirectBase}?printError=stripe-not-configured`);
+  if (!stripe) redirect(`${redirectBase}?error=stripe-not-configured`);
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -189,8 +192,8 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
       },
     ],
     metadata: { kind: "printOrder", printOrderId: printOrder.id, eventId },
-    success_url: `${origin}/dashboard/events/${eventId}/billing/success?session_id={CHECKOUT_SESSION_ID}&kind=printOrder&return=seating`,
-    cancel_url: `${origin}${redirectBase}?printError=cancelled`,
+    success_url: `${origin}/dashboard/events/${eventId}/billing/success?session_id={CHECKOUT_SESSION_ID}&kind=printOrder`,
+    cancel_url: `${origin}${redirectBase}?error=print-cancelled`,
   });
 
   if (!checkoutSession.url) {

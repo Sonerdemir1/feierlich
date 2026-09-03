@@ -3,9 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createTable, deleteTable, assignGuestToTable, suggestSeating, applySeatingSuggestion, discardSeatingSuggestion } from "./actions";
-import { emailQrDesign, createPrintOrder } from "../qr/actions";
-import { PRINT_QUANTITY_TIERS } from "@/lib/qr-design";
-import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
+import { emailQrDesign } from "../qr/actions";
 import { aiSeatingConfigured, type SeatingAssignment } from "@/lib/ai-seating";
 
 export default async function SeatingPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/seating">) {
@@ -28,13 +26,6 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
 
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
   const qrEmailStatus = typeof sp.qrEmail === "string" ? sp.qrEmail : undefined;
-  const printErrorKey = typeof sp.printError === "string" ? sp.printError : undefined;
-  const printErrorLabel: Record<string, string> = {
-    "missing-address": "Bitte alle Adressfelder ausfüllen.",
-    "table-not-found": "Tisch nicht gefunden.",
-    "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
-    cancelled: "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
-  };
   const generalErrorLabel: Record<string, string> = {
     full: "Dieser Tisch ist bereits voll.",
     "seating-ai-no-guests": "Alle Gäste sind bereits zugeordnet.",
@@ -66,12 +57,6 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
           QR-Design wurde an eure hinterlegte E-Mail-Adresse geschickt.
         </div>
       )}
-      {printErrorKey && (
-        <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
-          {printErrorLabel[printErrorKey] ?? "Etwas ist schiefgelaufen."}
-        </div>
-      )}
-
       {/* Tische */}
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 28 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 14 }}>Tische</div>
@@ -121,32 +106,6 @@ export default async function SeatingPage({ params, searchParams }: PageProps<"/
           <input name="capacity" type="number" min={1} defaultValue={8} style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 90 }} />
           <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5 }}>
             + Tisch hinzufügen
-          </button>
-        </form>
-      </div>
-
-      {/* Karten drucken lassen */}
-      <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 28 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Karten drucken lassen</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
-          Wir drucken euer QR-Design und schicken es an eure Adresse. Der Auftrag geht als Anfrage raus — wir melden uns zur Bestätigung und Zahlung.
-        </div>
-        <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Mengenrabatt: {PRINT_QUANTITY_TIERS.slice().reverse().map((t) => t.label).join(" · ")}
-        </div>
-        <form action={createPrintOrder.bind(null, id)} style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 620 }}>
-          <QrPrintDesignFields eventId={id} tables={tables.map((t) => ({ id: t.id, name: t.name }))} />
-          <input name="quantity" type="number" min={1} max={500} defaultValue={1} style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 80 }} />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
-            <input name="shippingName" placeholder="Name" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
-            <input name="shippingStreet" placeholder="Straße & Hausnummer" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
-            <input name="shippingZip" placeholder="PLZ" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: 100 }} />
-            <input name="shippingCity" placeholder="Ort" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 160px", minWidth: 0 }} />
-          </div>
-          <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5, alignSelf: "flex-start" }}>
-            Druckauftrag anfragen
           </button>
         </form>
       </div>

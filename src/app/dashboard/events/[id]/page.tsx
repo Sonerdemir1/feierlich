@@ -22,6 +22,7 @@ import {
   uploadBackgroundMusic,
   removeBackgroundMusic,
 } from "../actions";
+import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured } from "@/lib/ai-text";
@@ -114,7 +115,7 @@ export default async function EventDetailPage({
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
   const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend] =
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables] =
     await Promise.all([
       prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.eventModule.findMany({ where: { eventId: id } }),
@@ -125,6 +126,7 @@ export default async function EventDetailPage({
       prisma.addOn.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
       prisma.eventAddOn.findMany({ where: { eventId: id } }),
       getViewsTrend(id),
+      prisma.table.findMany({ where: { eventId: id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
     ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const gatedKeys = await gatedModuleKeys(id);
@@ -920,12 +922,7 @@ export default async function EventDetailPage({
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>QR-Codes</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Rohe QR-Codes zum direkten Download. Gestaltete Tisch-/Aufsteller-Karten mit Design-Auswahl (klassisch,
-          modern, opulent) gibt es auf der{" "}
-          <Link href={`/dashboard/events/${event.id}/seating`} style={{ color: "var(--terracotta-dark)" }}>
-            Sitzplan-Seite
-          </Link>
-          .
+          Rohe QR-Codes zum direkten Download. Für die gestaltete Karte samt Druckauftrag siehe unten.
         </div>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           {[
@@ -953,6 +950,15 @@ export default async function EventDetailPage({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Karte herunterladen */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Karte herunterladen</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Gestaltete Tisch-/Aufsteller-Karte mit eurem QR-Code — Design wählen, herunterladen, selbst ausdrucken.
+        </div>
+        <QrPrintDesignFields eventId={event.id} tables={tables} />
       </div>
 
       {/* Social-Grafik */}

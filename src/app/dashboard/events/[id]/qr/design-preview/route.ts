@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { buildQrDesignSvg, type PrintSize, type QrTheme } from "@/lib/qr-design";
 import { safeQrColorsFromEvent } from "@/lib/qr";
 
-// Live-Vorschau fuer das Karten-Design auf der Sitzplan-Seite (Theme/Groesse/
-// Tisch per Query-Param) — spiegelt exakt die Parameter, die emailQrDesign
-// tatsaechlich verschickt (gleiches primary/accent, kein separates background),
-// damit die Vorschau nie vom tatsaechlich versendeten Design abweicht.
+// Live-Vorschau fuer das Karten-Design auf der Event-Hauptseite (Theme/
+// Groesse/Tisch per Query-Param) — spiegelt exakt die Parameter, die
+// emailQrDesign tatsaechlich verschickt (gleiches primary/accent, kein
+// separates background), damit die Vorschau nie vom tatsaechlich
+// heruntergeladenen Design abweicht. Mit `download=1` liefert dieselbe Route
+// die druckfertige Datei direkt als Attachment — Kunden drucken die Karte
+// selbst aus, statt sie bei uns drucken und verschicken zu lassen.
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
@@ -61,7 +64,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     background: safeBackground,
   });
 
+  const download = url.searchParams.get("download") === "1";
+  const filename = `karte-${size.toLowerCase()}-${event.slug}${tableId ? `-${tableId}` : ""}.svg`;
+
   return new Response(svg, {
-    headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" },
+    headers: {
+      "Content-Type": "image/svg+xml",
+      "Cache-Control": "no-store",
+      ...(download ? { "Content-Disposition": `attachment; filename="${filename}"` } : {}),
+    },
   });
 }

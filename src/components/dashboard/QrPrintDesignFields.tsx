@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PRINT_SIZE_MM, PRINT_PRICE_CENTS, QR_THEMES, type PrintSize, type QrTheme } from "@/lib/qr-design";
+import { PRINT_SIZE_MM, QR_THEMES, type PrintSize, type QrTheme } from "@/lib/qr-design";
 
 const selectStyle: React.CSSProperties = {
   padding: "10px 12px",
@@ -14,8 +14,10 @@ const selectStyle: React.CSSProperties = {
 
 // Eigene Client-Komponente statt der frueheren blinden <select>-Dropdowns —
 // aendert der Nutzer Tisch/Groesse/Theme, aktualisiert sich die Vorschau
-// rechts sofort per Query-Param an die neue Preview-Route, statt das Design
-// erst nach dem Absenden per E-Mail zu sehen.
+// rechts sofort per Query-Param an dieselbe Route, die der Download-Link
+// nutzt (nur mit &download=1) — Vorschau und heruntergeladene Datei sind
+// dadurch immer exakt dasselbe Design. Kunden drucken selbst aus, kein
+// Druck-und-Versand-Auftrag noetig.
 export function QrPrintDesignFields({
   eventId,
   tables,
@@ -28,11 +30,12 @@ export function QrPrintDesignFields({
   const [theme, setTheme] = useState<QrTheme>("classic");
 
   const previewSrc = `/dashboard/events/${eventId}/qr/design-preview?theme=${theme}&size=${size}${tableId ? `&tableId=${tableId}` : ""}`;
+  const downloadSrc = `${previewSrc}&download=1`;
 
   return (
     <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10, flex: "1 1 320px" }}>
-        <select name="tableId" value={tableId} onChange={(e) => setTableId(e.target.value)} style={selectStyle}>
+        <select value={tableId} onChange={(e) => setTableId(e.target.value)} style={selectStyle}>
           <option value="">Allgemeine Einladungsseite</option>
           {tables.map((t) => (
             <option key={t.id} value={t.id}>
@@ -40,20 +43,28 @@ export function QrPrintDesignFields({
             </option>
           ))}
         </select>
-        <select name="size" value={size} onChange={(e) => setSize(e.target.value as PrintSize)} style={selectStyle}>
+        <select value={size} onChange={(e) => setSize(e.target.value as PrintSize)} style={selectStyle}>
           {(Object.keys(PRINT_SIZE_MM) as PrintSize[]).map((s) => (
             <option key={s} value={s}>
-              {PRINT_SIZE_MM[s].label} — {(PRINT_PRICE_CENTS[s] / 100).toFixed(2)} € /Stück
+              {PRINT_SIZE_MM[s].label}
             </option>
           ))}
         </select>
-        <select name="theme" value={theme} onChange={(e) => setTheme(e.target.value as QrTheme)} style={selectStyle}>
+        <select value={theme} onChange={(e) => setTheme(e.target.value as QrTheme)} style={selectStyle}>
           {QR_THEMES.map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
             </option>
           ))}
         </select>
+        <a
+          href={downloadSrc}
+          download
+          className="btn btn-ghost"
+          style={{ padding: "10px 18px", fontSize: 12.5, alignSelf: "flex-start" }}
+        >
+          Herunterladen (SVG)
+        </a>
       </div>
       <div style={{ flex: "0 0 140px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- serverseitig generiertes SVG, kein next/image-Asset */}
