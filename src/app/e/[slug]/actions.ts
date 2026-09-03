@@ -19,6 +19,14 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
   const count = Number.isFinite(countRaw) && countRaw > 0 ? Math.min(countRaw, 20) : 1;
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000) || null;
 
+  // Nie den rohen String uebernehmen — nur echte Hauptgang-Namen dieses
+  // Events akzeptieren, sonst koennte ein manipuliertes Formular beliebigen
+  // Text in menuChoice schreiben.
+  const menuChoiceRaw = String(formData.get("menuChoice") ?? "").trim();
+  const menuChoice = menuChoiceRaw
+    ? (await prisma.menuItem.findFirst({ where: { eventId, course: "MAIN", name: menuChoiceRaw } }))?.name ?? null
+    : null;
+
   const guest = await prisma.guest.create({
     data: { eventId, firstName: name, invitedCount: count },
   });
@@ -28,6 +36,7 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
       status,
       attendingCount: status === "YES" ? count : null,
       message,
+      menuChoice,
       respondedAt: new Date(),
     },
   });

@@ -22,6 +22,8 @@ import {
   uploadBackgroundMusic,
   removeBackgroundMusic,
 } from "../actions";
+import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
+import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -46,6 +48,20 @@ const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
   PUBLISHED: "Veröffentlicht",
   ARCHIVED: "Archiviert",
+};
+
+const wishlistTypeLabel: Record<string, string> = {
+  GIFT: "Geschenk",
+  CASH: "Geldgeschenk",
+  HONEYMOON: "Flitterwochen",
+  EXTERNAL: "Externe Liste",
+};
+
+const menuCourseLabel: Record<string, string> = {
+  STARTER: "Vorspeise",
+  MAIN: "Hauptgang",
+  DESSERT: "Dessert",
+  DRINK: "Getränke",
 };
 
 const orderStatusLabel: Record<string, string> = {
@@ -115,7 +131,7 @@ export default async function EventDetailPage({
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
   const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables] =
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, menuItems] =
     await Promise.all([
       prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.eventModule.findMany({ where: { eventId: id } }),
@@ -127,6 +143,8 @@ export default async function EventDetailPage({
       prisma.eventAddOn.findMany({ where: { eventId: id } }),
       getViewsTrend(id),
       prisma.table.findMany({ where: { eventId: id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+      prisma.wishlistItem.findMany({ where: { eventId: id }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] }),
+      prisma.menuItem.findMany({ where: { eventId: id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] }),
     ]);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const gatedKeys = await gatedModuleKeys(id);
@@ -959,6 +977,102 @@ export default async function EventDetailPage({
           Gestaltete Tisch-/Aufsteller-Karte mit eurem QR-Code — Design wählen, herunterladen, selbst ausdrucken.
         </div>
         <QrPrintDesignFields eventId={event.id} tables={tables} />
+      </div>
+
+      {/* Wunschliste */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Wunschliste</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Geschenkewünsche für eure Gäste — sichtbar, wenn das Modul &bdquo;Wunschliste&ldquo; aktiviert ist.
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 18 }}>
+          {wishlistItems.map((w) => (
+            <div
+              key={w.id}
+              style={{
+                border: "1px solid var(--line)",
+                background: "var(--ivory-2)",
+                padding: "10px 14px",
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 10,
+                rowGap: 8,
+                fontSize: 13,
+              }}
+            >
+              <span style={{ fontWeight: 600 }}>{w.title}</span>
+              <span style={{ color: "var(--ink-faint)", fontSize: 11.5 }}>{wishlistTypeLabel[w.type] ?? w.type}</span>
+              <form action={deleteWishlistItem.bind(null, event.id, w.id)}>
+                <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  Entfernen
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+        <form action={createWishlistItem.bind(null, event.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
+          <select name="type" defaultValue="GIFT" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13 }}>
+            {Object.entries(wishlistTypeLabel).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <input name="title" placeholder="z. B. Kaffeemaschine" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 200px", minWidth: 0 }} />
+          <input name="url" placeholder="Link (optional)" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 200px", minWidth: 0 }} />
+          <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5 }}>
+            + Eintrag hinzufügen
+          </button>
+        </form>
+      </div>
+
+      {/* Digitale Menükarte */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Digitale Menükarte</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Gänge und Gerichte — Hauptgänge stehen euren Gästen bei der RSVP zur Auswahl.
+        </div>
+        {Object.entries(menuCourseLabel).map(([course, label]) => {
+          const items = menuItems.filter((m) => m.course === course);
+          return (
+            <div key={course} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, letterSpacing: "0.05em", color: "var(--ink-faint)", textTransform: "uppercase", marginBottom: 8 }}>
+                {label}
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
+                {items.map((m) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      border: "1px solid var(--line)",
+                      background: "var(--ivory-2)",
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      fontSize: 13,
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>{m.name}</span>
+                    <form action={deleteMenuItem.bind(null, event.id, m.id)}>
+                      <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        Entfernen
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </div>
+              <form action={createMenuItem.bind(null, event.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                <input type="hidden" name="course" value={course} />
+                <input name="name" placeholder="z. B. Lachsfilet" required style={{ padding: "8px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5, flex: "1 1 180px", minWidth: 0 }} />
+                <button type="submit" className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }}>
+                  + Hinzufügen
+                </button>
+              </form>
+            </div>
+          );
+        })}
       </div>
 
       {/* Social-Grafik */}

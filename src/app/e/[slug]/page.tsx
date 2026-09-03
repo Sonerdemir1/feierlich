@@ -26,6 +26,20 @@ import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry } from "
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
 
+const WISHLIST_TYPE_LABEL: Record<string, string> = {
+  GIFT: "Geschenke",
+  CASH: "Geldgeschenke",
+  HONEYMOON: "Flitterwochen",
+  EXTERNAL: "Weitere Wünsche",
+};
+
+const MENU_COURSE_LABEL: Record<string, string> = {
+  STARTER: "Vorspeise",
+  MAIN: "Hauptgang",
+  DESSERT: "Dessert",
+  DRINK: "Getränke",
+};
+
 async function getEvent(slug: string) {
   return prisma.event.findUnique({
     where: { slug },
@@ -196,7 +210,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const guestbookStatus = typeof sp.guestbook === "string" ? sp.guestbook : undefined;
   const guestbookError = typeof sp.guestbookError === "string" ? sp.guestbookError : undefined;
 
-  const [galleryItems, guestbookEntries] = await Promise.all([
+  const [galleryItems, guestbookEntries, wishlistItems, menuItems] = await Promise.all([
     isModuleOn("gallery")
       ? prisma.galleryItem.findMany({
           where: { eventId: event.id, status: "APPROVED" },
@@ -207,6 +221,12 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       : Promise.resolve([]),
     isModuleOn("guestbook")
       ? prisma.guestbookEntry.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 30 })
+      : Promise.resolve([]),
+    isModuleOn("wishlist")
+      ? prisma.wishlistItem.findMany({ where: { eventId: event.id }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] })
+      : Promise.resolve([]),
+    isModuleOn("menu")
+      ? prisma.menuItem.findMany({ where: { eventId: event.id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] })
       : Promise.resolve([]),
   ]);
 
@@ -750,6 +770,25 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                     style={{ padding: "10px 12px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
                   />
                 </label>
+                {isModuleOn("menu") && menuItems.some((m) => m.course === "MAIN") && (
+                  <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, opacity: 0.8 }}>
+                    Menüwunsch
+                    <select
+                      name="menuChoice"
+                      defaultValue=""
+                      style={{ padding: "10px 12px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
+                    >
+                      <option value="">Keine Angabe</option>
+                      {menuItems
+                        .filter((m) => m.course === "MAIN")
+                        .map((m) => (
+                          <option key={m.id} value={m.name}>
+                            {m.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                )}
                 <textarea
                   name="message"
                   placeholder="Nachricht (optional)"
@@ -791,6 +830,32 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </p>
             )}
           </div>
+        </section>
+      )}
+
+      {isModuleOn("menu") && menuItems.length > 0 && (
+        <section id="menu" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
+            Menü
+          </div>
+          {(["STARTER", "MAIN", "DESSERT", "DRINK"] as const)
+            .map((course) => ({ course, items: menuItems.filter((m) => m.course === course) }))
+            .filter((group) => group.items.length > 0)
+            .map((group) => (
+              <div key={group.course} style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.6, marginBottom: 10 }}>
+                  {MENU_COURSE_LABEL[group.course]}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {group.items.map((item) => (
+                    <div key={item.id} style={{ fontSize: 14 }}>
+                      <span style={{ fontWeight: 600 }}>{item.name}</span>
+                      {item.description && <span style={{ opacity: 0.75 }}> — {item.description}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
         </section>
       )}
 
@@ -880,6 +945,37 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </form>
             )}
           </div>
+        </section>
+      )}
+
+      {isModuleOn("wishlist") && wishlistItems.length > 0 && (
+        <section id="wunschliste" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
+            Wunschliste
+          </div>
+          {(["GIFT", "CASH", "HONEYMOON", "EXTERNAL"] as const)
+            .map((type) => ({ type, items: wishlistItems.filter((w) => w.type === type) }))
+            .filter((group) => group.items.length > 0)
+            .map((group) => (
+              <div key={group.type} style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.6, marginBottom: 10 }}>
+                  {WISHLIST_TYPE_LABEL[group.type]}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {group.items.map((item) => (
+                    <div key={item.id} style={{ border: `1px solid ${colors.accent}55`, padding: "14px 16px" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{item.title}</div>
+                      {item.description && <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 4 }}>{item.description}</p>}
+                      {item.url && (
+                        <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: colors.accent, marginTop: 6, display: "inline-block" }}>
+                          Öffnen →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
         </section>
       )}
 
