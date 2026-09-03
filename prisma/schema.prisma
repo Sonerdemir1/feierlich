@@ -201,6 +201,15 @@ model Event {
   title           String // z.B. "Anna & Lukas"
   subtitle        String?
   description     String?
+  // Ueberschreibt das Standard-Anlass-Label (sonst EventType.name, z.B.
+  // "Hochzeit") mit freiem Text, z.B. "DÜĞÜN DAVETİYESİ" — leer = Standard.
+  eventLabel      String?
+  // Zwei-Familien-Textblock (tuerkische Hochzeitskarten-Konvention,
+  // "AİLESİ"), nur sichtbar wenn mindestens eines gesetzt ist — siehe
+  // /e/[slug]/page.tsx. Bislang nur in der kostenlosen Design-Studio-
+  // Vorschau (localStorage-Entwurf) moeglich, hier jetzt echt speicherbar.
+  familyLeft      String?
+  familyRight     String?
   eventDate       DateTime
   eventTime       String?
   locationName    String?

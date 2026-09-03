@@ -143,7 +143,7 @@ export default async function EventDetailPage({
   const activeStyle: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
     ? JSON.parse(event.styleJson)
     : {};
-  const TEXT_ELEMENT_KEYS: TextElementKey[] = ["title", "subtitle", "date", "description"];
+  const TEXT_ELEMENT_KEYS: TextElementKey[] = ["eventLabel", "title", "subtitle", "family", "date", "description"];
   const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
 
   const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
@@ -195,7 +195,7 @@ export default async function EventDetailPage({
         {statusLabel[event.status] ?? event.status}
       </p>
 
-      <details style={{ marginBottom: 32 }}>
+      <details open style={{ marginBottom: 32 }}>
         <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
           Details bearbeiten
         </summary>
@@ -222,6 +222,46 @@ export default async function EventDetailPage({
               style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
             />
           </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            Anlass-Label (optional)
+            <input
+              type="text"
+              name="eventLabel"
+              placeholder={`Standard: ${event.eventType.name}`}
+              defaultValue={event.eventLabel ?? ""}
+              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+            />
+            <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>
+              Ersetzt das kleine Label über dem Namen auf der Karte, z. B. &bdquo;DÜĞÜN DAVETİYESİ&ldquo; — leer lassen für
+              den Standardtext.
+            </span>
+          </label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+              Familie (links, optional)
+              <input
+                type="text"
+                name="familyLeft"
+                placeholder="z. B. Demir"
+                defaultValue={event.familyLeft ?? ""}
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+              />
+            </label>
+            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+              Familie (rechts, optional)
+              <input
+                type="text"
+                name="familyRight"
+                placeholder="z. B. Yılmaz"
+                defaultValue={event.familyRight ?? ""}
+                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+              />
+            </label>
+          </div>
+          <span style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: -6 }}>
+            Zeigt einen Zwei-Familien-Block auf der Karte, nur wenn mindestens eines der beiden Felder ausgefüllt ist —
+            beide leer lassen, um ihn auszublenden.
+          </span>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
               Datum

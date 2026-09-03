@@ -157,6 +157,10 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const subtitleOverride = elementOverrideStyle(style.elements, "subtitle");
   const dateOverride = elementOverrideStyle(style.elements, "date");
   const descriptionOverride = elementOverrideStyle(style.elements, "description");
+  const eventLabelOverride = elementOverrideStyle(style.elements, "eventLabel");
+  const familyOverride = elementOverrideStyle(style.elements, "family");
+  const eventLabelText = event.eventLabel || event.eventType.name;
+  const hasFamilyNames = Boolean(event.familyLeft || event.familyRight);
   // Echte Schriftart-Wahl aus dem Dashboard-Editor hat Vorrang — ohne
   // gesetztes styleJson faellt es wie bisher auf die automatische
   // Template-Schrift zurueck (Anzeige-/Textschrift des Templates gleich =
@@ -284,8 +288,17 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent }}>
-              {event.eventType.name}
+            <div
+              style={{
+                fontFamily: headingFont,
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: colors.accent,
+                ...eventLabelOverride,
+              }}
+            >
+              {eventLabelText}
             </div>
             <div>
               {editMode ? (
@@ -333,6 +346,19 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   </p>
                 )
               )}
+              {hasFamilyNames && (
+                <div className="customizer-card-families" style={{ color: colors.primary }}>
+                  <div>
+                    <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyLeft || "—"}</span>
+                    <small>AİLESİ</small>
+                  </div>
+                  <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
+                  <div>
+                    <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyRight || "—"}</span>
+                    <small>AİLESİ</small>
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>
               {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
@@ -342,8 +368,18 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </div>
       ) : envelopeImages ? (
         <>
-          <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
-            {event.eventType.name}
+          <div
+            style={{
+              fontFamily: headingFont,
+              fontSize: 11,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: colors.accent,
+              marginBottom: 20,
+              ...eventLabelOverride,
+            }}
+          >
+            {eventLabelText}
           </div>
           <div style={{ maxWidth: 320, margin: "0 auto" }}>
             <EnvelopeReveal images={envelopeImages}>
@@ -407,11 +443,34 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
             )
           )}
+          {hasFamilyNames && (
+            <div className="customizer-card-families" style={{ color: colors.primary, maxWidth: 320, margin: "12px auto 0" }}>
+              <div>
+                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyLeft || "—"}</span>
+                <small>AİLESİ</small>
+              </div>
+              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
+              <div>
+                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyRight || "—"}</span>
+                <small>AİLESİ</small>
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <>
-          <div style={{ fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20 }}>
-            {event.eventType.name}
+          <div
+            style={{
+              fontFamily: headingFont,
+              fontSize: 11,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: colors.accent,
+              marginBottom: 20,
+              ...eventLabelOverride,
+            }}
+          >
+            {eventLabelText}
           </div>
           {editMode ? (
             <InlineEditableText
@@ -456,6 +515,19 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             event.subtitle && (
               <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
             )
+          )}
+          {hasFamilyNames && (
+            <div className="customizer-card-families" style={{ color: colors.primary, maxWidth: 320, margin: "16px auto 0" }}>
+              <div>
+                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyLeft || "—"}</span>
+                <small>AİLESİ</small>
+              </div>
+              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
+              <div>
+                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyRight || "—"}</span>
+                <small>AİLESİ</small>
+              </div>
+            </div>
           )}
           <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
           <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>

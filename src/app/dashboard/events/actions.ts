@@ -406,11 +406,11 @@ export async function saveDesign(eventId: string, formData: FormData) {
   if (fontId) style.fontId = fontId;
   if (ornaments) style.ornaments = true;
 
-  // Pro-Element Groesse/Farbe (Titel/Untertitel/Datum/Beschreibung) — siehe
-  // src/lib/text-style.ts. Nur nicht-"md"/nicht-leere Werte aufnehmen,
-  // gleiches Muster wie bei den Farben oben.
+  // Pro-Element Groesse/Farbe (Anlass-Label/Titel/Untertitel/Familiennamen/
+  // Datum/Beschreibung) — siehe src/lib/text-style.ts. Nur nicht-"md"/nicht-
+  // leere Werte aufnehmen, gleiches Muster wie bei den Farben oben.
   const elements: Record<string, { size?: string; color?: string }> = {};
-  for (const key of ["title", "subtitle", "date", "description"] as const) {
+  for (const key of ["eventLabel", "title", "subtitle", "family", "date", "description"] as const) {
     const size = String(formData.get(`${key}Size`) ?? "").trim();
     const colorOn = formData.get(`${key}ColorOn`) === "on";
     const color = colorOn ? String(formData.get(`${key}Color`) ?? "").trim() : "";
@@ -534,6 +534,12 @@ export async function updateEventDetails(eventId: string, formData: FormData) {
   const locationLat = locationLatRaw ? Number(locationLatRaw) : null;
   const locationLng = locationLngRaw ? Number(locationLngRaw) : null;
   const description = String(formData.get("description") ?? "").trim() || null;
+  // Leeres Feld = wieder auf Standard zurueck (EventType.name) bzw. Block
+  // ausblenden — kein separater "entfernen"-Schalter noetig, das Leeren
+  // des Textfelds selbst ist bereits das Entfernen.
+  const eventLabel = String(formData.get("eventLabel") ?? "").trim() || null;
+  const familyLeft = String(formData.get("familyLeft") ?? "").trim() || null;
+  const familyRight = String(formData.get("familyRight") ?? "").trim() || null;
 
   await prisma.event.update({
     where: { id: event.id },
@@ -547,6 +553,9 @@ export async function updateEventDetails(eventId: string, formData: FormData) {
       locationLat,
       locationLng,
       description,
+      eventLabel,
+      familyLeft,
+      familyRight,
     },
   });
   revalidatePath(`/dashboard/events/${eventId}`);

@@ -5,7 +5,7 @@
 // Farbe änderbar". Bewusst als kleine Preset-Stufen statt freiem
 // px-Eingabefeld — einfacher zu bedienen, kein Risiko für kaputte
 // Layouts durch extreme Werte.
-export type TextElementKey = "title" | "subtitle" | "date" | "description";
+export type TextElementKey = "title" | "subtitle" | "date" | "description" | "eventLabel" | "family";
 
 export type TextElementStyle = { size?: string; color?: string };
 export type StyleElements = Partial<Record<TextElementKey, TextElementStyle>>;
@@ -38,6 +38,18 @@ export const ELEMENT_SIZE_PRESETS: Record<TextElementKey, SizePreset[]> = {
     { id: "lg", label: "Groß", px: 16 },
     { id: "xl", label: "Sehr groß", px: 18 },
   ],
+  eventLabel: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 9 },
+    { id: "lg", label: "Groß", px: 12 },
+    { id: "xl", label: "Sehr groß", px: 14 },
+  ],
+  family: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 11 },
+    { id: "lg", label: "Groß", px: 14 },
+    { id: "xl", label: "Sehr groß", px: 17 },
+  ],
 };
 
 export const TEXT_ELEMENT_LABELS: Record<TextElementKey, string> = {
@@ -45,6 +57,8 @@ export const TEXT_ELEMENT_LABELS: Record<TextElementKey, string> = {
   subtitle: "Untertitel",
   date: "Datum & Uhrzeit",
   description: "Beschreibung",
+  eventLabel: "Anlass-Label",
+  family: "Familiennamen",
 };
 
 export function sizePresetPx(key: TextElementKey, id: string | undefined): number {

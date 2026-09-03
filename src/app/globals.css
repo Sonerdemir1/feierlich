@@ -947,7 +947,10 @@ a.card:hover {
   opacity: 0.75;
   margin-top: 2px;
 }
-.customizer-card-families-div {
+/* Spezifischer als ".customizer-card-families > div" (Namensspalten) —
+   sonst gewinnt dessen "flex:1" gegen "flex:0 0 1px" hier und der duenne
+   Trenner wird zu einer breiten dritten Spalte. */
+.customizer-card-families > .customizer-card-families-div {
   width: 1px;
   flex: 0 0 1px;
 }
