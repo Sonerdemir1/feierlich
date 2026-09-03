@@ -457,6 +457,12 @@ model GuestbookEntry {
   mediaId           String?
   status            ModerationStatus @default(PENDING)
   createdAt         DateTime         @default(now())
+  // Von analyzeGuestbookEntries() gesetzt (KI-Gaestebuch-Kuration) —
+  // "unangemessen" | "herzlich" | "ok", plus kurze Begruendung. Bleibt null,
+  // bis der Betreiber die Analyse aktiv anstoesst (gleiches Muster wie
+  // Media.aiVerdict bei der Foto-Kuration).
+  aiVerdict         String?
+  aiVerdictReason   String?
 
   event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   media Media? @relation(fields: [mediaId], references: [id])

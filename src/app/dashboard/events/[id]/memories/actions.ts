@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzePhotos, PHOTO_CURATION_BATCH_LIMIT } from "@/lib/ai-photo-curation";
+import { analyzeGuestbookMessages, GUESTBOOK_CURATION_BATCH_LIMIT } from "@/lib/ai-guestbook-curation";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -62,6 +63,35 @@ export async function analyzeGalleryPhotos(eventId: string) {
       results
         .filter((r) => photos.some((p) => p.id === r.id))
         .map((r) => prisma.media.update({ where: { id: r.id }, data: { aiVerdict: r.verdict, aiVerdictReason: r.reason } }))
+    );
+  }
+
+  revalidatePath(`/dashboard/events/${eventId}/memories`);
+  redirect(`/dashboard/events/${eventId}/memories`);
+}
+
+export async function analyzeGuestbookEntries(eventId: string) {
+  await requireOwnedEvent(eventId);
+
+  const pending = await prisma.guestbookEntry.findMany({
+    where: { eventId, status: "PENDING", message: { not: null } },
+    orderBy: { createdAt: "asc" },
+    take: GUESTBOOK_CURATION_BATCH_LIMIT,
+  });
+  const entries = pending.filter((e) => e.message).map((e) => ({ id: e.id, message: e.message! }));
+
+  if (entries.length > 0) {
+    let results;
+    try {
+      results = await analyzeGuestbookMessages(entries);
+    } catch {
+      redirect(`/dashboard/events/${eventId}/memories?error=guestbook-curation-failed`);
+    }
+
+    await prisma.$transaction(
+      results
+        .filter((r) => entries.some((e) => e.id === r.id))
+        .map((r) => prisma.guestbookEntry.update({ where: { id: r.id }, data: { aiVerdict: r.verdict, aiVerdictReason: r.reason } }))
     );
   }
 

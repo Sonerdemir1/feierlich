@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos } from "./actions";
+import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos, analyzeGuestbookEntries } from "./actions";
 import { aiPhotoCurationConfigured } from "@/lib/ai-photo-curation";
+import { aiGuestbookCurationConfigured } from "@/lib/ai-guestbook-curation";
 
 const statusLabel: Record<string, string> = { PENDING: "Wartet auf Freigabe", APPROVED: "Freigegeben", HIDDEN: "Ausgeblendet", DELETED: "Gelöscht" };
 const statusColor: Record<string, string> = { PENDING: "#B9975B", APPROVED: "#5B7A4E", HIDDEN: "#8A7F6E", DELETED: "#B2543A" };
@@ -11,6 +12,10 @@ const statusColor: Record<string, string> = { PENDING: "#B9975B", APPROVED: "#5B
 const verdictLabel: Record<string, string> = { empfehlung: "Empfehlung", unscharf: "Unscharf", duplikat: "Duplikat", ok: "In Ordnung" };
 const verdictColor: Record<string, string> = { empfehlung: "#5B7A4E", unscharf: "#B2543A", duplikat: "#8A7F6E", ok: "#B9975B" };
 const verdictRank: Record<string, number> = { empfehlung: 0, ok: 1, unscharf: 2, duplikat: 3 };
+
+const guestbookVerdictLabel: Record<string, string> = { unangemessen: "Bitte prüfen", herzlich: "Besonders herzlich", ok: "In Ordnung" };
+const guestbookVerdictColor: Record<string, string> = { unangemessen: "#B2543A", herzlich: "#5B7A4E", ok: "#B9975B" };
+const guestbookVerdictRank: Record<string, number> = { unangemessen: 0, herzlich: 1, ok: 2 };
 
 function ModerationButtons({ approve, hide, del }: { approve: () => Promise<void>; hide: () => Promise<void>; del: () => Promise<void> }) {
   return (
@@ -61,6 +66,22 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
   });
   const pendingPhotoCount = galleryItemsRaw.filter((item) => item.status === "PENDING" && item.media.type === "IMAGE").length;
   const curationError = sp.error === "photo-curation-failed";
+
+  // Gleiches Sortiermuster wie bei den Fotos: PENDING zuerst, darunter nach
+  // Verdict (unangemessen ganz oben, damit es nicht in der Menge untergeht).
+  const guestbookEntriesSorted = [...guestbookEntries].sort((a, b) => {
+    const aPending = a.status === "PENDING" ? 0 : 1;
+    const bPending = b.status === "PENDING" ? 0 : 1;
+    if (aPending !== bPending) return aPending - bPending;
+    if (aPending === 0) {
+      const aRank = guestbookVerdictRank[a.aiVerdict ?? ""] ?? 1;
+      const bRank = guestbookVerdictRank[b.aiVerdict ?? ""] ?? 1;
+      if (aRank !== bRank) return aRank - bRank;
+    }
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
+  const pendingMessageCount = guestbookEntries.filter((e) => e.status === "PENDING" && e.message).length;
+  const guestbookCurationError = sp.error === "guestbook-curation-failed";
 
   return (
     <div>
@@ -123,15 +144,45 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
       </div>
 
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px" }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 16 }}>Gästebuch ({guestbookEntries.length})</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Gästebuch ({guestbookEntries.length})</div>
+          {aiGuestbookCurationConfigured && pendingMessageCount > 0 && (
+            <form action={analyzeGuestbookEntries.bind(null, id)}>
+              <button type="submit" className="btn btn-ghost" style={{ padding: "7px 14px", fontSize: 11.5 }}>
+                KI-Nachrichten sortieren
+              </button>
+            </form>
+          )}
+        </div>
+        {guestbookCurationError && (
+          <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "10px 14px", fontSize: 12.5, marginBottom: 16 }}>
+            Die Nachrichten-Analyse ist gerade nicht verfügbar. Bitte später erneut versuchen.
+          </div>
+        )}
         {guestbookEntries.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--ink-soft)" }}>Noch keine Nachrichten.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {guestbookEntries.map((entry) => (
+            {guestbookEntriesSorted.map((entry) => (
               <div key={entry.id} style={{ border: "1px solid var(--line)", padding: "14px 16px", display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>{entry.authorName}</div>
+                  {entry.aiVerdict && (
+                    <div
+                      title={entry.aiVerdictReason ?? undefined}
+                      style={{
+                        display: "inline-block",
+                        fontSize: 10,
+                        color: guestbookVerdictColor[entry.aiVerdict],
+                        fontWeight: 600,
+                        border: `1px solid ${guestbookVerdictColor[entry.aiVerdict]}55`,
+                        padding: "2px 7px",
+                        marginTop: 6,
+                      }}
+                    >
+                      {guestbookVerdictLabel[entry.aiVerdict] ?? entry.aiVerdict}
+                    </div>
+                  )}
                   {entry.message && <div style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>{entry.message}</div>}
                   {entry.translatedMessage && (
                     <div style={{ fontSize: 12, color: "var(--ink-faint)", marginTop: 4, fontStyle: "italic" }}>
