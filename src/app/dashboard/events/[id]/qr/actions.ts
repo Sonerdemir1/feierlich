@@ -20,6 +20,11 @@ function themeFromForm(formData: FormData): QrTheme {
   return raw === "modern-block" || raw === "gold-frame" ? raw : "classic";
 }
 
+function sizeFromForm(formData: FormData): PrintSize {
+  const raw = String(formData.get("size") ?? "A6");
+  return raw === "A5" || raw === "A4" ? raw : "A6";
+}
+
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -38,7 +43,11 @@ function targetFromForm(formData: FormData): Target {
   return { kind: String(formData.get("qrType") ?? "EVENT_PAGE") === "RSVP" ? "RSVP" : "EVENT_PAGE" };
 }
 
-async function resolveTarget(eventId: string, slug: string, target: Target) {
+// `title` landet im Namens-Kaestchen unten auf der Karte — soll immer die
+// eigentlichen Namen zeigen (Paar/Firma/Geburtstagskind, = Event.title),
+// nicht ein generisches Wort wie "Einladung". Der Tisch-Bezug bei
+// Tisch-QR-Codes steht stattdessen mit im Untertitel.
+async function resolveTarget(eventId: string, slug: string, eventTitle: string, target: Target) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   if (target.kind === "TABLE") {
@@ -46,15 +55,15 @@ async function resolveTarget(eventId: string, slug: string, target: Target) {
     if (!table) throw new Error("Tisch nicht gefunden.");
     return {
       targetUrl: `${baseUrl}/e/${slug}?tisch=${table.id}#galerie`,
-      title: table.name,
-      subtitle: "Fotos & Videos teilen",
+      title: eventTitle,
+      subtitle: `${table.name} · Fotos & Videos teilen`,
     };
   }
 
   const path = target.kind === "RSVP" ? `/e/${slug}#rsvp` : `/e/${slug}`;
   return {
     targetUrl: `${baseUrl}${path}`,
-    title: target.kind === "RSVP" ? "Zusagen" : "Einladung",
+    title: eventTitle,
     subtitle: target.kind === "RSVP" ? "Sagt uns Bescheid" : "Scannt für alle Infos",
   };
 }
@@ -65,10 +74,10 @@ async function resolveTarget(eventId: string, slug: string, target: Target) {
 // noetig, das Auslösen der Action IST der Sende-Vorgang).
 export async function emailQrDesign(eventId: string, formData: FormData) {
   const { event, session } = await requireOwnedEvent(eventId);
-  const size: PrintSize = String(formData.get("size") ?? "A6") === "A5" ? "A5" : "A6";
+  const size: PrintSize = sizeFromForm(formData);
   const theme = themeFromForm(formData);
   const target = targetFromForm(formData);
-  const resolved = await resolveTarget(eventId, event.slug, target);
+  const resolved = await resolveTarget(eventId, event.slug, event.title, target);
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   // Gleicher Kontrast-Schutz wie bei der Live-Vorschau (design-preview/route.ts)
@@ -116,7 +125,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
 
   const redirectBase = `/dashboard/events/${eventId}/seating`;
 
-  const size: PrintSize = String(formData.get("size") ?? "A6") === "A5" ? "A5" : "A6";
+  const size: PrintSize = sizeFromForm(formData);
   const theme = themeFromForm(formData);
   const quantity = Math.max(1, Math.min(500, Number(formData.get("quantity") ?? 1) || 1));
   const target = targetFromForm(formData);

@@ -16,7 +16,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!event || event.ownerId !== session.user.id) return new Response("Nicht gefunden.", { status: 404 });
 
   const url = new URL(request.url);
-  const size: PrintSize = url.searchParams.get("size") === "A5" ? "A5" : "A6";
+  const sizeParam = url.searchParams.get("size");
+  const size: PrintSize = sizeParam === "A5" || sizeParam === "A4" ? sizeParam : "A6";
   const themeParam = url.searchParams.get("theme");
   const theme: QrTheme = themeParam === "modern-block" || themeParam === "gold-frame" ? themeParam : "classic";
   const tableId = url.searchParams.get("tableId") ?? "";
@@ -30,11 +31,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const table = await prisma.table.findFirst({ where: { id: tableId, eventId: id } });
     if (!table) return new Response("Tisch nicht gefunden.", { status: 404 });
     targetUrl = `${baseUrl}/e/${event.slug}?tisch=${table.id}#galerie`;
-    title = table.name;
-    subtitle = "Fotos & Videos teilen";
+    // Das Namens-Kaestchen auf der Karte zeigt immer die eigentlichen Namen
+    // (Paar/Firma/Geburtstagskind, = Event.title) statt eines generischen
+    // Worts — der Tisch-Bezug steht stattdessen mit im Untertitel.
+    title = event.title;
+    subtitle = `${table.name} · Fotos & Videos teilen`;
   } else {
     targetUrl = `${baseUrl}/e/${event.slug}`;
-    title = "Einladung";
+    title = event.title;
     subtitle = "Scannt für alle Infos";
   }
 

@@ -1,6 +1,6 @@
 import { qrSvg } from "./qr";
 
-export type PrintSize = "A6" | "A5";
+export type PrintSize = "A6" | "A5" | "A4";
 
 // Physische Groessen in mm — SVG unterstuetzt mm direkt als Einheit fuer
 // width/height, dadurch stimmt der Massstab beim Drucken (aus Browser oder
@@ -8,6 +8,7 @@ export type PrintSize = "A6" | "A5";
 export const PRINT_SIZE_MM: Record<PrintSize, { width: number; height: number; label: string }> = {
   A6: { width: 105, height: 148, label: "A6 (105 × 148 mm) — Tischkarte" },
   A5: { width: 148, height: 210, label: "A5 (148 × 210 mm) — Aufsteller" },
+  A4: { width: 210, height: 297, label: "A4 (210 × 297 mm) — Willkommensschild" },
 };
 
 // PLATZHALTER-Preise pro Stueck, NICHT aus Marktrecherche abgeleitet
@@ -18,6 +19,7 @@ export const PRINT_SIZE_MM: Record<PrintSize, { width: number; height: number; l
 export const PRINT_PRICE_CENTS: Record<PrintSize, number> = {
   A6: 290,
   A5: 390,
+  A4: 590,
 };
 
 // Mengenrabatt-Stufen (Rabatt auf den Stueckpreis oben), Schwellwerte
@@ -117,39 +119,113 @@ function modernBlockTheme(p: ThemeInput): string {
   <text x="${width / 2}" y="${height - 6}" text-anchor="middle" font-family="sans-serif" font-size="2.6" fill="#FFFFFFAA" letter-spacing="0.3">EINLADI.DE</text>`;
 }
 
-// Doppellinien-Rahmen mit kleinen Eck-Akzenten (diagonale Striche statt
-// botanischer Illustration — als handgeschriebenes SVG zuverlaessig sauber
-// darstellbar) und kursiver Serifenschrift — angelehnt an klassische
-// Hochzeits-Einladungskarten, passend zum tuerkisch-/kurdischsprachigen
-// Hochzeitssaal-Publikum (opulente, aber elegante Optik).
+// Zeichnet vier kurze Eck-Winkel (Klammern) um ein Rechteck — genutzt fuer
+// den aeusseren Seitenrahmen UND den QR-Platzhalter-Rahmen, damit beide
+// exakt denselben Akzent-Stil teilen statt zwei separaten Implementierungen.
+function cornerBrackets(x: number, y: number, w: number, h: number, size: number, color: string, strokeWidth = 0.35): string {
+  return [
+    [x, y, x + size, y, x, y + size],
+    [x + w, y, x + w - size, y, x + w, y + size],
+    [x, y + h, x + size, y + h, x, y + h - size],
+    [x + w, y + h, x + w - size, y + h, x + w, y + h - size],
+  ]
+    .map(([cx, cy, x1, y1, x2, y2]) => `<path d="M ${x1} ${y1} L ${cx} ${cy} L ${x2} ${y2}" fill="none" stroke="${color}" stroke-width="${strokeWidth}" />`)
+    .join("\n  ");
+}
+
+// Sehr einfacher Greedy-Umbruch nach Zeichenanzahl statt echter
+// Textbreiten-Messung (im SVG-String ohne DOM/Canvas nicht verfuegbar) —
+// reicht fuer kurze Anleitungstexte auf einer Druckvorlage.
+function wrapLines(text: string, maxChars: number, maxLines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+      if (lines.length === maxLines - 1) break;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.slice(0, maxLines);
+}
+
+// Zierrahmen mit Zweig-Icon, Skript-Ueberschrift, verziertem Trenner,
+// gepunktetem QR-Platzhalter mit Eck-Klammern und eigener Namens-/
+// Tischkarten-Box darunter — orientiert an klassischen, opulenten
+// Hochzeits-QR-Karten (Referenz: "QR CARD"-Ordner), aber vollstaendig
+// farbparametrisiert (primary/accent/background), damit es zur jeweils
+// gewaehlten Vorlagenfarbe passt statt nur zu einer festen Gold-Palette.
 function goldFrameTheme(p: ThemeInput): string {
   const { width, height, primary, accent, background, qr, instructions } = p;
+  // Referenzbreite A6 (105mm) = Faktor 1 — alle sonst festen mm-Abstaende/
+  // Schriftgroessen skalieren hierueber mit, sonst haeuft sich bei A4 (doppelte
+  // Breite) der ganze Inhalt oben und laesst unten ein unproportioniert
+  // grosses Leerfeld (beim Testen mit allen drei Formaten aufgefallen).
+  const s = width / 105;
   const outerMargin = 4;
   const innerMargin = 6.5;
-  const qrSizeMm = width * 0.52;
-  const qrX = (width - qrSizeMm) / 2;
-  const qrY = height * 0.33;
-  const corner = 6;
+  const outerCorners = cornerBrackets(innerMargin, innerMargin, width - innerMargin * 2, height - innerMargin * 2, 6 * s, accent);
 
-  const corners = [
-    [innerMargin, innerMargin, innerMargin + corner, innerMargin, innerMargin, innerMargin + corner],
-    [width - innerMargin, innerMargin, width - innerMargin - corner, innerMargin, width - innerMargin, innerMargin + corner],
-    [innerMargin, height - innerMargin, innerMargin + corner, height - innerMargin, innerMargin, height - innerMargin - corner],
-    [width - innerMargin, height - innerMargin, width - innerMargin - corner, height - innerMargin, width - innerMargin, height - innerMargin - corner],
-  ]
-    .map(([x, y, x1, y1, x2, y2]) => `<path d="M ${x1} ${y1} L ${x} ${y} L ${x2} ${y2}" fill="none" stroke="${accent}" stroke-width="0.35" />`)
+  // Zweig-Icon: symmetrischer Stiel mit drei Blattpaaren, komplett aus
+  // Pfaden gezeichnet (keine Rasterbilder) — skaliert mit der Kartengroesse.
+  const leafCx = width / 2;
+  const leafTopY = height * 0.09;
+  const leafScale = s * 0.45;
+  const branch = `<g transform="translate(${leafCx} ${leafTopY}) scale(${leafScale})">
+    <path d="M0,15 C0,8 -0.5,2 0,-11" stroke="${accent}" stroke-width="0.45" fill="none" stroke-linecap="round" />
+    <path d="M0,11 C-3.4,9 -5.4,5.6 -4.4,2.4 C-1.2,3.4 0,6.6 0,11 Z" fill="${accent}" />
+    <path d="M0,11 C3.4,9 5.4,5.6 4.4,2.4 C1.2,3.4 0,6.6 0,11 Z" fill="${accent}" />
+    <path d="M0,3.5 C-2.7,1.7 -4.3,-0.8 -3.3,-3.4 C-0.9,-2.3 0,0.2 0,3.5 Z" fill="${accent}" />
+    <path d="M0,3.5 C2.7,1.7 4.3,-0.8 3.3,-3.4 C0.9,-2.3 0,0.2 0,3.5 Z" fill="${accent}" />
+    <path d="M0,-4 C-2,-5.5 -3,-7.6 -2,-9.6 C-0.5,-8.5 0,-6.4 0,-4 Z" fill="${accent}" />
+  </g>`;
+
+  const headingY = height * 0.2;
+  const scriptText = (p.subtitle ?? p.title).trim();
+  const dividerY = headingY + 8.5 * s;
+
+  const bodyLineHeight = 4.6 * s;
+  const bodyLines = wrapLines(instructions, width * 0.34, 3);
+  const bodyStartY = dividerY + 8 * s;
+  const body = bodyLines
+    .map(
+      (line, i) =>
+        `<text x="${width / 2}" y="${bodyStartY + i * bodyLineHeight}" text-anchor="middle" font-family="Georgia, serif" font-size="${3.4 * s}" fill="${primary}">${escapeXml(line)}</text>`
+    )
     .join("\n  ");
+
+  const qrSizeMm = width * 0.5;
+  const qrX = (width - qrSizeMm) / 2;
+  const qrY = bodyStartY + bodyLines.length * bodyLineHeight + 6 * s;
+  const framePad = 2.6 * s;
+  const frameCorner = 5 * s;
+
+  const nameBoxY = qrY + qrSizeMm + 10 * s;
+  const nameBoxH = height * 0.055;
+  const nameBoxW = width * 0.62;
+  const nameBoxX = (width - nameBoxW) / 2;
 
   return `<rect width="${width}" height="${height}" fill="${background}" />
   <rect x="${outerMargin}" y="${outerMargin}" width="${width - outerMargin * 2}" height="${height - outerMargin * 2}" fill="none" stroke="${accent}" stroke-width="0.25" />
   <rect x="${innerMargin}" y="${innerMargin}" width="${width - innerMargin * 2}" height="${height - innerMargin * 2}" fill="none" stroke="${accent}" stroke-width="0.25" />
-  ${corners}
-  <text x="${width / 2}" y="${height * 0.16}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="6.5" fill="${primary}">${escapeXml(p.title)}</text>
-  <line x1="${width / 2 - 10}" y1="${height * 0.16 + 4}" x2="${width / 2 + 10}" y2="${height * 0.16 + 4}" stroke="${accent}" stroke-width="0.3" />
-  ${p.subtitle ? `<text x="${width / 2}" y="${height * 0.16 + 9}" text-anchor="middle" font-family="sans-serif" font-size="3" fill="${accent}" letter-spacing="0.6">${escapeXml(p.subtitle.toUpperCase())}</text>` : ""}
+  ${outerCorners}
+  ${branch}
+  <text x="${width / 2}" y="${headingY}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="${7.2 * s}" fill="${primary}">${escapeXml(scriptText)}</text>
+  <line x1="${width / 2 - 11 * s}" y1="${dividerY}" x2="${width / 2 - 3 * s}" y2="${dividerY}" stroke="${accent}" stroke-width="0.3" />
+  <rect x="${width / 2 - 1.2 * s}" y="${dividerY - 1.2 * s}" width="${2.4 * s}" height="${2.4 * s}" fill="none" stroke="${accent}" stroke-width="0.3" transform="rotate(45 ${width / 2} ${dividerY})" />
+  <line x1="${width / 2 + 3 * s}" y1="${dividerY}" x2="${width / 2 + 11 * s}" y2="${dividerY}" stroke="${accent}" stroke-width="0.3" />
+  ${body}
+  <rect x="${qrX - framePad}" y="${qrY - framePad}" width="${qrSizeMm + framePad * 2}" height="${qrSizeMm + framePad * 2}" fill="none" stroke="${accent}" stroke-width="0.3" stroke-dasharray="0.6 1.4" />
+  ${cornerBrackets(qrX - framePad, qrY - framePad, qrSizeMm + framePad * 2, qrSizeMm + framePad * 2, frameCorner, accent, 0.45)}
   <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${qr.viewBox}">${qr.inner}</svg>
-  <text x="${width / 2}" y="${qrY + qrSizeMm + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.2" fill="${primary}" letter-spacing="0.2">${escapeXml(instructions)}</text>
-  <text x="${width / 2}" y="${height - 8}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="2.8" fill="${accent}" letter-spacing="0.4">einladi.de</text>`;
+  <rect x="${nameBoxX}" y="${nameBoxY}" width="${nameBoxW}" height="${nameBoxH}" fill="none" stroke="${accent}" stroke-width="0.3" />
+  <text x="${width / 2}" y="${nameBoxY + nameBoxH / 2 + 1.3 * s}" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="${4 * s}" letter-spacing="0.3" fill="${primary}">${escapeXml(p.title.toUpperCase())}</text>
+  <text x="${width / 2}" y="${height - 8 * s}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="${2.8 * s}" fill="${accent}" letter-spacing="0.4">einladi.de</text>`;
 }
 
 // Baut eine druckfertige SVG-"Tischkarte"/"Aufsteller" mit QR-Code,
