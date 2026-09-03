@@ -5,6 +5,7 @@ import { RevealAnimator } from "@/components/marketing/RevealAnimator";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { GuestPagePreview, SharePreview, GalleryPreview } from "@/components/marketing/PhoneMockups";
 import { HeroStory } from "@/components/marketing/HeroStory";
+import { MotionHero } from "@/components/marketing/MotionHero";
 import { TemplateGallery } from "@/components/marketing/TemplateGallery";
 import { categorySlug, categoryLabel } from "@/lib/gallery-templates";
 import { getGalleryCategories } from "@/lib/gallery-templates-data";
@@ -93,55 +94,52 @@ export default async function Home() {
     <>
       <RevealAnimator />
 
-      <nav>
-        <Logo />
-        <div className="nav-links">
-          <a href="#erinnerungen">{t.nav.gallery}</a>
-          <a href="#vorlagen">{t.nav.templates}</a>
-          <a href="#preise">{t.nav.pricing}</a>
-          <a href="/dashboard">{t.nav.login}</a>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <LanguageSwitcher locale={locale} redirectTo="/" />
-          <a href="/dashboard" className="btn btn-primary">
-            {t.nav.cta}
-          </a>
-        </div>
-      </nav>
-
-      <section className="hero reveal">
-        <div className="hero-grid">
-          <div className="hero-copy">
-            <div className="eyebrow">{t.hero.eyebrow}</div>
-            <h1>{t.hero.title}</h1>
-            <p className="hero-sub">{t.hero.sub}</p>
-            <div className="hero-cta">
-              <a href="#preise" className="btn btn-primary">
-                {t.hero.ctaPrimary}
-              </a>
-              <a href="#vorlagen" className="btn btn-ghost">
-                {t.hero.ctaSecondary}
-              </a>
-            </div>
+      {/* docs/MOTION.md §2 — der Umschlag-Moment ersetzt den bisherigen
+          Text+Mockup-Hero. Bewusst nur um die Hero-Szene herum
+          .motion-home-gescoped (nicht die ganze Seite), damit die
+          Sections darunter (noch cremefarben) nicht unlesbar werden —
+          die volle "Tinte & Kerzenlicht"-Uebertragung auf den Rest der
+          Seite ist ein eigener, noch offener Schritt (siehe Ankündigung
+          im Chat). Die Nav schwebt hier transparent ueber der Szene
+          (position:fixed) statt Platz wegzunehmen — sonst ragt die
+          100dvh-Hero-Sektion unten ueber den sichtbaren Viewport hinaus. */}
+      <div className="motion-home">
+        <div className="motion-grain" />
+        <div className="motion-vignette" />
+        <nav className="motion-nav">
+          <Logo dark />
+          <div className="nav-links">
+            <a href="#erinnerungen">{t.nav.gallery}</a>
+            <a href="#vorlagen">{t.nav.templates}</a>
+            <a href="#preise">{t.nav.pricing}</a>
+            <a href="/dashboard">{t.nav.login}</a>
           </div>
-          <div className="hero-visual">
-            <div className="phone-frame">
-              <div className="phone-inner">
-                <GalleryPreview />
-              </div>
-            </div>
-            <span className="hero-chip" style={{ top: 28, left: -6 }}>
-              {t.hero.chipBilingual}
-            </span>
-            <span className="hero-chip" style={{ top: "48%", right: -22 }}>
-              {t.hero.chipAi}
-            </span>
-            <span className="hero-chip" style={{ bottom: 44, left: 0 }}>
-              🎨 {templateCount} {t.nav.templates}
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <LanguageSwitcher locale={locale} redirectTo="/" />
+            <a href="/dashboard" className="btn btn-primary">
+              {t.nav.cta}
+            </a>
+          </div>
+        </nav>
+        <MotionHero names="Anna & Lukas" />
+        <div className="motion-hero-copy">
+          <div className="eyebrow" style={{ color: "var(--gold)" }}>
+            {t.hero.eyebrow}
+          </div>
+          <h1 style={{ color: "var(--parchment)" }}>{t.hero.title}</h1>
+          <p className="hero-sub" style={{ color: "color-mix(in srgb, var(--parchment) 78%, transparent)" }}>
+            {t.hero.sub}
+          </p>
+          <div className="hero-cta">
+            <a href="#preise" className="btn btn-primary">
+              {t.hero.ctaPrimary}
+            </a>
+            <a href="#vorlagen" className="btn btn-ghost motion-btn-ghost">
+              {t.hero.ctaSecondary}
+            </a>
           </div>
         </div>
-      </section>
+      </div>
 
       <section className="cat-nav reveal">
         <div className="cat-nav-heading">{t.catNav.heading}</div>

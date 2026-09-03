@@ -26,6 +26,359 @@
   --font-body: "Inter", system-ui, sans-serif;
 }
 
+/* docs/MOTION.md — Farbwelt "Tinte & Kerzenlicht", NUR fuer die Startseite/
+   Galerie (siehe Geltungsbereich §0 der Spezifikation). CSS-Variablen
+   ueberschreiben hier lokal --ink/--gold/--sage fuer alle Nachfahren von
+   .motion-home — der Rest der App (Dashboard, echte Einladungsseiten)
+   bleibt auf der warmen Palette oben unberuehrt, da Custom Properties nur
+   innerhalb des Scopes kaskadieren. */
+.motion-home {
+  --ink: #14121c;
+  --ink-deep: #0c0a12;
+  --parchment: #f2e9da;
+  --gold: #c9a15c;
+  --henna: #8e2c3b;
+  --sage: #6c7a63;
+  --branch-accent: var(--henna);
+
+  position: relative;
+  background: var(--ink);
+  color: var(--parchment);
+  font-family: var(--font-karla), system-ui, sans-serif;
+  overflow-x: clip;
+}
+.motion-home h1,
+.motion-home h2,
+.motion-home h3 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 400;
+  font-variation-settings: "opsz" 72, "SOFT" 30, "WONK" 1;
+}
+/* Grain + Vignette: als letzte Kinder von .motion-home statt Pseudo-
+   Elemente, damit sie unabhaengig von der Stacking-Order der Sections
+   zuverlaessig obenauf liegen (position:fixed + spaete DOM-Position),
+   ohne dass jede Section einen eigenen z-index braucht. */
+.motion-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.motion-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, var(--ink-deep) 130%);
+}
+
+/* Hero-Umschlag-Sequenz — Timings/Kurven exakt aus docs/MOTION.md §2. */
+.motion-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 20px 28px;
+  background: color-mix(in srgb, var(--ink-deep) 72%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 18%, transparent);
+}
+.motion-nav .nav-links a {
+  color: color-mix(in srgb, var(--parchment) 82%, transparent);
+}
+.motion-nav .nav-links a:hover {
+  color: var(--gold);
+}
+.motion-nav .nav-links a::after {
+  background: var(--gold);
+}
+
+.motion-hero {
+  position: relative;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.motion-hero-scene {
+  position: relative;
+  width: min(340px, 82vw);
+  height: min(74vh, 580px);
+  perspective: 1400px;
+}
+[data-phase="open"] .motion-hero-scene {
+  animation: motionCameraDrift 8000ms ease-out 1600ms forwards;
+}
+
+/* Landschafts-Umschlag (echte Proportion 3:2) mit Dreiecks-Klappe per
+   clip-path — gleiche bewaehrte Technik wie .envelope-flap in
+   EnvelopeOpen.tsx, unten in der Szene verankert. Die Karte (separat,
+   Hochformat) gleitet dahinter/davor hervor statt sich die Landschafts-
+   Proportion des Umschlags zu teilen. */
+.motion-envelope {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  aspect-ratio: 3 / 2;
+  transform-style: preserve-3d;
+}
+.motion-envelope-body {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 6px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 12%, var(--ink)) 0%, var(--ink-deep) 75%);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+.motion-flap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 54%;
+  z-index: 3;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--gold) 20%, var(--ink)), var(--ink-deep));
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+[data-phase="opening"] .motion-flap,
+[data-phase="open"] .motion-flap {
+  animation: motionFlapOpen 1200ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards;
+}
+
+.motion-seal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 46px;
+  height: 46px;
+  border: none;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--gold) 60%, white) 0%, var(--gold) 45%, color-mix(in srgb, var(--gold) 70%, black) 100%);
+  padding: 0;
+  cursor: pointer;
+  z-index: 4;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45), inset 0 -3px 6px rgba(0, 0, 0, 0.25), inset 0 2px 3px rgba(255, 255, 255, 0.35);
+  animation: motionSealPulse 2400ms ease-in-out infinite;
+}
+.motion-seal:focus-visible {
+  outline: 2px solid var(--parchment);
+  outline-offset: 4px;
+}
+[data-phase="opening"] .motion-seal,
+[data-phase="open"] .motion-seal {
+  animation: motionSealPop 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  pointer-events: none;
+}
+
+.motion-card {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 76%;
+  aspect-ratio: 5 / 7;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)' opacity='0.05'/%3E%3C/svg%3E"),
+    var(--parchment);
+  color: var(--ink);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 30px 60px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translate(-50%, 12%);
+}
+[data-phase="opening"] .motion-card,
+[data-phase="open"] .motion-card {
+  animation: motionCardOut 900ms cubic-bezier(0.22, 1, 0.36, 1) 600ms forwards;
+}
+.motion-card-inner {
+  text-align: center;
+  padding: 20px;
+}
+.motion-ornament {
+  width: 70%;
+  height: auto;
+  margin: 0 auto 14px;
+  display: block;
+}
+.motion-ornament path {
+  transition: stroke-dashoffset 1600ms ease 1300ms;
+}
+.motion-card-names {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-variation-settings: "opsz" 72, "SOFT" 30, "WONK" 1;
+  font-size: clamp(22px, 5vw, 30px);
+}
+.motion-card-letter {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(20px);
+  white-space: pre;
+}
+[data-phase="opening"] .motion-card-letter,
+[data-phase="open"] .motion-card-letter {
+  animation: motionLetterIn 500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(1300ms + var(--i) * 45ms);
+}
+.motion-card-date {
+  margin-top: 10px;
+  font-family: var(--font-karla), sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  opacity: 0;
+  transform: translateY(10px);
+}
+[data-phase="opening"] .motion-card-date,
+[data-phase="open"] .motion-card-date {
+  animation: motionLetterIn 500ms cubic-bezier(0.16, 1, 0.3, 1) 2300ms forwards;
+}
+
+.motion-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 20px 28px 90px;
+  text-align: center;
+}
+.motion-hero-copy .hero-sub {
+  max-width: 480px;
+  margin: 24px auto 0;
+}
+.motion-hero-copy .hero-cta {
+  justify-content: center;
+}
+.motion-btn-ghost {
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent) !important;
+  color: var(--parchment) !important;
+}
+.motion-btn-ghost:hover {
+  border-color: var(--gold) !important;
+}
+
+.motion-hero-hint {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-karla), sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--parchment) 70%, transparent);
+}
+
+@keyframes motionSealPulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+}
+@keyframes motionSealPop {
+  0% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0) rotate(-12deg);
+    opacity: 0;
+  }
+}
+@keyframes motionFlapOpen {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(-168deg);
+  }
+}
+@keyframes motionCardOut {
+  from {
+    transform: translate(-50%, 12%);
+    filter: blur(6px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -4%);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+@keyframes motionLetterIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes motionCameraDrift {
+  from {
+    transform: scale(1) translateY(0);
+  }
+  to {
+    transform: scale(1.04) translateY(-2%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-seal,
+  .motion-flap,
+  .motion-card,
+  .motion-card-letter,
+  .motion-card-date,
+  .motion-hero-scene {
+    animation: none !important;
+  }
+  .motion-seal {
+    display: none;
+  }
+  .motion-flap {
+    transform: rotateX(-168deg);
+  }
+  .motion-card {
+    opacity: 1;
+    transform: translate(-50%, -4%);
+    filter: none;
+  }
+  .motion-card-letter,
+  .motion-card-date {
+    opacity: 1;
+    transform: none;
+  }
+  .motion-ornament path {
+    transition: none;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
