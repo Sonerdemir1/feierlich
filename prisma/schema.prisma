@@ -228,6 +228,11 @@ model Event {
   // Editor-Einstellungen fuer die oeffentliche Event-Seite (Schriftart,
   // Eck-Ornamente), analog zu colorOverride. null = Template-Standard.
   styleJson       String?
+  // Steuert NUR die Saal-Live-Wand (/live/[eventId]), nicht die normale
+  // Gaeste-Galerie auf dem Handy: "immediate" zeigt frisch freigegebene
+  // Fotos sofort auf der grossen Leinwand, "next-morning" haelt sie dort
+  // zurueck bis zum Morgen nach dem Event (siehe src/lib/live-wall.ts).
+  liveWallMode    String      @default("immediate")
   viewCount       Int         @default(0)
   status          EventStatus @default(DRAFT)
   createdAt       DateTime    @default(now())

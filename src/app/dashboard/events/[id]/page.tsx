@@ -25,6 +25,8 @@ import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { deleteMusicRequest } from "./music-requests-actions";
 import { checkInGuest } from "./checkin-actions";
+import { setLiveWallMode, setEventHashtag } from "./live-wall-actions";
+import { fallbackHashtag } from "@/lib/live-wall";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
@@ -193,6 +195,9 @@ export default async function EventDetailPage({
   const thankYouModuleId = allModules.find((m) => m.key === "thank-you-card")?.id;
   const thankYouModule = thankYouModuleId ? eventModules.find((em) => em.moduleId === thankYouModuleId) : undefined;
   const thankYouMessage: string = thankYouModule?.config ? (JSON.parse(thankYouModule.config).message ?? "") : "";
+  const socialModuleId = allModules.find((m) => m.key === "social-media")?.id;
+  const socialModule = socialModuleId ? eventModules.find((em) => em.moduleId === socialModuleId) : undefined;
+  const eventHashtag: string = socialModule?.config ? (JSON.parse(socialModule.config).hashtag ?? "") : "";
   // Gleiche Vorschaubild-Logik wie generateMetadata in /e/[slug] — eigenes
   // Titelbild zuerst, sonst das Kartendesign der Vorlage, damit der Kunde
   // hier sieht, was beim Teilen in WhatsApp/Facebook/Instagram ankommt.
@@ -1030,6 +1035,48 @@ export default async function EventDetailPage({
               ))}
           </div>
         )}
+      </div>
+
+      {/* Live-Wand */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Live-Wand für den Saal</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Freigegebene Fotos laufen als ruhige Diashow auf einem Beamer oder Fernseher im Saal —{" "}
+          <a
+            href={`https://${publicHost()}/live/${event.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "var(--terracotta-dark)" }}
+          >
+            Live-Wand öffnen ↗
+          </a>
+        </div>
+        <form action={setLiveWallMode.bind(null, event.id)} style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer" }}>
+              <input type="radio" name="liveWallMode" value="immediate" defaultChecked={event.liveWallMode !== "next-morning"} />
+              Fotos sofort zeigen
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer" }}>
+              <input type="radio" name="liveWallMode" value="next-morning" defaultChecked={event.liveWallMode === "next-morning"} />
+              Erst am Morgen danach freigeben
+            </label>
+          </div>
+          <button type="submit" className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }}>
+            Speichern
+          </button>
+        </form>
+        <form action={setEventHashtag.bind(null, event.id)} style={{ display: "flex", gap: 8, maxWidth: 320 }}>
+          <input
+            name="hashtag"
+            placeholder={fallbackHashtag(event.title) || "#EuerHashtag"}
+            defaultValue={eventHashtag}
+            style={{ flex: 1, padding: "9px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5 }}
+          />
+          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12 }}>
+            Speichern
+          </button>
+        </form>
       </div>
 
       {/* Social-Grafik */}
