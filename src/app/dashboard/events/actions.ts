@@ -13,6 +13,7 @@ import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } f
 import { generateInvitationCopy } from "@/lib/ai-text";
 import { stripe } from "@/lib/stripe";
 import { markEventAddOnPaid } from "@/lib/checkout-fulfillment";
+import { buildDesignUpdate } from "@/lib/design-style";
 
 const REFERRAL_COOKIE = "ref_partner";
 
@@ -383,48 +384,15 @@ export async function saveThankYouCard(eventId: string, formData: FormData) {
   redirect(`/dashboard/events/${eventId}?thankYouSaved=1`);
 }
 
+// Non-JS-Fallback (progressive enhancement) fuer das Design-Formular —
+// der normale Weg ist inzwischen die Live-Sync-Route
+// (src/app/dashboard/events/[id]/design/route.ts), die dieselbe
+// buildDesignUpdate()-Logik nutzt, aber ohne Redirect/Remount speichert.
 export async function saveDesign(eventId: string, formData: FormData) {
   const { event } = await requireOwnedEvent(eventId);
 
-  // Nur nicht-leere Felder aufnehmen — beim Lesen wird ueber die Template-
-  // Standardfarben gemergt ({ ...templateColors, ...override }), ein
-  // leerer String wuerde die Template-Farbe sonst kaputt auf "" setzen
-  // statt sie einfach unveraendert zu lassen.
-  const override: Record<string, string> = {};
-  for (const key of ["primary", "accent", "background"] as const) {
-    const value = String(formData.get(key) ?? "").trim();
-    if (value) override[key] = value;
-  }
-
-  // fontId/ornaments sind echte Editor-Einstellungen fuer die oeffentliche
-  // Event-Seite (siehe /e/[slug]/page.tsx), unabhaengig von den Farben —
-  // eigenes JSON-Feld statt in colorOverride mit reingemischt, damit beide
-  // unabhaengig voneinander zurueckgesetzt werden koennen.
-  const fontId = String(formData.get("fontId") ?? "").trim();
-  const ornaments = formData.get("ornaments") === "on";
-  const style: Record<string, unknown> = {};
-  if (fontId) style.fontId = fontId;
-  if (ornaments) style.ornaments = true;
-
-  // Pro-Element Groesse/Farbe (Anlass-Label/Titel/Untertitel/Familiennamen/
-  // Datum/Beschreibung) — siehe src/lib/text-style.ts. Nur nicht-"md"/nicht-
-  // leere Werte aufnehmen, gleiches Muster wie bei den Farben oben.
-  const elements: Record<string, { size?: string; color?: string }> = {};
-  for (const key of ["eventLabel", "title", "subtitle", "family", "date", "description"] as const) {
-    const size = String(formData.get(`${key}Size`) ?? "").trim();
-    const colorOn = formData.get(`${key}ColorOn`) === "on";
-    const color = colorOn ? String(formData.get(`${key}Color`) ?? "").trim() : "";
-    const entry: { size?: string; color?: string } = {};
-    if (size && size !== "md") entry.size = size;
-    if (color) entry.color = color;
-    if (entry.size || entry.color) elements[key] = entry;
-  }
-  if (Object.keys(elements).length > 0) style.elements = elements;
-
-  await prisma.event.update({
-    where: { id: eventId },
-    data: { colorOverride: JSON.stringify(override), styleJson: JSON.stringify(style) },
-  });
+  const { colorOverride, styleJson } = buildDesignUpdate(formData);
+  await prisma.event.update({ where: { id: eventId }, data: { colorOverride, styleJson } });
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);

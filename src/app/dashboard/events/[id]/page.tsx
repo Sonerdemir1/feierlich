@@ -11,7 +11,6 @@ import {
   saveModules,
   publishEvent,
   gatedModuleKeys,
-  saveDesign,
   resetDesign,
   changeTemplate,
   updateSlug,
@@ -32,16 +31,14 @@ import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from
 import { aiTextConfigured } from "@/lib/ai-text";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
-import { FONT_OPTIONS } from "@/lib/fonts";
-import { ELEMENT_SIZE_PRESETS, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey } from "@/lib/text-style";
+import type { StyleElements } from "@/lib/text-style";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
 import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
-import { LivePreviewFrame } from "@/components/dashboard/LivePreviewFrame";
-import { AutoSubmitForm } from "@/components/dashboard/AutoSubmitForm";
+import { DesignEditor } from "@/components/dashboard/DesignEditor";
 import { EinladiKiChat } from "@/components/dashboard/EinladiKiChat";
 import { einladiKiConfigured } from "@/lib/einladi-ki";
 import { SocialGraphicPreview } from "@/components/dashboard/SocialGraphicPreview";
@@ -166,7 +163,6 @@ export default async function EventDetailPage({
   const activeStyle: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
     ? JSON.parse(event.styleJson)
     : {};
-  const TEXT_ELEMENT_KEYS: TextElementKey[] = ["eventLabel", "title", "subtitle", "family", "date", "description"];
   const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
 
   const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
@@ -217,6 +213,26 @@ export default async function EventDetailPage({
         {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)} · Status:{" "}
         {statusLabel[event.status] ?? event.status}
       </p>
+
+      {/* Design & Vorschau — bewusst ganz oben, direkt sichtbar ohne
+          Scrollen (frueheres Nutzer-Feedback: "rechts ist komplett frei,
+          man muss komplett nach unten scrollen"). */}
+      <div className="card" style={{ padding: "20px 22px", marginBottom: 32 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Design &amp; Vorschau</div>
+        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+          Farben, Schriftart &amp; Verzierungen anpassen — wirkt sofort auf die Vorschau rechts, ohne Neuladen.
+        </div>
+        <DesignEditor
+          eventId={event.id}
+          eventSlug={event.slug}
+          initialColors={activeColors}
+          initialFontId={activeStyle.fontId}
+          initialOrnaments={Boolean(activeStyle.ornaments)}
+          initialElements={activeStyle.elements}
+          hasOverride={hasColorOverride || hasStyleOverride}
+          onReset={resetDesign.bind(null, event.id)}
+        />
+      </div>
 
       <details open style={{ marginBottom: 32 }}>
         <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
@@ -504,135 +520,6 @@ export default async function EventDetailPage({
               </span>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Design & Vorschau */}
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Design &amp; Vorschau</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Farben, Schriftart &amp; Verzierungen anpassen — jede Änderung speichert automatisch, die Vorschau rechts aktualisiert sich sofort.
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
-          <div style={{ flex: "0 0 260px", minWidth: 240 }}>
-            <AutoSubmitForm action={saveDesign.bind(null, event.id)}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
-                Primär (Text)
-                <input type="color" name="primary" defaultValue={activeColors.primary} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
-                Akzent
-                <input type="color" name="accent" defaultValue={activeColors.accent} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
-                Hintergrund
-                <input type="color" name="background" defaultValue={activeColors.background} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
-              </label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
-                Schriftart
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(74px, 1fr))", gap: 6 }}>
-                  <label className="customizer-font-btn" style={{ display: "block", cursor: "pointer", position: "relative" }}>
-                    <input
-                      type="radio"
-                      name="fontId"
-                      value=""
-                      defaultChecked={!activeStyle.fontId}
-                      style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                    />
-                    <span style={{ display: "block", fontFamily: "var(--font-display)", fontStyle: "italic" }}>Aa</span>
-                    <small style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 9.5, marginTop: 4 }}>Standard</small>
-                  </label>
-                  {FONT_OPTIONS.map((f) => (
-                    <label key={f.id} className="customizer-font-btn" style={{ display: "block", cursor: "pointer", position: "relative" }}>
-                      <input
-                        type="radio"
-                        name="fontId"
-                        value={f.id}
-                        defaultChecked={activeStyle.fontId === f.id}
-                        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
-                      />
-                      <span
-                        style={{
-                          display: "block",
-                          fontFamily: f.cssVar,
-                          fontStyle: f.italic ? "italic" : "normal",
-                          textTransform: f.uppercase ? "uppercase" : "none",
-                        }}
-                      >
-                        Aa
-                      </span>
-                      <small style={{ display: "block", fontFamily: "var(--font-body)", fontSize: 9.5, marginTop: 4 }}>{f.label}</small>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <label className="customizer-toggle">
-                <input type="checkbox" name="ornaments" defaultChecked={Boolean(activeStyle.ornaments)} />
-                <span className="customizer-switch" aria-hidden="true" />
-                <span className="customizer-toggle-text">Verzierungen (Eck-Ornamente) anzeigen</span>
-              </label>
-
-              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 4 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 2 }}>Text-Feinsteuerung</div>
-                <div style={{ fontSize: 11, color: "var(--ink-faint)", marginBottom: 10 }}>
-                  Größe &amp; Farbe für jeden Text einzeln — Titel, Untertitel, Datum, Beschreibung.
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {TEXT_ELEMENT_KEYS.map((key) => {
-                    const el = activeStyle.elements?.[key];
-                    return (
-                      <div key={key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ flex: "1 1 auto", fontSize: 12, color: "var(--ink-soft)" }}>
-                          {TEXT_ELEMENT_LABELS[key]}
-                        </span>
-                        <select
-                          name={`${key}Size`}
-                          defaultValue={el?.size ?? "md"}
-                          style={{ padding: "7px 8px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 11.5 }}
-                        >
-                          {ELEMENT_SIZE_PRESETS[key].map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.label}
-                            </option>
-                          ))}
-                        </select>
-                        <label
-                          title="Eigene Farbe verwenden (sonst folgt der Text der globalen Primär-Farbe oben)"
-                          style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
-                        >
-                          <input type="checkbox" name={`${key}ColorOn`} defaultChecked={Boolean(el?.color)} style={{ marginRight: 4 }} />
-                        </label>
-                        <input
-                          type="color"
-                          name={`${key}Color`}
-                          defaultValue={el?.color ?? activeColors.primary}
-                          style={{ width: 34, height: 30, border: "1px solid var(--line)", cursor: "pointer", padding: 0 }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>Änderungen werden automatisch gespeichert.</span>
-            </AutoSubmitForm>
-            {(hasColorOverride || hasStyleOverride) && (
-              <form action={resetDesign.bind(null, event.id)} style={{ marginTop: 8 }}>
-                <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12, width: "100%" }}>
-                  Zurücksetzen auf Vorlage
-                </button>
-              </form>
-            )}
-          </div>
-          <div style={{ flex: "1 1 360px", minWidth: 260 }}>
-            <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
-              Tipp: Titel, Untertitel und Beschreibung direkt in der Vorschau anklicken und bearbeiten.
-            </div>
-            <LivePreviewFrame
-              src={`/e/${event.slug}?dashboardPreview=1`}
-              frameKey={`${event.templateId}-${event.colorOverride ?? "default"}-${event.styleJson ?? "default"}`}
-            />
-          </div>
         </div>
       </div>
 

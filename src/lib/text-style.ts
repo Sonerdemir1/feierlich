@@ -7,6 +7,11 @@
 // Layouts durch extreme Werte.
 export type TextElementKey = "title" | "subtitle" | "date" | "description" | "eventLabel" | "family";
 
+// Reihenfolge, wie sie im Editor angezeigt wird (oben nach unten auf der
+// Karte) — bewusst getrennt von der Key-Reihenfolge in den anderen
+// Exports dieser Datei, die historisch gewachsen ist.
+export const TEXT_ELEMENT_KEYS: TextElementKey[] = ["eventLabel", "title", "subtitle", "family", "date", "description"];
+
 export type TextElementStyle = { size?: string; color?: string };
 export type StyleElements = Partial<Record<TextElementKey, TextElementStyle>>;
 

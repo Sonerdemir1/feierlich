@@ -2,17 +2,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Countdown } from "@/components/public/Countdown";
 import { PhotoWall } from "@/components/gallery/PhotoWall";
 import { GuestbookEntryCard } from "@/components/guestbook/GuestbookEntryCard";
 import { GuestNameField } from "@/components/public/GuestNameField";
 import { FileField } from "@/components/public/FileField";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
-import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
 import { VideoEnvelope } from "@/components/marketing/VideoEnvelope";
 import { BackgroundMusicToggle } from "@/components/marketing/BackgroundMusicToggle";
-import { CornerMotif } from "@/components/marketing/TemplatePreview";
+import { HeroCard, type LiveDesignState } from "@/components/public/HeroCard";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
 import { InlineEditableText } from "@/components/public/InlineEditableText";
@@ -165,27 +163,23 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const style: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
     ? JSON.parse(event.styleJson)
     : {};
-  // Pro-Element Groesse/Farbe (Titel/Untertitel/Datum/Beschreibung) —
-  // leeres Objekt {} wenn kein Override gesetzt ist, damit die
-  // bestehenden clamp()/opacity-Werte an den Einsatzstellen unangetastet
-  // bleiben (Object-Spread mit {} aendert nichts).
-  const titleOverride = elementOverrideStyle(style.elements, "title");
-  const subtitleOverride = elementOverrideStyle(style.elements, "subtitle");
-  const dateOverride = elementOverrideStyle(style.elements, "date");
+  // Beschreibung sitzt ausserhalb der Karte (eigener Abschnitt darunter,
+  // siehe unten) — bleibt serverseitig berechnet. Titel/Untertitel/Datum/
+  // Anlass-Label/Familiennamen werden dagegen jetzt in HeroCard.tsx live
+  // (per postMessage) berechnet, siehe initialDesignState weiter unten.
   const descriptionOverride = elementOverrideStyle(style.elements, "description");
-  const eventLabelOverride = elementOverrideStyle(style.elements, "eventLabel");
-  const familyOverride = elementOverrideStyle(style.elements, "family");
   const eventLabelText = event.eventLabel || event.eventType.name;
   const hasFamilyNames = Boolean(event.familyLeft || event.familyRight);
   // Echte Schriftart-Wahl aus dem Dashboard-Editor hat Vorrang — ohne
   // gesetztes styleJson faellt es wie bisher auf die automatische
   // Template-Schrift zurueck (Anzeige-/Textschrift des Templates gleich =
-  // Body-Schrift nutzen, sonst die Display-Schrift).
+  // Body-Schrift nutzen, sonst die Display-Schrift) — fuer die Abschnitte
+  // AUSSERHALB der Karte (RSVP, Galerie, ...), die nicht live mitgehen.
+  const templateFontFallback: "var(--font-body)" | "var(--font-display)" =
+    templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)";
   const chosenFont = fontOptionById(style.fontId);
-  const headingFont = chosenFont?.cssVar ?? (templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)");
-  const headingItalic = chosenFont ? Boolean(chosenFont.italic) : headingFont === "var(--font-display)";
-  const headingUppercase = Boolean(chosenFont?.uppercase);
-  const showOrnaments = Boolean(style.ornaments);
+  const headingFont = chosenFont?.cssVar ?? templateFontFallback;
+  const initialDesignState: LiveDesignState = { colors, fontId: style.fontId, ornaments: Boolean(style.ornaments), elements: style.elements };
   const envelopeImages: string[] | null = event.template.envelopeSequenceUrls
     ? JSON.parse(event.template.envelopeSequenceUrls)
     : null;
@@ -194,7 +188,6 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // generische Farbflaeche. Hat Vorrang vor den Eck-Ornamenten (Motiv
   // bringt seinen eigenen Rahmen schon mit).
   const cardImageUrl = event.template.previewUrl;
-  const applyOrnamentFrame = showOrnaments && !cardImageUrl;
   const textZone = cardTextZone(event.template.layoutKey);
 
   // Kommt von einem Tisch-QR-Code (/dashboard/events/[id]/qr/table/[tableId])
@@ -274,329 +267,32 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   };
   const mediaAccept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm";
 
-  // Hero-Inhalt (Anlass-Label, Titel/Datum in ihren drei Varianten,
-  // Countdown) einmal vorberechnet — envelopeImages-Vorlagen (echte
-  // Umschlag-Fotografie) zeigen ihn direkt, alle anderen erst nach der
-  // generischen CSS-Umschlag-Animation (siehe EnvelopeOpen).
+  // Hero-Inhalt (Anlass-Label, Namen, Familiennamen, Datum, Countdown) lebt
+  // jetzt in HeroCard.tsx (Client-Komponente) statt hier als reines
+  // Server-JSX — haelt Farben/Schriftart/Verzierungen/Feinsteuerung in
+  // lokalem State, den DesignEditor.tsx im Dashboard per postMessage live
+  // aktualisiert, ohne dass dieser iframe neu laedt.
   const heroInner = (
-    <div style={applyOrnamentFrame ? { position: "relative", padding: "22px 18px" } : undefined}>
-      {applyOrnamentFrame && (
-        <>
-          <div style={{ position: "absolute", inset: 0, border: `1px solid ${colors.accent}` }} />
-          <div style={{ position: "absolute", inset: 6, border: `1px solid ${colors.accent}66` }} />
-          <CornerMotif color={colors.accent} corner="tl" />
-          <CornerMotif color={colors.accent} corner="tr" />
-          <CornerMotif color={colors.accent} corner="bl" />
-          <CornerMotif color={colors.accent} corner="br" />
-        </>
-      )}
-      {cardImageUrl ? (
-        <div style={{ position: "relative", maxWidth: 380, margin: "0 auto" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- Kartengrafik mit variablem Seitenverhaeltnis je Design, kein fixes next/image-Format */}
-          <img
-            src={cardImageUrl}
-            alt=""
-            style={{ width: "100%", height: "auto", display: "block", borderRadius: "var(--radius)", boxShadow: "var(--shadow-md)" }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: `${textZone.top}% ${textZone.right}% ${textZone.bottom}% ${textZone.left}%`,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              // Verteilt Anlass-Label / Name-Gruppe / Datum ueber die
-              // gesamte verfuegbare Hoehe der Sicherheitszone, statt sie
-              // eng zusammenzudraengen — nutzt den Freiraum, den jede
-              // Karte unterschiedlich viel mitbringt.
-              justifyContent: "space-evenly",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: headingFont,
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: colors.accent,
-                ...eventLabelOverride,
-              }}
-            >
-              {eventLabelText}
-            </div>
-            <div>
-              {editMode ? (
-                <InlineEditableText
-                  eventId={event.id}
-                  field="title"
-                  value={event.title}
-                  style={{
-                    fontFamily: headingFont,
-                    fontStyle: headingItalic ? "italic" : "normal",
-                    textTransform: headingUppercase ? "uppercase" : "none",
-                    fontWeight: 600,
-                    fontSize: "clamp(21px, 5.5vw, 30px)",
-                    color: colors.primary,
-                    ...titleOverride,
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    fontFamily: headingFont,
-                    fontStyle: headingItalic ? "italic" : "normal",
-                    textTransform: headingUppercase ? "uppercase" : "none",
-                    fontWeight: 600,
-                    fontSize: "clamp(21px, 5.5vw, 30px)",
-                    color: colors.primary,
-                    ...titleOverride,
-                  }}
-                >
-                  {event.title}
-                </div>
-              )}
-              {editMode ? (
-                <InlineEditableText
-                  eventId={event.id}
-                  field="subtitle"
-                  value={event.subtitle ?? ""}
-                  placeholder="Untertitel hinzufügen…"
-                  style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}
-                />
-              ) : (
-                event.subtitle && (
-                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>
-                    {event.subtitle}
-                  </p>
-                )
-              )}
-              {hasFamilyNames && (
-                <div className="customizer-card-families" style={{ color: colors.primary }}>
-                  <div>
-                    <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyLeft || "—"}</span>
-                    <small>AİLESİ</small>
-                  </div>
-                  <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
-                  <div>
-                    <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyRight || "—"}</span>
-                    <small>AİLESİ</small>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>
-              {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-              {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-            </div>
-          </div>
-        </div>
-      ) : envelopeImages ? (
-        <>
-          <div
-            style={{
-              fontFamily: headingFont,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: colors.accent,
-              marginBottom: 20,
-              ...eventLabelOverride,
-            }}
-          >
-            {eventLabelText}
-          </div>
-          <div style={{ maxWidth: 320, margin: "0 auto" }}>
-            <EnvelopeReveal images={envelopeImages}>
-              <div style={{ textAlign: "center" }}>
-                {editMode ? (
-                  <InlineEditableText
-                    eventId={event.id}
-                    field="title"
-                    value={event.title}
-                    style={{
-                      fontFamily: headingFont,
-                      fontStyle: headingItalic ? "italic" : "normal",
-                      textTransform: headingUppercase ? "uppercase" : "none",
-                      fontWeight: 600,
-                      fontSize: "clamp(24px, 5vw, 34px)",
-                      color: colors.primary,
-                      ...titleOverride,
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      fontFamily: headingFont,
-                      fontStyle: headingItalic ? "italic" : "normal",
-                      textTransform: headingUppercase ? "uppercase" : "none",
-                      fontWeight: 600,
-                      fontSize: "clamp(24px, 5vw, 34px)",
-                      color: colors.primary,
-                      ...titleOverride,
-                    }}
-                  >
-                    {event.title}
-                  </div>
-                )}
-                <div
-                  style={{
-                    marginTop: 10,
-                    fontSize: 11.5,
-                    letterSpacing: "0.06em",
-                    color: colors.primary,
-                    opacity: 0.8,
-                    ...dateOverride,
-                  }}
-                >
-                  {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-                  {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-                </div>
-              </div>
-            </EnvelopeReveal>
-          </div>
-          {editMode ? (
-            <InlineEditableText
-              eventId={event.id}
-              field="subtitle"
-              value={event.subtitle ?? ""}
-              placeholder="Untertitel hinzufügen…"
-              style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}
-            />
-          ) : (
-            event.subtitle && (
-              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{event.subtitle}</p>
-            )
-          )}
-          {hasFamilyNames && (
-            <div className="customizer-card-families" style={{ color: colors.primary, maxWidth: 320, margin: "12px auto 0" }}>
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyLeft || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyRight || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <div
-            style={{
-              fontFamily: headingFont,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: colors.accent,
-              marginBottom: 20,
-              ...eventLabelOverride,
-            }}
-          >
-            {eventLabelText}
-          </div>
-          {editMode ? (
-            <InlineEditableText
-              eventId={event.id}
-              field="title"
-              value={event.title}
-              as="h1"
-              style={{
-                fontFamily: headingFont,
-                fontStyle: headingItalic ? "italic" : "normal",
-                textTransform: headingUppercase ? "uppercase" : "none",
-                fontWeight: 600,
-                fontSize: "clamp(34px, 6vw, 52px)",
-                margin: 0,
-                ...titleOverride,
-              }}
-            />
-          ) : (
-            <h1
-              style={{
-                fontFamily: headingFont,
-                fontStyle: headingItalic ? "italic" : "normal",
-                textTransform: headingUppercase ? "uppercase" : "none",
-                fontWeight: 600,
-                fontSize: "clamp(34px, 6vw, 52px)",
-                margin: 0,
-                ...titleOverride,
-              }}
-            >
-              {event.title}
-            </h1>
-          )}
-          {editMode ? (
-            <InlineEditableText
-              eventId={event.id}
-              field="subtitle"
-              value={event.subtitle ?? ""}
-              placeholder="Untertitel hinzufügen…"
-              style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}
-            />
-          ) : (
-            event.subtitle && (
-              <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{event.subtitle}</p>
-            )
-          )}
-          {hasFamilyNames && (
-            <div className="customizer-card-families" style={{ color: colors.primary, maxWidth: 320, margin: "16px auto 0" }}>
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyLeft || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{event.familyRight || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-            </div>
-          )}
-          <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
-          <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>
-            {new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(event.eventDate)}
-            {event.eventTime ? ` · ${event.eventTime} Uhr` : ""}
-          </div>
-        </>
-      )}
-
-      {isModuleOn("countdown") && (
-        <div style={{ marginTop: 32 }}>
-          <Countdown targetIso={event.eventDate.toISOString()} accent={colors.accent} />
-        </div>
-      )}
-
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 24 }}>
-        <a
-          href={`/e/${event.slug}/ics`}
-          style={{
-            padding: "9px 16px",
-            fontSize: 12,
-            border: `1px solid ${colors.accent}88`,
-            color: colors.primary,
-            textDecoration: "none",
-          }}
-        >
-          In Kalender speichern
-        </a>
-        <a
-          href={calendarUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            padding: "9px 16px",
-            fontSize: 12,
-            border: `1px solid ${colors.accent}88`,
-            color: colors.primary,
-            textDecoration: "none",
-          }}
-        >
-          Google Kalender
-        </a>
-      </div>
-    </div>
+    <HeroCard
+      eventId={event.id}
+      eventSlug={event.slug}
+      title={event.title}
+      subtitle={event.subtitle}
+      familyLeft={event.familyLeft}
+      familyRight={event.familyRight}
+      eventDate={event.eventDate}
+      eventTime={event.eventTime}
+      eventLabelText={eventLabelText}
+      editMode={editMode}
+      cardImageUrl={cardImageUrl}
+      envelopeImages={envelopeImages}
+      textZone={textZone}
+      hasFamilyNames={hasFamilyNames}
+      calendarUrl={calendarUrl}
+      countdownOn={isModuleOn("countdown")}
+      templateFontFallback={templateFontFallback}
+      initial={initialDesignState}
+    />
   );
 
   // Ganzseitiger Hintergrund, der das gewaehlte Kartendesign aufgreift —
