@@ -64,7 +64,6 @@ export async function uploadGalleryPhoto(eventId: string, slug: string, formData
   if (error) redirect(`/e/${slug}?galleryError=${error}#galerie`);
 
   const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
-  const uploaderName = String(formData.get("uploaderName") ?? "").trim().slice(0, 80) || null;
 
   // tableId kommt aus einem versteckten Formularfeld — im Browser
   // manipulierbar, daher hier erneut gegen das eigene Event geprueft statt
@@ -73,10 +72,32 @@ export async function uploadGalleryPhoto(eventId: string, slug: string, formData
   const tableIdRaw = String(formData.get("tableId") ?? "").trim();
   const table = tableIdRaw ? await prisma.table.findFirst({ where: { id: tableIdRaw, eventId } }) : null;
 
+  // Kein Name im Upload-Formular selbst (Ziel: maximal drei Beruehrungen
+  // vom QR-Scan bis zum hochgeladenen Foto, ohne Pflichtfeld) — die
+  // mediaId geht mit in den Redirect, damit setUploaderName() den Namen
+  // danach optional nachtragen kann, siehe Erfolgs-Zustand weiter unten
+  // auf der Seite.
   const media = await prisma.media.create({
-    data: { eventId, tableId: table?.id, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, uploaderName, status: "PENDING" },
+    data: { eventId, tableId: table?.id, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, status: "PENDING" },
   });
   await prisma.galleryItem.create({ data: { eventId, mediaId: media.id, status: "PENDING" } });
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?gallery=success&mediaId=${media.id}#galerie`);
+}
+
+// Nachtraeglicher, komplett optionaler Name-Eintrag NACH dem Hochladen —
+// siehe uploadGalleryPhoto oben. Leerer Name ist kein Fehler, einfach
+// zurueck zum Erfolgs-Zustand ohne mediaId (kein erneutes Nachtragen beim
+// Zurueck-Navigieren/Neuladen moeglich).
+export async function setUploaderName(eventId: string, slug: string, formData: FormData) {
+  const mediaId = String(formData.get("mediaId") ?? "").trim();
+  const uploaderName = String(formData.get("uploaderName") ?? "").trim().slice(0, 80);
+
+  if (mediaId && uploaderName) {
+    const media = await prisma.media.findFirst({ where: { id: mediaId, eventId } });
+    if (media) await prisma.media.update({ where: { id: mediaId }, data: { uploaderName } });
+  }
 
   revalidatePath(`/e/${slug}`);
   redirect(`/e/${slug}?gallery=success#galerie`);

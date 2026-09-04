@@ -19,7 +19,7 @@ import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
 import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
-import { submitRsvp, findSeat, uploadGalleryPhoto, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
+import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -202,6 +202,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const seatResult = typeof sp.seat === "string" ? sp.seat : undefined;
   const galleryStatus = typeof sp.gallery === "string" ? sp.gallery : undefined;
   const galleryError = typeof sp.galleryError === "string" ? sp.galleryError : undefined;
+  const galleryMediaId = typeof sp.mediaId === "string" ? sp.mediaId : undefined;
   const guestbookStatus = typeof sp.guestbook === "string" ? sp.guestbook : undefined;
   const guestbookError = typeof sp.guestbookError === "string" ? sp.guestbookError : undefined;
   const musicStatus = typeof sp.music === "string" ? sp.music : undefined;
@@ -631,8 +632,32 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px", textAlign: "center" }}>
             {galleryStatus === "success" ? (
-              <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
+              galleryMediaId ? (
+                <form action={setUploaderName.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
+                  <input type="hidden" name="mediaId" value={galleryMediaId} />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <GuestNameField
+                      name="uploaderName"
+                      placeholder="Wie heißt ihr? (optional)"
+                      defaultValue={guestDisplayName}
+                      style={{ flex: 1, padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
+                    />
+                    <button type="submit" style={{ padding: "0 16px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                      Speichern
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
+              )
             ) : (
+              // Ziel: maximal drei Beruehrungen vom QR-Scan bis zum
+              // hochgeladenen Foto, ohne Konto, ohne Namenseingabe (siehe
+              // docs/BENCHMARK.md) — FileField reicht die Datei per
+              // autoSubmit direkt beim Auswaehlen ein, kein zweiter Tap auf
+              // einen separaten "Hochladen"-Button noetig. Der Name wird
+              // erst danach im Erfolgs-Zustand oben optional nachgefragt.
               <form action={uploadGalleryPhoto.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {galleryError && <p style={{ fontSize: 12, color: "#C9605C" }}>{uploadErrorLabel[galleryError]}</p>}
                 {uploadTable && (
@@ -641,16 +666,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   </p>
                 )}
                 <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
-                <GuestNameField
-                  name="uploaderName"
-                  placeholder="Euer Name (optional)"
-                  defaultValue={guestDisplayName}
-                  style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
-                />
-                <FileField name="file" accept={mediaAccept} required label="Foto oder Video auswählen" colors={colors} />
-                <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Foto/Video hochladen
-                </button>
+                <FileField name="file" accept={mediaAccept} required autoSubmit label="Foto oder Video auswählen" colors={colors} />
               </form>
             )}
           </div>

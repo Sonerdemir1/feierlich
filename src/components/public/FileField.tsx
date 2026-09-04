@@ -15,12 +15,19 @@ export function FileField({
   required,
   label,
   colors,
+  autoSubmit,
 }: {
   name: string;
   accept: string;
   required?: boolean;
   label: string;
   colors: Colors;
+  // Reicht die Datei direkt beim Auswaehlen ein, ohne separaten Tap auf
+  // einen Absenden-Button — siehe Galerie-Upload in e/[slug]/page.tsx
+  // (Ziel: so wenige Beruehrungen wie moeglich vom QR-Scan bis zum
+  // hochgeladenen Foto). Nicht bei Gaestebuch-Anhaengen genutzt, dort soll
+  // ein Anhang die restliche Nachricht nicht vorzeitig abschicken.
+  autoSubmit?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -34,7 +41,10 @@ export function FileField({
         accept={accept}
         required={required}
         style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
-        onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+        onChange={(e) => {
+          setFileName(e.target.files?.[0]?.name ?? null);
+          if (autoSubmit && e.target.files?.[0]) e.target.form?.requestSubmit();
+        }}
       />
       <button
         type="button"

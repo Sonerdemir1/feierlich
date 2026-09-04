@@ -24,6 +24,7 @@
     "stripe": "^22.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/google.maps": "^3.66.1",
     "@types/node": "^20",
