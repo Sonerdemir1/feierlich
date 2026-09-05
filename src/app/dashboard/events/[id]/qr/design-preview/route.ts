@@ -24,6 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const themeParam = url.searchParams.get("theme");
   const theme: QrTheme = themeParam === "modern-block" || themeParam === "gold-frame" ? themeParam : "classic";
   const tableId = url.searchParams.get("tableId") ?? "";
+  const activeStyle: { fontId?: string } = event.styleJson ? JSON.parse(event.styleJson) : {};
+  const fontId = url.searchParams.get("fontId") ?? activeStyle.fontId;
 
   const baseUrl = `${url.protocol}//${url.host}`;
   let targetUrl: string;
@@ -62,6 +64,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     primary: safePrimary,
     accent: activeColors.accent,
     background: safeBackground,
+    fontId,
   });
 
   const download = url.searchParams.get("download") === "1";

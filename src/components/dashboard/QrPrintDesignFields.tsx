@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PRINT_SIZE_MM, QR_THEMES, type PrintSize, type QrTheme } from "@/lib/qr-design";
+import { FONT_OPTIONS } from "@/lib/fonts";
 
 const selectStyle: React.CSSProperties = {
   padding: "10px 12px",
@@ -27,9 +28,16 @@ export function QrPrintDesignFields({
 }) {
   const [tableId, setTableId] = useState("");
   const [size, setSize] = useState<PrintSize>("A6");
-  const [theme, setTheme] = useState<QrTheme>("classic");
+  // "gold-frame" (Zierrahmen mit Zweig-Icon) statt "classic" als Standard —
+  // orientiert sich an der vom Kunden hochgeladenen Referenz (QR-CARD-Ordner)
+  // und am opulenten Gold-Look, den die Zielgruppe (tuerkische Hochzeiten)
+  // erwartet, siehe docs/MOTION.md-Kontext.
+  const [theme, setTheme] = useState<QrTheme>("gold-frame");
+  // "" = Schriftart des Events uebernehmen (Server-Default) statt einer der
+  // kuratierten Optionen fest vorzugeben.
+  const [fontId, setFontId] = useState("");
 
-  const previewSrc = `/dashboard/events/${eventId}/qr/design-preview?theme=${theme}&size=${size}${tableId ? `&tableId=${tableId}` : ""}`;
+  const previewSrc = `/dashboard/events/${eventId}/qr/design-preview?theme=${theme}&size=${size}${tableId ? `&tableId=${tableId}` : ""}${fontId ? `&fontId=${fontId}` : ""}`;
   const downloadSrc = `${previewSrc}&download=1`;
 
   return (
@@ -54,6 +62,14 @@ export function QrPrintDesignFields({
           {QR_THEMES.map((t) => (
             <option key={t.id} value={t.id}>
               {t.label}
+            </option>
+          ))}
+        </select>
+        <select value={fontId} onChange={(e) => setFontId(e.target.value)} style={selectStyle}>
+          <option value="">Schriftart wie Einladung</option>
+          {FONT_OPTIONS.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.label}
             </option>
           ))}
         </select>

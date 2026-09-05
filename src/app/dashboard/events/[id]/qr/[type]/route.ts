@@ -52,6 +52,7 @@ export async function GET(
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "image/png",
+        "Cache-Control": "no-store",
         ...(download ? { "Content-Disposition": `attachment; filename="${filename}"` } : {}),
       },
     });
@@ -61,6 +62,7 @@ export async function GET(
   return new Response(svg, {
     headers: {
       "Content-Type": "image/svg+xml",
+      "Cache-Control": "no-store",
       ...(download ? { "Content-Disposition": `attachment; filename="${filename}"` } : {}),
     },
   });

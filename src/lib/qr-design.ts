@@ -1,4 +1,6 @@
 import { qrSvg } from "./qr";
+import { loadGoogleFont } from "./social-graphic";
+import { fontOptionById } from "./fonts";
 
 export type PrintSize = "A6" | "A5" | "A4";
 
@@ -79,19 +81,32 @@ type QrDesignParams = {
   primary?: string;
   accent?: string;
   background?: string;
+  // Optional — eine der Schriftart-IDs aus src/lib/fonts.ts (dieselbe Auswahl
+  // wie im Design-Editor). Ohne Angabe bleibt es bei der bisherigen festen
+  // Theme-Schrift (Georgia/Helvetica), kein Verhaltensunterschied.
+  fontId?: string;
 };
 
-type ThemeInput = QrDesignParams & { width: number; height: number; primary: string; accent: string; background: string; qr: { viewBox: string; inner: string }; instructions: string };
+type ThemeInput = QrDesignParams & {
+  width: number;
+  height: number;
+  primary: string;
+  accent: string;
+  background: string;
+  qr: { viewBox: string; inner: string };
+  instructions: string;
+  headingFamily: string;
+};
 
 function classicTheme(p: ThemeInput): string {
-  const { width, height, primary, accent, background, qr, instructions } = p;
+  const { width, height, primary, accent, background, qr, instructions, headingFamily } = p;
   const qrSizeMm = width * 0.55;
   const qrX = (width - qrSizeMm) / 2;
   const qrY = height * 0.32;
 
   return `<rect width="${width}" height="${height}" fill="${background}" />
   <rect x="4" y="4" width="${width - 8}" height="${height - 8}" fill="none" stroke="${accent}" stroke-width="0.4" />
-  <text x="${width / 2}" y="${height * 0.14}" text-anchor="middle" font-family="Georgia, serif" font-size="6" fill="${primary}">${escapeXml(p.title)}</text>
+  <text x="${width / 2}" y="${height * 0.14}" text-anchor="middle" font-family="${headingFamily}" font-size="6" fill="${primary}">${escapeXml(p.title)}</text>
   ${p.subtitle ? `<text x="${width / 2}" y="${height * 0.14 + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.2" fill="${accent}" letter-spacing="0.3">${escapeXml(p.subtitle)}</text>` : ""}
   <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${qr.viewBox}">${qr.inner}</svg>
   <text x="${width / 2}" y="${qrY + qrSizeMm + 8}" text-anchor="middle" font-family="sans-serif" font-size="3.4" fill="${primary}">${escapeXml(instructions)}</text>
@@ -161,7 +176,7 @@ function wrapLines(text: string, maxChars: number, maxLines: number): string[] {
 // farbparametrisiert (primary/accent/background), damit es zur jeweils
 // gewaehlten Vorlagenfarbe passt statt nur zu einer festen Gold-Palette.
 function goldFrameTheme(p: ThemeInput): string {
-  const { width, height, primary, accent, background, qr, instructions } = p;
+  const { width, height, primary, accent, background, qr, instructions, headingFamily } = p;
   // Referenzbreite A6 (105mm) = Faktor 1 — alle sonst festen mm-Abstaende/
   // Schriftgroessen skalieren hierueber mit, sonst haeuft sich bei A4 (doppelte
   // Breite) der ganze Inhalt oben und laesst unten ein unproportioniert
@@ -215,7 +230,7 @@ function goldFrameTheme(p: ThemeInput): string {
   <rect x="${innerMargin}" y="${innerMargin}" width="${width - innerMargin * 2}" height="${height - innerMargin * 2}" fill="none" stroke="${accent}" stroke-width="0.25" />
   ${outerCorners}
   ${branch}
-  <text x="${width / 2}" y="${headingY}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="${7.2 * s}" fill="${primary}">${escapeXml(scriptText)}</text>
+  <text x="${width / 2}" y="${headingY}" text-anchor="middle" font-family="${headingFamily}" font-style="italic" font-size="${7.2 * s}" fill="${primary}">${escapeXml(scriptText)}</text>
   <line x1="${width / 2 - 11 * s}" y1="${dividerY}" x2="${width / 2 - 3 * s}" y2="${dividerY}" stroke="${accent}" stroke-width="0.3" />
   <rect x="${width / 2 - 1.2 * s}" y="${dividerY - 1.2 * s}" width="${2.4 * s}" height="${2.4 * s}" fill="none" stroke="${accent}" stroke-width="0.3" transform="rotate(45 ${width / 2} ${dividerY})" />
   <line x1="${width / 2 + 3 * s}" y1="${dividerY}" x2="${width / 2 + 11 * s}" y2="${dividerY}" stroke="${accent}" stroke-width="0.3" />
@@ -224,7 +239,7 @@ function goldFrameTheme(p: ThemeInput): string {
   ${cornerBrackets(qrX - framePad, qrY - framePad, qrSizeMm + framePad * 2, qrSizeMm + framePad * 2, frameCorner, accent, 0.45)}
   <svg x="${qrX}" y="${qrY}" width="${qrSizeMm}" height="${qrSizeMm}" viewBox="${qr.viewBox}">${qr.inner}</svg>
   <rect x="${nameBoxX}" y="${nameBoxY}" width="${nameBoxW}" height="${nameBoxH}" fill="none" stroke="${accent}" stroke-width="0.3" />
-  <text x="${width / 2}" y="${nameBoxY + nameBoxH / 2 + 1.3 * s}" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="${4 * s}" letter-spacing="0.3" fill="${primary}">${escapeXml(p.title.toUpperCase())}</text>
+  <text x="${width / 2}" y="${nameBoxY + nameBoxH / 2 + 1.3 * s}" text-anchor="middle" font-family="${headingFamily}" font-weight="700" font-size="${4 * s}" letter-spacing="0.3" fill="${primary}">${escapeXml(p.title.toUpperCase())}</text>
   <text x="${width / 2}" y="${height - 8 * s}" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="${2.8 * s}" fill="${accent}" letter-spacing="0.4">einladi.de</text>`;
 }
 
@@ -242,11 +257,38 @@ export async function buildQrDesignSvg(params: QrDesignParams & { theme?: QrThem
   const rawQr = await qrSvg(params.targetUrl);
   const qr = extractQrInner(rawQr);
 
-  const input: ThemeInput = { ...params, width, height, primary, accent, background, qr, instructions };
+  // Eigene Schrift statt der festen Theme-Schrift: dieselbe Google-Font-Datei
+  // wie bei der Social-Grafik (next/og) laden, aber hier als base64 @font-face
+  // direkt im SVG einbetten — die Datei ist eigenstaendig (SVG kennt keine
+  // next/font-CSS-Variablen), funktioniert dadurch auch im <img>-Tag der
+  // Vorschau und in der heruntergeladenen Datei.
+  let fontFaceStyle = "";
+  let headingFamily = "Georgia, serif";
+  const chosenFont = fontOptionById(params.fontId);
+  if (chosenFont) {
+    try {
+      const text = `${params.title} ${params.subtitle ?? ""}`;
+      const fontData = await loadGoogleFont(chosenFont.googleFamily, text, 600);
+      const base64 = Buffer.from(fontData).toString("base64");
+      fontFaceStyle = `<style>@font-face { font-family: "${chosenFont.googleFamily}"; src: url(data:font/ttf;base64,${base64}) format("truetype"); font-weight: 600; }</style>`;
+      // Einfache Anfuehrungszeichen, nicht doppelte — headingFamily landet in
+      // einem SVG-Attribut, das selbst in doppelten Anfuehrungszeichen steht
+      // (font-family="..."); doppelte Zeichen hier wuerden das Attribut
+      // vorzeitig schliessen und die SVG-Datei als ungueltiges XML kaputt
+      // machen (im Browser als "attributes construct error" sichtbar).
+      headingFamily = `'${chosenFont.googleFamily}', Georgia, serif`;
+    } catch {
+      // Google Fonts nicht erreichbar — Karte bleibt bei der bisherigen
+      // Standardschrift nutzbar statt komplett zu scheitern.
+    }
+  }
+
+  const input: ThemeInput = { ...params, width, height, primary, accent, background, qr, instructions, headingFamily };
   const body =
     params.theme === "modern-block" ? modernBlockTheme(input) : params.theme === "gold-frame" ? goldFrameTheme(input) : classicTheme(input);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}mm" height="${height}mm" viewBox="0 0 ${width} ${height}">
+  ${fontFaceStyle}
   ${body}
 </svg>`;
 }

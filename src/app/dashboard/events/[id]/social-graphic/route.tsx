@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { qrPng, safeQrColorsFromEvent } from "@/lib/qr";
 import { publicHost } from "@/lib/site";
 import { loadGoogleFont, SOCIAL_GRAPHIC_SIZES, type SocialGraphicFormat } from "@/lib/social-graphic";
+import { fontOptionById } from "@/lib/fonts";
 
 // Erzeugt ein teilbares Social-Media-Bild (Story/Beitrag) mit den echten
 // Vorlagenfarben des Events + QR-Code zur Einladungsseite. Nutzt next/og
@@ -24,6 +25,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const colors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
+  const activeStyle: { fontId?: string } = event.styleJson ? JSON.parse(event.styleJson) : {};
+  const chosenFont = fontOptionById(activeStyle.fontId);
+  const displayFamily = chosenFont?.googleFamily ?? "Playfair Display";
 
   const dateLabel = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "long", year: "numeric" }).format(event.eventDate);
   const targetUrl = `https://${publicHost()}/e/${event.slug}`;
@@ -36,18 +40,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   let fonts: { name: string; data: ArrayBuffer; weight: 400 | 700; style: "normal" }[] = [];
   try {
     const [display, body] = await Promise.all([
-      loadGoogleFont("Playfair Display", text, 700),
+      loadGoogleFont(displayFamily, text, 700),
       loadGoogleFont("Inter", text, 400),
     ]);
     fonts = [
-      { name: "Playfair Display", data: display, weight: 700, style: "normal" },
+      { name: displayFamily, data: display, weight: 700, style: "normal" },
       { name: "Inter", data: body, weight: 400, style: "normal" },
     ];
   } catch {
     // Google Fonts nicht erreichbar — Satori faellt auf seine eingebaute
     // Standardschrift zurueck, das Bild bleibt trotzdem nutzbar.
   }
-  const displayFont = fonts.length ? "Playfair Display" : undefined;
+  const displayFont = fonts.length ? displayFamily : undefined;
   const bodyFont = fonts.length ? "Inter" : undefined;
 
   const image = new ImageResponse(
