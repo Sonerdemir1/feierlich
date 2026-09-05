@@ -13,7 +13,7 @@ import { BackgroundMusicToggle } from "@/components/marketing/BackgroundMusicTog
 import { HeroCard, type LiveDesignState } from "@/components/public/HeroCard";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
-import { InlineEditableText } from "@/components/public/InlineEditableText";
+import { EditableDescription } from "@/components/public/EditableDescription";
 import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
@@ -284,6 +284,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       eventDate={event.eventDate}
       eventTime={event.eventTime}
       eventLabelText={eventLabelText}
+      eventLabelRaw={event.eventLabel}
+      eventTypeDefaultLabel={event.eventType.name}
       editMode={editMode}
       cardImageUrl={cardImageUrl}
       envelopeImages={envelopeImages}
@@ -391,11 +393,9 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
       {editMode ? (
         <section style={{ maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-          <InlineEditableText
+          <EditableDescription
             eventId={event.id}
-            field="description"
             value={event.description ?? ""}
-            placeholder="Beschreibung hinzufügen…"
             style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}
           />
         </section>

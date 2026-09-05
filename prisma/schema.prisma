@@ -306,6 +306,10 @@ model EventModule {
   moduleId String
   enabled  Boolean @default(true)
   config   String? // JSON-String fuer modul-spezifische Einstellungen
+  // Reihenfolge der Abschnitte auf der Event-Seite, pro Event individuell
+  // umsortierbar (Editor-Umbau) — null bedeutet "noch nicht umsortiert",
+  // dann gilt die bisherige feste Reihenfolge im JSX als Fallback.
+  sortOrder Int?
 
   event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   module Module @relation(fields: [moduleId], references: [id])

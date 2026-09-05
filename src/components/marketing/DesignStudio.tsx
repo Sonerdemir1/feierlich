@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { CSSProperties } from "react";
+import { Fragment, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
@@ -9,6 +9,15 @@ import { FONT_OPTIONS } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
 import { categoryLabel, type GalleryTemplate } from "@/lib/gallery-templates";
 import type { Locale } from "@/lib/i18n";
+import { packageSlug } from "@/lib/packages";
+import { ContextPanel } from "@/components/editor/ContextPanel";
+import { SelectableElement } from "@/components/editor/SelectableElement";
+import { TextControls } from "@/components/editor/TextControls";
+import { DateQuickEdit } from "@/components/editor/DateQuickEdit";
+import { FontPicker } from "@/components/editor/FontPicker";
+import { InlineEditableField } from "@/components/public/InlineEditableField";
+import { SectionsList } from "@/components/dashboard/panels/SectionsList";
+import { elementOverrideStyle, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey, type TextElementStyle } from "@/lib/text-style";
 
 type PhotoShape = "rect" | "circle" | "star" | "polaroid";
 
@@ -45,7 +54,11 @@ function photoStyle(shape: PhotoShape): CSSProperties {
 type Draft = {
   text: string;
   eventLabel: string;
-  dateText: string;
+  // Ersetzt das fruehere freie Textfeld "dateText" — ein echtes Datum wird
+  // fuer die Klick-Bearbeitung ueber DateQuickEdit UND fuer die spaetere
+  // Umwandlung in ein echtes Event.eventDate gebraucht (siehe apply-draft).
+  eventDate: string; // "YYYY-MM-DD" oder "" (noch nicht gesetzt)
+  eventTime: string; // "HH:MM" oder ""
   locationText: string;
   familyLeft: string;
   familyRight: string;
@@ -64,6 +77,13 @@ type Draft = {
   showGallery: boolean;
   showPhotoBackground: boolean;
   extraFeatures: Record<string, boolean>;
+  // Reihenfolge aller 14 umschaltbaren Kartenabschnitte (4 Kern-Keys +
+  // EXTRA_FEATURES-Keys) — steuert die Renderreihenfolge in der Karte.
+  sectionOrder: string[];
+  // Pro-Element Groesse/Ausrichtung/Farbe/Stil/Schriftart — dieselbe Struktur
+  // wie im Dashboard-Editor (src/lib/text-style.ts), damit TextControls.tsx
+  // unveraendert wiederverwendet werden kann.
+  elements?: StyleElements;
 };
 
 // Welches Paket ein Feature freischaltet — aus prisma/seed.ts (Package.
@@ -98,6 +118,21 @@ const TIER_PRICE: Record<string, number> = {
 };
 const TIER_ORDER = ["Basic", "Premium", "Premium Plus", "VIP"];
 
+// Fuer den "Details ->"-Link im Funktionen-Tab, der auf die bestehende
+// Preisseite verlinkt (src/app/preise/[key]/page.tsx) statt Preisabsaetze
+// direkt im Editor zu zeigen.
+const PACKAGE_KEY_BY_TIER: Record<string, string> = {
+  Basic: "BASIC",
+  Premium: "PREMIUM",
+  "Premium Plus": "PREMIUM_PLUS",
+  VIP: "VIP",
+};
+
+const PANEL_TABS = [
+  { id: "design", label: "Design" },
+  { id: "funktionen", label: "Funktionen" },
+];
+
 // Kurzbeschreibung je Kern-Funktion — direkt aus den Modul-Beschreibungen
 // in prisma/seed.ts uebernommen (gleiches Wartungsmuster wie FEATURE_TIER),
 // damit der Kunde beim Toggle versteht, was er da anschaltet, statt nur
@@ -126,7 +161,19 @@ const EXTRA_FEATURES: { key: string; label: string; description: string }[] = [
   { key: "video-invitation", label: "Video-Einladung", description: "Videobotschaft als persönliche Einladung." },
 ];
 
+// Default-Reihenfolge aller 14 umschaltbaren Kartenabschnitte — deckt sich
+// mit der bisherigen fest kodierten Render-Reihenfolge (Countdown -> RSVP ->
+// Sitzplan -> Galerie), die EXTRA_FEATURES kommen in ihrer bisherigen
+// Anzeige-Reihenfolge danach.
+const CORE_SECTION_KEYS = ["countdown", "rsvp", "seating", "gallery"];
+const DEFAULT_SECTION_ORDER = [...CORE_SECTION_KEYS, ...EXTRA_FEATURES.map((f) => f.key)];
+
 const STORAGE_KEY = "einladi:design-drafts:v1";
+// Der exakt gleiche String-Wert wird in ApplyPendingDraft.tsx bewusst
+// dupliziert statt von hier importiert, damit der winzige Dashboard-
+// Baustein nicht das ganze DesignStudio-Modul mitziehen muss — siehe
+// Kommentar dort.
+export const PENDING_DRAFT_KEY = "einladi:pending-draft-template-id";
 const MAX_IMAGE_BYTES = 2_500_000;
 
 function loadDrafts(): Record<string, Draft> {
@@ -143,7 +190,8 @@ function defaultDraft(item: GalleryTemplate): Draft {
   return {
     text: item.defaultText,
     eventLabel: item.defaultEventLabel,
-    dateText: "",
+    eventDate: "",
+    eventTime: "",
     locationText: "",
     familyLeft: "",
     familyRight: "",
@@ -162,6 +210,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showGallery: true,
     showPhotoBackground: true,
     extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, true])),
+    sectionOrder: DEFAULT_SECTION_ORDER,
   };
 }
 
@@ -200,6 +249,8 @@ export function DesignStudio({
   // {} waehrend SSR (loadDrafts prueft `typeof window`).
   const [drafts, setDrafts] = useState<Record<string, Draft>>(loadDrafts);
   const [savedHint, setSavedHint] = useState(false);
+  const [activeTab, setActiveTab] = useState("design");
+  const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
 
   // Merge statt reinem Fallback: ein in localStorage gespeicherter Entwurf
   // aus einer aelteren Version (vor neuen Draft-Feldern) soll die neuen
@@ -207,7 +258,12 @@ export function DesignStudio({
   function mergedDraft(saved?: Draft): Draft {
     const base = defaultDraft(item);
     if (!saved) return base;
-    return { ...base, ...saved, extraFeatures: { ...base.extraFeatures, ...saved.extraFeatures } };
+    // sectionOrder haengt in ihrer Reihenfolge vom gespeicherten Draft ab,
+    // aber falls seither neue Abschnitts-Keys hinzukamen (z.B. nach einem
+    // Feature-Release), werden die hinten angehaengt statt zu fehlen.
+    const savedOrder = saved.sectionOrder ?? base.sectionOrder;
+    const sectionOrder = [...savedOrder, ...base.sectionOrder.filter((k) => !savedOrder.includes(k))];
+    return { ...base, ...saved, extraFeatures: { ...base.extraFeatures, ...saved.extraFeatures }, sectionOrder };
   }
 
   const draft = mergedDraft(drafts[item.id]);
@@ -220,6 +276,269 @@ export function DesignStudio({
       return next;
     });
     setSavedHint(false);
+  }
+
+  // Formatiert eventDate/eventTime fuers Karten-Display — gleiche
+  // Darstellung wie im Dashboard-Editor (HeroCard.tsx `dateText`), damit
+  // Vorschau hier und echte Kartenausgabe spaeter identisch aussehen.
+  function draftDateText(): string {
+    if (!draft.eventDate) return "";
+    const formatted = new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(new Date(draft.eventDate));
+    return draft.eventTime ? `${formatted} · ${draft.eventTime} Uhr` : formatted;
+  }
+
+  function updateElementStyle(key: TextElementKey, patch: Partial<TextElementStyle>) {
+    updateDraft({ elements: { ...draft.elements, [key]: { ...draft.elements?.[key], ...patch } } });
+  }
+
+  // Kleine Render-Helfer statt doppelt kopierter Klick-Auswahl-Logik in den
+  // beiden Karten-Layouts (mit/ohne Kartengrafik) — gleiches Muster wie
+  // renderEventLabel/renderTitle/renderFamily in HeroCard.tsx.
+  function renderEventLabel(style: CSSProperties) {
+    const override = elementOverrideStyle(draft.elements, "eventLabel");
+    return (
+      <SelectableElement kind="text" label="Anlass-Label" selected={selectedKey === "eventLabel"} onSelect={() => setSelectedKey("eventLabel")}>
+        <InlineEditableField
+          value={draft.eventLabel}
+          onChange={(text) => updateDraft({ eventLabel: text })}
+          placeholder={item.defaultEventLabel}
+          onFocus={() => setSelectedKey("eventLabel")}
+          style={{ ...style, ...override }}
+        />
+      </SelectableElement>
+    );
+  }
+
+  function renderTitle(style: CSSProperties) {
+    const override = elementOverrideStyle(draft.elements, "title");
+    return (
+      <SelectableElement kind="text" label="Name / Titel" selected={selectedKey === "title"} onSelect={() => setSelectedKey("title")}>
+        <InlineEditableField
+          value={draft.text}
+          onChange={(text) => updateDraft({ text })}
+          placeholder={item.defaultText}
+          onFocus={() => setSelectedKey("title")}
+          style={{ ...style, ...override }}
+        />
+      </SelectableElement>
+    );
+  }
+
+  function renderFamily(containerStyle: CSSProperties) {
+    if (!draft.familyLeft && !draft.familyRight) return null;
+    const override = elementOverrideStyle(draft.elements, "family");
+    const nameStyle: CSSProperties = { ...override };
+    return (
+      <SelectableElement kind="text" label="Familiennamen" selected={selectedKey === "family"} onSelect={() => setSelectedKey("family")}>
+        <div className="customizer-card-families" style={containerStyle}>
+          <div>
+            <InlineEditableField value={draft.familyLeft} onChange={(text) => updateDraft({ familyLeft: text })} placeholder="—" onFocus={() => setSelectedKey("family")} style={nameStyle} />
+            <small>AİLESİ</small>
+          </div>
+          <div className="customizer-card-families-div" style={{ background: `${draft.accent}66` }} />
+          <div>
+            <InlineEditableField value={draft.familyRight} onChange={(text) => updateDraft({ familyRight: text })} placeholder="—" onFocus={() => setSelectedKey("family")} style={nameStyle} />
+            <small>AİLESİ</small>
+          </div>
+        </div>
+      </SelectableElement>
+    );
+  }
+
+  function renderDate(style: CSSProperties) {
+    return (
+      <SelectableElement kind="date" label={TEXT_ELEMENT_LABELS.date} selected={selectedKey === "date"} onSelect={() => setSelectedKey("date")} style={style}>
+        <div className="customizer-card-date" style={{ color: style.color }}>
+          {draftDateText() || "Datum & Uhrzeit"}
+        </div>
+      </SelectableElement>
+    );
+  }
+
+  // Ersetzt die vier fest verdrahteten Bloecke (Countdown/Zusagen/Sitzplan/
+  // Galerie) + die separate Chip-Liste fuer die restlichen 10 Module durch
+  // eine einzige, nach draft.sectionOrder sortierte Liste — jedes der 14
+  // Module bekommt jetzt seinen eigenen Vorschau-Block (Nutzer-Entscheidung,
+  // siehe Plan), und die Reihenfolge wird ueber SectionsList im Panel
+  // steuerbar statt fest im JSX zu stehen.
+  function renderSection(key: string): ReactNode {
+    switch (key) {
+      case "countdown":
+        if (!draft.showCountdown) return null;
+        return (
+          <div className="customizer-card-countdown" key={key}>
+            {[
+              ["14", "TAGE"],
+              ["06", "STD"],
+              ["32", "MIN"],
+            ].map(([n, l]) => (
+              <div key={l} style={{ color: draft.primary }}>
+                <div style={{ fontFamily: font.cssVar, color: draft.accent }}>{n}</div>
+                <div>{l}</div>
+              </div>
+            ))}
+          </div>
+        );
+      case "rsvp":
+        if (!draft.showRsvp) return null;
+        return (
+          <div className="customizer-card-rsvp" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <div style={{ color: draft.primary }}>Kommt ihr?</div>
+            <div>
+              <span style={{ background: draft.accent, color: draft.background }}>Zusagen</span>
+              <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Absagen</span>
+            </div>
+          </div>
+        );
+      case "seating":
+        if (!draft.showSeating) return null;
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <div style={{ color: draft.primary }}>Sitzplan-Suche</div>
+            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+              Euer Name …
+            </div>
+            <div className="customizer-card-seating-grid">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <span key={i} style={i === 2 ? { background: draft.accent } : { borderColor: `${draft.accent}55` }} />
+              ))}
+            </div>
+          </div>
+        );
+      case "gallery":
+        if (!draft.showGallery) return null;
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <div style={{ color: draft.primary }}>Foto- &amp; Videogalerie</div>
+            <div className="customizer-card-gallery-grid">
+              {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
+                <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
+              ))}
+            </div>
+          </div>
+        );
+      default: {
+        if (!draft.extraFeatures[key]) return null;
+        const feature = EXTRA_FEATURES.find((f) => f.key === key);
+        if (!feature) return null;
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <div style={{ color: draft.primary }}>{feature.label}</div>
+            {renderExtraFeatureContent(key)}
+          </div>
+        );
+      }
+    }
+  }
+
+  // Rein statische Beispielinhalte je Modul (keine echte Interaktivitaet
+  // noetig, siehe Plan) — visuell im selben Stil wie die bestehenden
+  // Sitzplan-/Galerie-Bloecke oben.
+  function renderExtraFeatureContent(key: string): ReactNode {
+    switch (key) {
+      case "agenda":
+        return (
+          <div className="customizer-card-agenda">
+            {[
+              ["16:00", "Sektempfang"],
+              ["17:00", "Zeremonie"],
+              ["19:00", "Feier"],
+            ].map(([time, label]) => (
+              <div key={label}>
+                <span className="customizer-card-agenda-dot" style={{ background: draft.accent }} />
+                <span className="customizer-card-agenda-time" style={{ color: draft.accent }}>
+                  {time}
+                </span>
+                <span style={{ color: draft.primary }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        );
+      case "guestbook":
+        return (
+          <>
+            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+              Eure Nachricht …
+            </div>
+            <div className="customizer-card-note" style={{ borderColor: `${draft.accent}55`, color: draft.primary }}>
+              „Wir freuen uns riesig für euch — alles Liebe!“ – Familie Kaya
+            </div>
+          </>
+        );
+      case "dresscode":
+        return (
+          <div className="customizer-card-info-line" style={{ color: draft.primary }}>
+            Elegant / Smart Casual
+          </div>
+        );
+      case "social-media":
+        return (
+          <div className="customizer-card-info-line" style={{ color: draft.primary }}>
+            #EureHochzeit2026
+          </div>
+        );
+      case "menu":
+        return (
+          <div className="customizer-card-chips">
+            {["Vorspeise", "Hauptgang", "Dessert"].map((label) => (
+              <span key={label} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                {label}
+              </span>
+            ))}
+          </div>
+        );
+      case "wishlist":
+        return (
+          <div className="customizer-card-chips">
+            {["Geschirr-Set", "Reisegutschein", "Küchenmaschine"].map((label) => (
+              <span key={label} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                {label}
+              </span>
+            ))}
+          </div>
+        );
+      case "music-requests":
+        return (
+          <>
+            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+              Song oder Interpret …
+            </div>
+            <div className="customizer-card-chips">
+              <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>♪ Perfect – Ed Sheeran</span>
+            </div>
+          </>
+        );
+      case "thank-you-card":
+        return (
+          <div className="customizer-card-info-line" style={{ color: draft.primary }}>
+            Erscheint automatisch nach dem Fest
+          </div>
+        );
+      case "audio-invitation":
+        return (
+          <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
+            <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
+              ▶
+            </span>
+            <div className="customizer-card-audio-wave" aria-hidden="true">
+              {[6, 11, 15, 9, 16, 7, 12].map((h, i) => (
+                <span key={i} style={{ height: h, background: `${draft.accent}99` }} />
+              ))}
+            </div>
+          </div>
+        );
+      case "video-invitation":
+        return (
+          <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
+            <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
+              ▶
+            </span>
+            <span style={{ color: draft.primary, fontSize: 10.5 }}>Videobotschaft ansehen</span>
+          </div>
+        );
+      default:
+        return null;
+    }
   }
 
   function handleImageFile(file: File | null) {
@@ -235,6 +554,15 @@ export function DesignStudio({
 
   function applyAndContinue() {
     saveDrafts(drafts);
+    // Marker fuer ApplyPendingDraft.tsx (gemountet auf /dashboard) — liest
+    // nach dem Login genau diesen Draft aus localStorage und erzeugt daraus
+    // ein echtes Event (siehe /dashboard/apply-draft/route.ts). Ohne diesen
+    // Marker wuerde der Entwurf nach dem Login nie wieder gelesen.
+    try {
+      window.localStorage.setItem(PENDING_DRAFT_KEY, item.id);
+    } catch {
+      // localStorage voll oder deaktiviert — Entwurf bleibt dann leider nur lokal in diesem Formular erhalten.
+    }
     setSavedHint(true);
     router.push("/login");
   }
@@ -265,6 +593,29 @@ export function DesignStudio({
     items: toggleItems.filter((t) => FEATURE_TIER[t.key] === tier),
   })).filter((g) => g.items.length > 0);
 
+  // Eigene Liste getrennt vom nach Paket gruppierten Funktionen-Tab: dort
+  // geht es darum, WAS ein Paket freischaltet, hier nur um die Reihenfolge
+  // der bereits aktivierten Abschnitte auf der Karte — beides zusammen in
+  // einer Liste wuerde die Preis-Gruppierung durcheinanderbringen.
+  const sectionItems = draft.sectionOrder
+    .map((key) => toggleItems.find((t) => t.key === key))
+    .filter((t): t is (typeof toggleItems)[number] => Boolean(t))
+    .map((t) => ({ key: t.key, label: t.label, checked: t.checked, tier: FEATURE_TIER[t.key] }));
+
+  function moveSection(key: string, direction: "up" | "down") {
+    const order = [...draft.sectionOrder];
+    const idx = order.indexOf(key);
+    if (idx === -1) return;
+    const swapWith = direction === "up" ? idx - 1 : idx + 1;
+    if (swapWith < 0 || swapWith >= order.length) return;
+    [order[idx], order[swapWith]] = [order[swapWith], order[idx]];
+    updateDraft({ sectionOrder: order });
+  }
+
+  function toggleSection(key: string, value: boolean) {
+    toggleItems.find((t) => t.key === key)?.onChange(value);
+  }
+
   return (
     <div className="studio-page">
       <div className="studio-top">
@@ -284,8 +635,8 @@ export function DesignStudio({
       </div>
 
       <div className="studio-grid">
-        <div className="studio-card-col">
-          <div className="studio-card-sticky">
+        <div className="studio-canvas-col">
+          <div className="studio-canvas">
             <div
               className="customizer-card"
               style={{
@@ -319,25 +670,16 @@ export function DesignStudio({
                         textAlign: "center",
                       }}
                     >
-                      <div className="customizer-card-eyebrow" style={{ color: draft.accent, marginBottom: 0 }}>
-                        {draft.eventLabel || item.defaultEventLabel}
-                      </div>
-                      <div
-                        className="customizer-card-name"
-                        style={{
-                          fontFamily: font.cssVar,
-                          fontStyle: font.italic ? "italic" : "normal",
-                          textTransform: font.uppercase ? "uppercase" : "none",
-                          fontSize: draft.fontSize,
-                          color: draft.primary,
-                        }}
-                      >
-                        {draft.text || item.defaultText}
-                      </div>
+                      {renderEventLabel({ color: draft.accent, marginBottom: 0 })}
+                      {renderTitle({
+                        fontFamily: font.cssVar,
+                        fontStyle: font.italic ? "italic" : "normal",
+                        textTransform: font.uppercase ? "uppercase" : "none",
+                        fontSize: draft.fontSize,
+                        color: draft.primary,
+                      })}
                       <div>
-                        <div className="customizer-card-date" style={{ color: draft.primary, marginTop: 0, marginBottom: 6 }}>
-                          {draft.dateText || "Datum & Uhrzeit"}
-                        </div>
+                        {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 6 })}
                         <div className="customizer-card-location" style={{ color: draft.primary }}>
                           <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
                             <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
@@ -396,40 +738,19 @@ export function DesignStudio({
                       </div>
                     )}
 
-                    <div className="customizer-card-eyebrow" style={{ color: draft.accent }}>
-                      {draft.eventLabel || item.defaultEventLabel}
-                    </div>
-                    <div
-                      className="customizer-card-name"
-                      style={{
-                        fontFamily: font.cssVar,
-                        fontStyle: font.italic ? "italic" : "normal",
-                        textTransform: font.uppercase ? "uppercase" : "none",
-                        fontSize: draft.fontSize,
-                        color: draft.accent,
-                      }}
-                    >
-                      {draft.text || item.defaultText}
-                    </div>
+                    {renderEventLabel({ color: draft.accent })}
+                    {renderTitle({
+                      fontFamily: font.cssVar,
+                      fontStyle: font.italic ? "italic" : "normal",
+                      textTransform: font.uppercase ? "uppercase" : "none",
+                      fontSize: draft.fontSize,
+                      color: draft.accent,
+                    })}
 
-                    {(draft.familyLeft || draft.familyRight) && (
-                      <div className="customizer-card-families" style={{ color: draft.primary }}>
-                        <div>
-                          <span>{draft.familyLeft || "—"}</span>
-                          <small>AİLESİ</small>
-                        </div>
-                        <div className="customizer-card-families-div" style={{ background: `${draft.accent}66` }} />
-                        <div>
-                          <span>{draft.familyRight || "—"}</span>
-                          <small>AİLESİ</small>
-                        </div>
-                      </div>
-                    )}
+                    {renderFamily({ color: draft.primary })}
 
                     <div className="customizer-card-divider" style={{ background: draft.accent }} />
-                    <div className="customizer-card-date" style={{ color: draft.primary }}>
-                      {draft.dateText || "Datum & Uhrzeit"}
-                    </div>
+                    {renderDate({ color: draft.primary })}
                     <div className="customizer-card-location" style={{ color: draft.primary }}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
                         <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
@@ -439,21 +760,10 @@ export function DesignStudio({
                   </>
                 )}
 
-                {draft.showCountdown && (
-                  <div className="customizer-card-countdown">
-                    {[
-                      ["14", "TAGE"],
-                      ["06", "STD"],
-                      ["32", "MIN"],
-                    ].map(([n, l]) => (
-                      <div key={l} style={{ color: draft.primary }}>
-                        <div style={{ fontFamily: font.cssVar, color: draft.accent }}>{n}</div>
-                        <div>{l}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
+                {/* Google Maps/Kalender sind feste UI-Chrome-Elemente, keine
+                    umschalt-/sortierbaren Paket-Module — bleiben deshalb
+                    ausserhalb der sectionOrder-Liste, direkt unter dem
+                    Kopfbereich. */}
                 <div className="customizer-card-actions">
                   <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Google Maps</span>
                   <span style={{ background: draft.accent, borderColor: draft.accent, color: draft.background }}>
@@ -461,61 +771,10 @@ export function DesignStudio({
                   </span>
                 </div>
 
-                {draft.showRsvp && (
-                  <div className="customizer-card-rsvp" style={{ borderColor: `${draft.accent}66` }}>
-                    <div style={{ color: draft.primary }}>Kommt ihr?</div>
-                    <div>
-                      <span style={{ background: draft.accent, color: draft.background }}>Zusagen</span>
-                      <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Absagen</span>
-                    </div>
-                  </div>
-                )}
-
-                {draft.showSeating && (
-                  <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
-                    <div style={{ color: draft.primary }}>Sitzplan-Suche</div>
-                    <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-                      Euer Name …
-                    </div>
-                    <div className="customizer-card-seating-grid">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <span key={i} style={i === 2 ? { background: draft.accent } : { borderColor: `${draft.accent}55` }} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {draft.showGallery && (
-                  <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
-                    <div style={{ color: draft.primary }}>Foto- &amp; Videogalerie</div>
-                    <div className="customizer-card-gallery-grid">
-                      {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
-                        <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {EXTRA_FEATURES.some((f) => draft.extraFeatures[f.key]) && (
-                  <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }}>
-                    <div style={{ color: draft.primary }}>Weitere Funktionen</div>
-                    <div className="customizer-card-chips">
-                      {EXTRA_FEATURES.filter((f) => draft.extraFeatures[f.key]).map((f) => (
-                        <span key={f.key} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-                          {f.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {draft.sectionOrder.map((key) => (
+                  <Fragment key={key}>{renderSection(key)}</Fragment>
+                ))}
               </div>
-            </div>
-
-            <div className="studio-card-cta">
-              <button type="button" className="btn btn-primary" onClick={applyAndContinue}>
-                Design speichern &amp; Konto erstellen
-              </button>
-              {savedHint && <span className="customizer-saved">Gespeichert — geht gleich weiter.</span>}
             </div>
 
             {(prevId || nextId) && (
@@ -531,46 +790,41 @@ export function DesignStudio({
           </div>
         </div>
 
-        <div className="studio-sections">
+        <div className="studio-panel-sticky">
+          <div className="studio-panel-scroll">
+          <ContextPanel tabs={PANEL_TABS} activeTabId={activeTab} onTabChange={setActiveTab}>
+          {activeTab !== "funktionen" && (
+        <>
+          {selectedKey === "date" ? (
+            <section className="studio-section">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <h4 style={{ margin: 0 }}>{TEXT_ELEMENT_LABELS.date}</h4>
+                <button
+                  type="button"
+                  onClick={() => setSelectedKey(undefined)}
+                  style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  Abwählen
+                </button>
+              </div>
+              <DateQuickEdit eventDate={draft.eventDate} eventTime={draft.eventTime} onChange={(next) => updateDraft(next)} />
+            </section>
+          ) : selectedKey ? (
+            <section className="studio-section">
+              <TextControls
+                elementKey={selectedKey}
+                label={TEXT_ELEMENT_LABELS[selectedKey]}
+                style={draft.elements?.[selectedKey] ?? {}}
+                defaultColor={draft.primary}
+                onChange={(patch) => updateElementStyle(selectedKey, patch)}
+                onDeselect={() => setSelectedKey(undefined)}
+              />
+            </section>
+          ) : null}
           <section className="studio-section">
             <h4>Texte</h4>
+            <p className="studio-section-intro">Name/Titel, Anlass-Label, Familiennamen und Datum direkt in der Karte anklicken und bearbeiten.</p>
             <div className="customizer-form">
-              <div className="customizer-field">
-                <label htmlFor={`text-${item.id}`}>Name / Titel</label>
-                <input
-                  id={`text-${item.id}`}
-                  className="customizer-text-input"
-                  type="text"
-                  value={draft.text}
-                  placeholder={item.defaultText}
-                  onChange={(e) => updateDraft({ text: e.target.value })}
-                />
-              </div>
-
-              <div className="customizer-field">
-                <label htmlFor={`label-${item.id}`}>Anlass</label>
-                <input
-                  id={`label-${item.id}`}
-                  className="customizer-text-input"
-                  type="text"
-                  value={draft.eventLabel}
-                  placeholder={item.defaultEventLabel}
-                  onChange={(e) => updateDraft({ eventLabel: e.target.value })}
-                />
-              </div>
-
-              <div className="customizer-field">
-                <label htmlFor={`date-${item.id}`}>Datum &amp; Uhrzeit</label>
-                <input
-                  id={`date-${item.id}`}
-                  className="customizer-text-input"
-                  type="text"
-                  value={draft.dateText}
-                  placeholder="z. B. 20. Juni 2026, 18 Uhr"
-                  onChange={(e) => updateDraft({ dateText: e.target.value })}
-                />
-              </div>
-
               <div className="customizer-field">
                 <label htmlFor={`location-${item.id}`}>Ort / Location</label>
                 <input
@@ -616,24 +870,7 @@ export function DesignStudio({
             <div className="customizer-form">
               <div className="customizer-field">
                 <label>Schriftart</label>
-                <div className="customizer-fonts">
-                  {FONT_OPTIONS.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      className={`customizer-font-btn${f.id === draft.fontId ? " is-active" : ""}`}
-                      style={{
-                        fontFamily: f.cssVar,
-                        fontStyle: f.italic ? "italic" : "normal",
-                        textTransform: f.uppercase ? "uppercase" : "none",
-                      }}
-                      onClick={() => updateDraft({ fontId: f.id })}
-                    >
-                      Aa
-                      <small>{f.label}</small>
-                    </button>
-                  ))}
-                </div>
+                <FontPicker value={draft.fontId} onChange={(fontId) => updateDraft({ fontId: fontId ?? "cormorant" })} />
               </div>
 
               <div className="customizer-field">
@@ -756,27 +993,38 @@ export function DesignStudio({
           </section>
 
           <section className="studio-section">
+            <h4>Reihenfolge &amp; Sichtbarkeit</h4>
+            <p className="studio-section-intro">
+              Bestimmt, welche aktivierten Abschnitte auf der Karte erscheinen und in welcher Reihenfolge.
+            </p>
+            <SectionsList items={sectionItems} onToggle={toggleSection} onMove={moveSection} />
+          </section>
+        </>
+          )}
+          {activeTab === "funktionen" && (
+        <>
+          <section className="studio-section">
             <h4>Funktionen</h4>
             <p className="studio-section-intro">
-              Wählt aus, was eure Gäste auf der Einladungsseite nutzen können. Die Preise gelten pro Paket, nicht pro
-              Funktion — hier seht ihr, ab welchem Paket etwas enthalten ist.
+              Wählt aus, was eure Gäste auf der Einladungsseite nutzen können — Details &amp; Preise pro Paket unter
+              „Details →“.
             </p>
             <div className="customizer-tier-groups">
               {toggleGroups.map((group) => (
                 <div className="customizer-tier-group" key={group.tier}>
                   <div className="customizer-tier-head">
                     <span>{group.tier}</span>
-                    <span className="customizer-tier-price">ab {eur.format(TIER_PRICE[group.tier] / 100)}</span>
+                    <Link href={`/preise/${packageSlug(PACKAGE_KEY_BY_TIER[group.tier])}`} className="customizer-tier-price" target="_blank" rel="noopener noreferrer">
+                      ab {eur.format(TIER_PRICE[group.tier] / 100)} · Details →
+                    </Link>
                   </div>
                   <div className="customizer-toggles">
                     {group.items.map((t) => (
-                      <label className="customizer-toggle" key={t.key}>
+                      <label className="customizer-toggle customizer-toggle-compact" key={t.key}>
                         <input type="checkbox" checked={t.checked} onChange={(e) => t.onChange(e.target.checked)} />
                         <span className="customizer-switch" aria-hidden="true" />
-                        <span className="customizer-toggle-text">
-                          <strong>{t.label}</strong>
-                          <small>{t.description}</small>
-                        </span>
+                        <span className="customizer-toggle-text">{t.label}</span>
+                        <span className="customizer-tier-badge">ab {group.tier}</span>
                       </label>
                     ))}
                   </div>
@@ -785,35 +1033,33 @@ export function DesignStudio({
             </div>
             <span className="customizer-hint">Alle Funktionen sind hier zur Ansicht aktiv, damit ihr seht, wie die Seite damit aussieht.</span>
           </section>
+        </>
+          )}
+          </ContextPanel>
+          </div>
 
-          <div className="studio-cta-row">
+          <div className="studio-panel-cta">
             <button type="button" className="btn btn-primary" onClick={applyAndContinue}>
               Design speichern &amp; Konto erstellen
             </button>
             {savedHint && <span className="customizer-saved">Gespeichert — geht gleich weiter.</span>}
           </div>
-
-          {otherInCategory.length > 0 && (
-            <section className="studio-section studio-alt">
-              <h4>Andere Designs in {categoryDisplay}</h4>
-              <div className="studio-alt-grid">
-                {otherInCategory.map((o) => (
-                  <Link key={o.id} href={`/gestalten/${o.id}`} className="studio-alt-tile">
-                    <TemplatePreview layoutKey={o.layoutKey} />
-                    <span>{o.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </div>
 
-      <div className="studio-mobile-cta">
-        <button type="button" className="btn btn-primary" onClick={applyAndContinue}>
-          Design speichern &amp; Konto erstellen
-        </button>
-      </div>
+      {otherInCategory.length > 0 && (
+        <section className="studio-section studio-alt">
+          <h4>Andere Designs in {categoryDisplay}</h4>
+          <div className="studio-alt-grid">
+            {otherInCategory.map((o) => (
+              <Link key={o.id} href={`/gestalten/${o.id}`} className="studio-alt-tile">
+                <TemplatePreview layoutKey={o.layoutKey} />
+                <span>{o.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

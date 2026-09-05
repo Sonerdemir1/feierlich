@@ -1,9 +1,15 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type ElementType } from "react";
+import { useState, type CSSProperties, type ElementType } from "react";
+import { InlineEditableField } from "@/components/public/InlineEditableField";
 
-type Field = "title" | "subtitle" | "description";
+type Field = "title" | "subtitle" | "description" | "eventLabel" | "familyLeft" | "familyRight";
 
+// Duenner Fetch-Wrapper um InlineEditableField.tsx (siehe Umsetzungsplan) —
+// speichert per fetch() an die Dashboard-Route, zeigt Speicher-Status, und
+// meldet Erfolg per postMessage an den umgebenden Dashboard-iframe. Wirft
+// bei einem fehlgeschlagenen Speichern, damit InlineEditableField die
+// Aenderung im DOM selbst rueckgaengig macht.
 // Nur aktiv, wenn die Event-Seite mit ?dashboardPreview=1 im Dashboard-
 // iframe eingebettet ist UND der Betrachter der Owner ist (beides serverseitig
 // in page.tsx geprueft, bevor diese Komponente ueberhaupt gerendert wird) —
@@ -15,6 +21,7 @@ export function InlineEditableText({
   as = "div",
   placeholder,
   style,
+  onFocus,
 }: {
   eventId: string;
   field: Field;
@@ -22,15 +29,11 @@ export function InlineEditableText({
   as?: ElementType;
   placeholder?: string;
   style?: CSSProperties;
+  onFocus?: () => void;
 }) {
-  const Tag = as;
-  const original = useRef(value);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  async function handleBlur(e: React.FocusEvent<HTMLElement>) {
-    const text = (e.currentTarget.innerText ?? "").trim();
-    if (text === original.current) return;
-
+  async function handleChange(text: string) {
     setStatus("saving");
     try {
       const res = await fetch(`/dashboard/events/${eventId}/inline-text`, {
@@ -39,40 +42,26 @@ export function InlineEditableText({
         body: JSON.stringify({ field, value: text }),
       });
       if (!res.ok) throw new Error("save failed");
-      original.current = text;
       setStatus("saved");
       window.parent.postMessage({ type: "einladi-inline-saved" }, window.location.origin);
       setTimeout(() => setStatus("idle"), 1400);
-    } catch {
-      e.currentTarget.innerText = original.current;
+    } catch (err) {
       setStatus("error");
       setTimeout(() => setStatus("idle"), 1800);
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLElement>) {
-    if (field !== "description" && e.key === "Enter") {
-      e.preventDefault();
-      (e.target as HTMLElement).blur();
-    }
-    if (e.key === "Escape") {
-      e.currentTarget.innerText = original.current;
-      (e.target as HTMLElement).blur();
+      throw err;
     }
   }
 
   return (
-    <Tag
-      contentEditable
-      suppressContentEditableWarning
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      data-placeholder={placeholder}
-      data-inline-status={status}
-      className="einladi-inline-editable"
-      style={{ outline: "none", cursor: "text", ...style }}
-    >
-      {value}
-    </Tag>
+    <InlineEditableField
+      value={value}
+      onChange={handleChange}
+      as={as}
+      placeholder={placeholder}
+      style={style}
+      onFocus={onFocus}
+      multiline={field === "description"}
+      status={status}
+    />
   );
 }

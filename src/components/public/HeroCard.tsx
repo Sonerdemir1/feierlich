@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ElementType } from "react";
 import { Countdown } from "@/components/public/Countdown";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { InlineEditableText } from "@/components/public/InlineEditableText";
+import { SelectableElement } from "@/components/editor/SelectableElement";
 import { fontOptionById } from "@/lib/fonts";
-import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
+import { elementOverrideStyle, type StyleElements, type TextElementKey } from "@/lib/text-style";
 
 type Colors = { primary: string; accent: string; background: string };
 type TextZone = { top: number; right: number; bottom: number; left: number };
@@ -16,6 +17,11 @@ export type LiveDesignState = {
   fontId?: string;
   ornaments: boolean;
   elements?: StyleElements;
+  // Live-Override fuers Datum (DateQuickEdit.tsx, Phase 3) — undefined laesst
+  // die serverseitig berechneten eventDate/eventTime-Props unangetastet,
+  // gesetzt aktualisiert Datumszeile + Countdown sofort ohne Seiten-Reload.
+  eventDateIso?: string;
+  eventTime?: string | null;
 };
 
 // Eigenstaendige Client-Komponente statt eines reinen Server-Blocks: haelt
@@ -37,6 +43,8 @@ export function HeroCard({
   eventDate,
   eventTime,
   eventLabelText,
+  eventLabelRaw,
+  eventTypeDefaultLabel,
   editMode,
   cardImageUrl,
   envelopeImages,
@@ -56,6 +64,8 @@ export function HeroCard({
   eventDate: Date;
   eventTime: string | null;
   eventLabelText: string;
+  eventLabelRaw: string | null;
+  eventTypeDefaultLabel: string;
   editMode: boolean;
   cardImageUrl: string | null;
   envelopeImages: string[] | null;
@@ -67,6 +77,7 @@ export function HeroCard({
   initial: LiveDesignState;
 }) {
   const [live, setLive] = useState<LiveDesignState>(initial);
+  const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
 
   useEffect(() => {
     if (!editMode) return;
@@ -78,6 +89,17 @@ export function HeroCard({
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [editMode]);
+
+  // Klick-Auswahl auf der Karte: die Auswahl selbst lebt hier lokal (steuert
+  // den Auswahl-Rahmen direkt am Element), das Kontext-Panel im Dashboard
+  // (DesignEditor.tsx) wird nur per postMessage informiert, welches Element
+  // gerade aktiv ist, und zeigt dafuer die passenden Controls — keine
+  // Rueck-Synchronisation noetig, die Karte ist immer die Quelle der Auswahl.
+  function selectElement(key: TextElementKey) {
+    if (!editMode) return;
+    setSelectedKey(key);
+    window.parent.postMessage({ type: "einladi-element-selected", key }, window.location.origin);
+  }
 
   const colors = live.colors;
   const chosenFont = fontOptionById(live.fontId);
@@ -93,7 +115,106 @@ export function HeroCard({
   const eventLabelOverride = elementOverrideStyle(live.elements, "eventLabel");
   const familyOverride = elementOverrideStyle(live.elements, "family");
 
-  const dateText = `${new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(eventDate)}${eventTime ? ` · ${eventTime} Uhr` : ""}`;
+  // live.eventDateIso/eventTime (gesetzt von DateQuickEdit.tsx ueber
+  // DesignEditor.tsx, siehe LiveDesignState oben) haben Vorrang vor den
+  // serverseitig berechneten Props — so aktualisieren sich Datumszeile UND
+  // Countdown sofort, ohne dass der Vorschau-iframe neu laedt.
+  const effectiveDate = live.eventDateIso ? new Date(live.eventDateIso) : eventDate;
+  const effectiveTime = live.eventTime !== undefined ? live.eventTime : eventTime;
+  const dateText = `${new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(effectiveDate)}${effectiveTime ? ` · ${effectiveTime} Uhr` : ""}`;
+
+  // Kleine Render-Helfer statt dreifach kopierter editMode-Verzweigungen —
+  // HeroCard rendert dieselben vier Textstellen in drei strukturell
+  // unterschiedlichen Karten-Layouts (Bild-Karte/Umschlag-Reveal/einfache
+  // Karte), aber die Klick-Auswahl-Logik dahinter ist ueberall identisch.
+  function renderEventLabel(style: CSSProperties) {
+    if (!editMode) return <div style={style}>{eventLabelText}</div>;
+    return (
+      <SelectableElement kind="text" label="Anlass-Label" selected={selectedKey === "eventLabel"} onSelect={() => selectElement("eventLabel")}>
+        <InlineEditableText
+          eventId={eventId}
+          field="eventLabel"
+          value={eventLabelRaw ?? ""}
+          placeholder={`Standard: ${eventTypeDefaultLabel}`}
+          onFocus={() => selectElement("eventLabel")}
+          style={style}
+        />
+      </SelectableElement>
+    );
+  }
+
+  function renderTitle(style: CSSProperties, as?: ElementType) {
+    if (!editMode) {
+      const Tag = as ?? "div";
+      return <Tag style={style}>{title}</Tag>;
+    }
+    return (
+      <SelectableElement kind="text" label="Titel" selected={selectedKey === "title"} onSelect={() => selectElement("title")}>
+        <InlineEditableText eventId={eventId} field="title" value={title} as={as} onFocus={() => selectElement("title")} style={style} />
+      </SelectableElement>
+    );
+  }
+
+  function renderSubtitle(style: CSSProperties) {
+    if (!editMode) return subtitle && <p style={style}>{subtitle}</p>;
+    return (
+      <SelectableElement kind="text" label="Untertitel" selected={selectedKey === "subtitle"} onSelect={() => selectElement("subtitle")}>
+        <InlineEditableText
+          eventId={eventId}
+          field="subtitle"
+          value={subtitle ?? ""}
+          placeholder="Untertitel hinzufügen…"
+          onFocus={() => selectElement("subtitle")}
+          style={style}
+        />
+      </SelectableElement>
+    );
+  }
+
+  function renderFamily(containerStyle: CSSProperties) {
+    if (!hasFamilyNames) return null;
+    const nameStyle: CSSProperties = { fontFamily: headingFont, ...familyOverride };
+    return (
+      <div className="customizer-card-families" style={containerStyle}>
+        {editMode ? (
+          <SelectableElement kind="text" label="Familiennamen" selected={selectedKey === "family"} onSelect={() => selectElement("family")}>
+            <div style={{ display: "flex", alignItems: "center", gap: "inherit" }}>
+              <div>
+                <InlineEditableText eventId={eventId} field="familyLeft" value={familyLeft ?? ""} placeholder="—" onFocus={() => selectElement("family")} style={nameStyle} />
+                <small>AİLESİ</small>
+              </div>
+              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
+              <div>
+                <InlineEditableText eventId={eventId} field="familyRight" value={familyRight ?? ""} placeholder="—" onFocus={() => selectElement("family")} style={nameStyle} />
+                <small>AİLESİ</small>
+              </div>
+            </div>
+          </SelectableElement>
+        ) : (
+          <>
+            <div>
+              <span style={nameStyle}>{familyLeft || "—"}</span>
+              <small>AİLESİ</small>
+            </div>
+            <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
+            <div>
+              <span style={nameStyle}>{familyRight || "—"}</span>
+              <small>AİLESİ</small>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  function renderDateLine(style: CSSProperties) {
+    if (!editMode) return <div style={style}>{dateText}</div>;
+    return (
+      <SelectableElement kind="date" label="Datum & Uhrzeit" selected={selectedKey === "date"} onSelect={() => selectElement("date")}>
+        <div style={style}>{dateText}</div>
+      </SelectableElement>
+    );
+  }
 
   return (
     <div style={applyOrnamentFrame ? { position: "relative", padding: "22px 18px" } : undefined}>
@@ -126,236 +247,70 @@ export function HeroCard({
               textAlign: "center",
             }}
           >
-            <div
-              style={{
-                fontFamily: headingFont,
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: colors.accent,
-                ...eventLabelOverride,
-              }}
-            >
-              {eventLabelText}
-            </div>
+            {renderEventLabel({ fontFamily: headingFont, fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: colors.accent, ...eventLabelOverride })}
             <div>
-              {editMode ? (
-                <InlineEditableText
-                  eventId={eventId}
-                  field="title"
-                  value={title}
-                  style={{
-                    fontFamily: headingFont,
-                    fontStyle: headingItalic ? "italic" : "normal",
-                    textTransform: headingUppercase ? "uppercase" : "none",
-                    fontWeight: 600,
-                    fontSize: "clamp(21px, 5.5vw, 30px)",
-                    color: colors.primary,
-                    ...titleOverride,
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    fontFamily: headingFont,
-                    fontStyle: headingItalic ? "italic" : "normal",
-                    textTransform: headingUppercase ? "uppercase" : "none",
-                    fontWeight: 600,
-                    fontSize: "clamp(21px, 5.5vw, 30px)",
-                    color: colors.primary,
-                    ...titleOverride,
-                  }}
-                >
-                  {title}
-                </div>
-              )}
-              {editMode ? (
-                <InlineEditableText
-                  eventId={eventId}
-                  field="subtitle"
-                  value={subtitle ?? ""}
-                  placeholder="Untertitel hinzufügen…"
-                  style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}
-                />
-              ) : (
-                subtitle && (
-                  <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride }}>{subtitle}</p>
-                )
-              )}
-              {hasFamilyNames && (
-                <div className="customizer-card-families" style={{ color: colors.primary }}>
-                  <div>
-                    <span style={{ fontFamily: headingFont, ...familyOverride }}>{familyLeft || "—"}</span>
-                    <small>AİLESİ</small>
-                  </div>
-                  <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
-                  <div>
-                    <span style={{ fontFamily: headingFont, ...familyOverride }}>{familyRight || "—"}</span>
-                    <small>AİLESİ</small>
-                  </div>
-                </div>
-              )}
+              {renderTitle({
+                fontFamily: headingFont,
+                fontStyle: headingItalic ? "italic" : "normal",
+                textTransform: headingUppercase ? "uppercase" : "none",
+                fontWeight: 600,
+                fontSize: "clamp(21px, 5.5vw, 30px)",
+                color: colors.primary,
+                ...titleOverride,
+              })}
+              {renderSubtitle({ fontSize: 12.5, opacity: 0.8, marginTop: 8, color: colors.primary, ...subtitleOverride })}
+              {renderFamily({ color: colors.primary })}
             </div>
-            <div style={{ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride }}>{dateText}</div>
+            {renderDateLine({ fontSize: 11, letterSpacing: "0.04em", color: colors.primary, opacity: 0.85, ...dateOverride })}
           </div>
         </div>
       ) : envelopeImages ? (
         <>
-          <div
-            style={{
-              fontFamily: headingFont,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: colors.accent,
-              marginBottom: 20,
-              ...eventLabelOverride,
-            }}
-          >
-            {eventLabelText}
-          </div>
+          {renderEventLabel({ fontFamily: headingFont, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20, ...eventLabelOverride })}
           <div style={{ maxWidth: 320, margin: "0 auto" }}>
             <EnvelopeReveal images={envelopeImages}>
               <div style={{ textAlign: "center" }}>
-                {editMode ? (
-                  <InlineEditableText
-                    eventId={eventId}
-                    field="title"
-                    value={title}
-                    style={{
-                      fontFamily: headingFont,
-                      fontStyle: headingItalic ? "italic" : "normal",
-                      textTransform: headingUppercase ? "uppercase" : "none",
-                      fontWeight: 600,
-                      fontSize: "clamp(24px, 5vw, 34px)",
-                      color: colors.primary,
-                      ...titleOverride,
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      fontFamily: headingFont,
-                      fontStyle: headingItalic ? "italic" : "normal",
-                      textTransform: headingUppercase ? "uppercase" : "none",
-                      fontWeight: 600,
-                      fontSize: "clamp(24px, 5vw, 34px)",
-                      color: colors.primary,
-                      ...titleOverride,
-                    }}
-                  >
-                    {title}
-                  </div>
-                )}
-                <div style={{ marginTop: 10, fontSize: 11.5, letterSpacing: "0.06em", color: colors.primary, opacity: 0.8, ...dateOverride }}>
-                  {dateText}
-                </div>
+                {renderTitle({
+                  fontFamily: headingFont,
+                  fontStyle: headingItalic ? "italic" : "normal",
+                  textTransform: headingUppercase ? "uppercase" : "none",
+                  fontWeight: 600,
+                  fontSize: "clamp(24px, 5vw, 34px)",
+                  color: colors.primary,
+                  ...titleOverride,
+                })}
+                {renderDateLine({ marginTop: 10, fontSize: 11.5, letterSpacing: "0.06em", color: colors.primary, opacity: 0.8, ...dateOverride })}
               </div>
             </EnvelopeReveal>
           </div>
-          {editMode ? (
-            <InlineEditableText
-              eventId={eventId}
-              field="subtitle"
-              value={subtitle ?? ""}
-              placeholder="Untertitel hinzufügen…"
-              style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}
-            />
-          ) : (
-            subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride }}>{subtitle}</p>
-          )}
-          {hasFamilyNames && (
-            <div className="customizer-card-families" style={{ color: colors.primary, maxWidth: 320, margin: "12px auto 0" }}>
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{familyLeft || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{familyRight || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-            </div>
-          )}
+          {renderSubtitle({ fontSize: 15, opacity: 0.75, marginTop: 24, ...subtitleOverride })}
+          {renderFamily({ color: colors.primary, maxWidth: 320, margin: "12px auto 0" })}
         </>
       ) : (
         <>
-          <div
-            style={{
+          {renderEventLabel({ fontFamily: headingFont, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", color: colors.accent, marginBottom: 20, ...eventLabelOverride })}
+          {renderTitle(
+            {
               fontFamily: headingFont,
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: colors.accent,
-              marginBottom: 20,
-              ...eventLabelOverride,
-            }}
-          >
-            {eventLabelText}
-          </div>
-          {editMode ? (
-            <InlineEditableText
-              eventId={eventId}
-              field="title"
-              value={title}
-              as="h1"
-              style={{
-                fontFamily: headingFont,
-                fontStyle: headingItalic ? "italic" : "normal",
-                textTransform: headingUppercase ? "uppercase" : "none",
-                fontWeight: 600,
-                fontSize: "clamp(34px, 6vw, 52px)",
-                margin: 0,
-                ...titleOverride,
-              }}
-            />
-          ) : (
-            <h1
-              style={{
-                fontFamily: headingFont,
-                fontStyle: headingItalic ? "italic" : "normal",
-                textTransform: headingUppercase ? "uppercase" : "none",
-                fontWeight: 600,
-                fontSize: "clamp(34px, 6vw, 52px)",
-                margin: 0,
-                ...titleOverride,
-              }}
-            >
-              {title}
-            </h1>
+              fontStyle: headingItalic ? "italic" : "normal",
+              textTransform: headingUppercase ? "uppercase" : "none",
+              fontWeight: 600,
+              fontSize: "clamp(34px, 6vw, 52px)",
+              margin: 0,
+              ...titleOverride,
+            },
+            "h1"
           )}
-          {editMode ? (
-            <InlineEditableText
-              eventId={eventId}
-              field="subtitle"
-              value={subtitle ?? ""}
-              placeholder="Untertitel hinzufügen…"
-              style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}
-            />
-          ) : (
-            subtitle && <p style={{ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride }}>{subtitle}</p>
-          )}
-          {hasFamilyNames && (
-            <div className="customizer-card-families" style={{ color: colors.primary, maxWidth: 320, margin: "16px auto 0" }}>
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{familyLeft || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-              <div className="customizer-card-families-div" style={{ background: `${colors.accent}66` }} />
-              <div>
-                <span style={{ fontFamily: headingFont, ...familyOverride }}>{familyRight || "—"}</span>
-                <small>AİLESİ</small>
-              </div>
-            </div>
-          )}
+          {renderSubtitle({ fontSize: 15, opacity: 0.75, marginTop: 12, ...subtitleOverride })}
+          {renderFamily({ color: colors.primary, maxWidth: 320, margin: "16px auto 0" })}
           <div style={{ width: 30, height: 1, background: colors.accent, margin: "24px auto" }} />
-          <div style={{ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride }}>{dateText}</div>
+          {renderDateLine({ fontSize: 13, letterSpacing: "0.06em", opacity: 0.8, ...dateOverride })}
         </>
       )}
 
       {countdownOn && (
         <div style={{ marginTop: 32 }}>
-          <Countdown targetIso={eventDate.toISOString()} accent={colors.accent} />
+          <Countdown key={effectiveDate.toISOString()} targetIso={effectiveDate.toISOString()} accent={colors.accent} />
         </div>
       )}
 

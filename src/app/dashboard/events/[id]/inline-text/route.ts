@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-const EDITABLE_FIELDS = new Set(["title", "subtitle", "description"]);
+const EDITABLE_FIELDS = new Set(["title", "subtitle", "description", "eventLabel", "familyLeft", "familyRight"]);
 
 // Speichert eine per Klick-Bearbeitung auf der Live-Vorschau (iframe mit
 // ?dashboardPreview=1) geaenderte Textstelle — direkt per fetch() aus dem

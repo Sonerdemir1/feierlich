@@ -364,6 +364,32 @@ export async function saveModules(eventId: string, formData: FormData) {
   redirect(`/dashboard/events/${eventId}?modulesSaved=1`);
 }
 
+// Schaltet genau ein Modul an/aus, ohne die anderen anzufassen — im
+// Unterschied zu saveModules() (das die komplette Checkbox-Liste als neuen
+// Gesamtzustand behandelt und alles Fehlende deaktiviert). Fuer eigene,
+// direkt bei der jeweiligen Funktion sitzende Ein/Aus-Schalter, z.B. bei der
+// Digitalen Menuekarte, statt eines Umwegs ueber das Modul-Raster weiter
+// oben auf der Seite.
+export async function toggleModule(eventId: string, moduleKey: string, formData: FormData) {
+  await requireOwnedEvent(eventId);
+
+  const gated = await gatedModuleKeys(eventId);
+  if (gated.has(moduleKey)) redirect(`/dashboard/events/${eventId}`);
+
+  const mod = await prisma.module.findUnique({ where: { key: moduleKey } });
+  if (!mod) redirect(`/dashboard/events/${eventId}`);
+
+  const enabled = formData.get("enabled") === "1";
+  await prisma.eventModule.upsert({
+    where: { eventId_moduleId: { eventId, moduleId: mod.id } },
+    update: { enabled },
+    create: { eventId, moduleId: mod.id, enabled },
+  });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  redirect(`/dashboard/events/${eventId}?modulesSaved=1`);
+}
+
 // Modul-spezifische Konfiguration ("thank-you-card") liegt im generischen
 // EventModule.config-JSON-Feld — gleiches Muster wie Event.colorOverride,
 // keine eigene Spalte noetig.

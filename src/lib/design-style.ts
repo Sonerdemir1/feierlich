@@ -18,18 +18,36 @@ export function buildDesignUpdate(formData: FormData): { colorOverride: string; 
   if (fontId) style.fontId = fontId;
   if (ornaments) style.ornaments = true;
 
-  const elements: Record<string, { size?: string; color?: string; fontId?: string; align?: string }> = {};
+  type ElementEntry = {
+    size?: string;
+    color?: string;
+    fontId?: string;
+    align?: string;
+    bold?: boolean;
+    underline?: boolean;
+    strikethrough?: boolean;
+    italic?: boolean;
+  };
+  const elements: Record<string, ElementEntry> = {};
   for (const key of ["eventLabel", "title", "subtitle", "family", "date", "description"] as const) {
     const size = String(formData.get(`${key}Size`) ?? "").trim();
     const colorOn = formData.get(`${key}ColorOn`) === "on";
     const color = colorOn ? String(formData.get(`${key}Color`) ?? "").trim() : "";
     const elFontId = String(formData.get(`${key}FontId`) ?? "").trim();
     const align = String(formData.get(`${key}Align`) ?? "").trim();
-    const entry: { size?: string; color?: string; fontId?: string; align?: string } = {};
+    const bold = formData.get(`${key}Bold`) === "on";
+    const underline = formData.get(`${key}Underline`) === "on";
+    const strikethrough = formData.get(`${key}Strikethrough`) === "on";
+    const italic = formData.get(`${key}Italic`) === "on";
+    const entry: ElementEntry = {};
     if (size && size !== "md") entry.size = size;
     if (color) entry.color = color;
     if (elFontId) entry.fontId = elFontId;
     if (align && align !== "center") entry.align = align;
+    if (bold) entry.bold = true;
+    if (underline) entry.underline = true;
+    if (strikethrough) entry.strikethrough = true;
+    if (italic) entry.italic = true;
     if (Object.keys(entry).length > 0) elements[key] = entry;
   }
   if (Object.keys(elements).length > 0) style.elements = elements;

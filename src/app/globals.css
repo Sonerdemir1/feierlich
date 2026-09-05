@@ -1080,34 +1080,52 @@ a.card:hover {
 .studio-back:hover {
   color: var(--ink);
 }
+/* Umgekehrte Rollenverteilung ggue. der frueheren Version: die Karte ist
+   jetzt die grosse, lang scrollende Hauptspalte (Canvas), das Panel ist
+   die schmale, sticky Spalte — exakt das Muster von .editor-panel-sticky
+   aus dem Dashboard-Editor, hier fuer den Marketing-Customizer uebernommen. */
 .studio-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 360px) 1fr;
-  gap: 56px;
+  grid-template-columns: 1fr minmax(280px, 340px);
+  gap: 40px;
   align-items: start;
 }
-.studio-card-col {
+.studio-canvas-col {
   display: flex;
   justify-content: center;
 }
-.studio-card-sticky {
-  position: sticky;
-  top: 24px;
+.studio-canvas {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   width: 100%;
 }
-.studio-card-cta {
+.studio-panel-sticky {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* Der Tab-Inhalt scrollt fuer sich (kann bei "Funktionen" laenger werden als
+   der Viewport), der CTA-Button bleibt als eigenes Flex-Kind IMMER sichtbar
+   darunter, statt im selben Scrollbereich mit nach unten zu wandern. */
+.studio-panel-scroll {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.studio-panel-cta {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
   width: 100%;
-  max-width: 320px;
 }
-.studio-card-cta .btn {
+.studio-panel-cta .btn {
   width: 100%;
 }
 .studio-nav {
@@ -1186,9 +1204,6 @@ a.card:hover {
   font-weight: 600;
   border-top: 1px solid var(--line);
 }
-.studio-mobile-cta {
-  display: none;
-}
 @media (max-width: 900px) {
   .studio-page {
     padding: 20px 18px 96px;
@@ -1197,31 +1212,18 @@ a.card:hover {
     grid-template-columns: 1fr;
     gap: 28px;
   }
-  /* Bisher hier auf position:static geschaltet — die Karte scrollte beim
-     Bearbeiten (z.B. Schriftgroesse ganz unten in "Schrift & Farbe")
-     komplett aus dem Bild, man sah waehrend der Anpassung keine Vorschau
-     mehr. Jetzt bleibt eine kompakte, hoehenbegrenzte Vorschau oben
-     sichtbar, waehrend darunter durch die Formularfelder gescrollt wird. */
-  .studio-card-sticky {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background: var(--ivory);
-    padding: 14px 0 10px;
-    box-shadow: 0 8px 16px -10px rgba(33, 28, 25, 0.22);
+  /* Karte ist jetzt die Hauptspalte — auf dem Handy stapelt sie sich einfach
+     normal oben, keine Hoehenbegrenzung/Maskierung mehr noetig (das war nur
+     fuer die fruehere kleine Sticky-Vorschau gedacht). Das Panel stapelt sich
+     darunter, nicht mehr sticky — auf so schmalem Platz wuerde ein sticky
+     Panel zu viel vom ohnehin knappen Bildschirm dauerhaft belegen (gleiches
+     Prinzip wie .editor-panel-sticky im Dashboard-Editor). */
+  .studio-panel-sticky {
+    position: static;
+    max-height: none;
   }
-  .customizer-card {
-    max-width: 210px;
-    max-height: 38vh;
-    overflow: hidden;
-    /* Weiches Ausblenden statt hartem Schnitt — sonst wuerden RSVP-/
-       Sitzplan-/Galerie-Bloecke bei aktivierten Funktionen mitten im
-       Abschnitt abgeschnitten wirken. */
-    mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent 100%);
-  }
-  .studio-card-cta {
-    display: none;
+  .studio-panel-scroll {
+    overflow-y: visible;
   }
   .studio-section {
     padding: 20px 18px;
@@ -1230,8 +1232,10 @@ a.card:hover {
     padding-bottom: 16px;
     margin-bottom: 20px;
   }
-  .studio-mobile-cta {
-    display: block;
+  /* Einziger CTA-Button (kein zweites JSX-Vorkommen) wird auf dem Handy zur
+     fixierten Leiste am unteren Rand, damit er bei einer langen Karte nicht
+     verloren geht. */
+  .studio-panel-cta {
     position: fixed;
     left: 0;
     right: 0;
@@ -1242,11 +1246,14 @@ a.card:hover {
     border-top: 1px solid var(--line);
     backdrop-filter: blur(6px);
   }
-  .studio-mobile-cta .btn {
-    width: 100%;
-  }
 }
 
+/* Groesser innerhalb der neuen breiten Canvas-Spalte (siehe .studio-canvas
+   oben) — der Basiswert 320px bleibt fuer andere/kuenftige Nutzer dieser
+   Klasse unangetastet, hier wird gezielt nur der Studio-Kontext ueberschrieben. */
+.studio-canvas .customizer-card {
+  max-width: 640px;
+}
 .customizer-card {
   width: 100%;
   max-width: 320px;
@@ -1467,6 +1474,74 @@ a.card:hover {
   padding: 5px 10px;
   border: 1px solid;
 }
+/* Statische Beispiel-Vorschaubloecke fuer die restlichen 10 Paket-Module
+   (Ablaufplan, Gaestebuch, Musikwuensche, Audio-/Video-Einladung) —
+   gleiches Wrapper-Muster wie .customizer-card-section, nur der Inhalt je
+   Modul unterscheidet sich. Keine echte Interaktivitaet noetig (siehe Plan). */
+.customizer-card-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 0 auto;
+  width: fit-content;
+}
+.customizer-card-agenda > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+.customizer-card-agenda-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.customizer-card-agenda-time {
+  font-weight: 700;
+  min-width: 34px;
+}
+.customizer-card-info-line {
+  font-size: 10.5px;
+}
+.customizer-card-note {
+  display: inline-block;
+  max-width: 260px;
+  border: 1px solid;
+  padding: 8px 12px;
+  font-size: 10px;
+  text-align: left;
+  line-height: 1.4;
+}
+.customizer-card-play-mock {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 7px 16px 7px 7px;
+}
+.customizer-card-play-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+.customizer-card-audio-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 16px;
+}
+.customizer-card-audio-wave span {
+  width: 3px;
+  border-radius: 2px;
+}
 /* Vorlagen-Auswahl im Dashboard ("Vorlage wechseln") — Label+Radio statt
    Button wie bei .tpl auf der Startseite, damit die Auswahl ohne Client-JS
    auskommt (reines Server-Component-Formular, Markierung per :has()). */
@@ -1670,6 +1745,57 @@ a.card:hover {
   color: var(--ink-faint);
   line-height: 1.4;
   margin-top: 2px;
+}
+/* Funktionen-Tab (DesignStudio.tsx): kompakte Zeile statt Fliesstext-
+   Beschreibung — Label + Paket-Badge, Details/Preis wandern in einen Link
+   auf die bestehende Preisseite (/preise/[key]). */
+.customizer-toggle-compact {
+  align-items: center;
+  justify-content: space-between;
+}
+.customizer-toggle-compact .customizer-toggle-text {
+  padding-top: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1 1 auto;
+}
+.customizer-tier-badge {
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.customizer-tier-price {
+  text-decoration: none;
+}
+.customizer-tier-price:hover {
+  text-decoration: underline;
+}
+/* WYSIWYG-Editor (DesignEditor.tsx): umgekehrte Rollenverteilung ggue.
+   .studio-card-sticky oben — dort ist die VORSCHAU klein und sticky, hier
+   ist die KARTE die grosse Arbeitsflaeche und das STEUER-PANEL bleibt beim
+   Scrollen der Karte sichtbar. Gleicher sticky-Mechanismus, andere Spalte. */
+.editor-panel-sticky {
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+@media (max-width: 900px) {
+  /* Auf schmalen Bildschirmen wuerde ein sticky Panel zu viel Platz neben
+     einer ohnehin schon schmalen Karte beanspruchen — Panel faellt unter
+     die Karte in den normalen Lesefluss, kein sticky-Verhalten dort. */
+  .editor-panel-sticky {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 /* Native Checkbox bleibt fuer Tastatur/Screenreader vorhanden, aber
    unsichtbar — .customizer-switch daneben ist die eigentliche, sichtbare

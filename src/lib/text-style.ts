@@ -1,3 +1,5 @@
+import { fontOptionById } from "./fonts";
+
 // Pro-Element Textfeinsteuerung (Groesse + Farbe) fuer die vier
 // frei formulierten Textstellen der echten Event-Seite — Titel
 // (Namen), Untertitel, Datumszeile, Beschreibung. Kunden-Feedback:
@@ -12,7 +14,18 @@ export type TextElementKey = "title" | "subtitle" | "date" | "description" | "ev
 // Exports dieser Datei, die historisch gewachsen ist.
 export const TEXT_ELEMENT_KEYS: TextElementKey[] = ["eventLabel", "title", "subtitle", "family", "date", "description"];
 
-export type TextElementStyle = { size?: string; color?: string };
+export type TextAlign = "left" | "center" | "right" | "justify";
+
+export type TextElementStyle = {
+  size?: string;
+  color?: string;
+  fontId?: string;
+  align?: TextAlign;
+  bold?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  italic?: boolean;
+};
 export type StyleElements = Partial<Record<TextElementKey, TextElementStyle>>;
 
 export type SizePreset = { id: string; label: string; px: number };
@@ -71,15 +84,35 @@ export function sizePresetPx(key: TextElementKey, id: string | undefined): numbe
   return ELEMENT_SIZE_PRESETS[key].find((p) => p.id === id)?.px ?? 0;
 }
 
+export type TextElementOverrideStyle = {
+  fontSize?: string;
+  color?: string;
+  fontFamily?: string;
+  textAlign?: TextAlign;
+  fontWeight?: number;
+  fontStyle?: "italic" | "normal";
+  textDecorationLine?: string;
+};
+
 // Liefert nur die Style-Properties, die tatsaechlich ueberschrieben werden
 // sollen — leeres Objekt wenn kein Override gesetzt ist, damit bestehende
-// clamp()/opacity-Werte am Aufrufort unangetastet bleiben.
-export function elementOverrideStyle(elements: StyleElements | undefined, key: TextElementKey): { fontSize?: string; color?: string } {
+// clamp()/opacity-Werte und die globale Schriftart/Kursiv-Einstellung am
+// Aufrufort unangetastet bleiben.
+export function elementOverrideStyle(elements: StyleElements | undefined, key: TextElementKey): TextElementOverrideStyle {
   const el = elements?.[key];
   if (!el) return {};
-  const out: { fontSize?: string; color?: string } = {};
+  const out: TextElementOverrideStyle = {};
   const px = sizePresetPx(key, el.size);
   if (px > 0) out.fontSize = `${px}px`;
   if (el.color) out.color = el.color;
+  if (el.fontId) {
+    const font = fontOptionById(el.fontId);
+    if (font) out.fontFamily = font.cssVar;
+  }
+  if (el.align) out.textAlign = el.align;
+  if (el.bold) out.fontWeight = 700;
+  if (el.italic) out.fontStyle = "italic";
+  const decorations = [el.underline ? "underline" : "", el.strikethrough ? "line-through" : ""].filter(Boolean);
+  if (decorations.length > 0) out.textDecorationLine = decorations.join(" ");
   return out;
 }
