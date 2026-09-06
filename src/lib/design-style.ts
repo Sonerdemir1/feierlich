@@ -1,3 +1,5 @@
+import { TEXT_ELEMENT_KEYS } from "./text-style";
+
 // Baut colorOverride/styleJson aus dem Design-Formular (Farben, Schriftart,
 // Verzierungen, Pro-Element-Feinsteuerung) — geteilt zwischen der
 // server-action-Variante (saveDesign, src/app/dashboard/events/actions.ts,
@@ -29,7 +31,11 @@ export function buildDesignUpdate(formData: FormData): { colorOverride: string; 
     italic?: boolean;
   };
   const elements: Record<string, ElementEntry> = {};
-  for (const key of ["eventLabel", "title", "subtitle", "family", "date", "description"] as const) {
+  // TEXT_ELEMENT_KEYS statt einer eigenen, hier zuvor gepflegten Kopie —
+  // diese Kopie war bereits um "location" veraltet (Stil-Aenderungen fuer
+  // Ort wurden dadurch nie gespeichert, siehe Schritt 3), ein neuer Key
+  // wuerde hier sonst beim naechsten Mal wieder stillschweigend verworfen.
+  for (const key of TEXT_ELEMENT_KEYS) {
     const size = String(formData.get(`${key}Size`) ?? "").trim();
     const colorOn = formData.get(`${key}ColorOn`) === "on";
     const color = colorOn ? String(formData.get(`${key}Color`) ?? "").trim() : "";
