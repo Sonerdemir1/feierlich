@@ -6,7 +6,10 @@ import { PhotoWall } from "@/components/gallery/PhotoWall";
 import { GuestbookEntryCard } from "@/components/guestbook/GuestbookEntryCard";
 import { GuestNameField } from "@/components/public/GuestNameField";
 import { FileField } from "@/components/public/FileField";
-import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
+import { GOOGLE_MAPS_API_KEY, googleMapsSearchUrl } from "@/lib/google-maps";
+import { EditableLocation } from "@/components/public/EditableLocation";
+import { EditableAgenda } from "@/components/public/EditableAgenda";
+import type { AgendaItem } from "@/lib/agenda";
 import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
 import { VideoEnvelope } from "@/components/marketing/VideoEnvelope";
 import { BackgroundMusicToggle } from "@/components/marketing/BackgroundMusicToggle";
@@ -14,6 +17,12 @@ import { HeroCard, type LiveDesignState } from "@/components/public/HeroCard";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
 import { EditableDescription } from "@/components/public/EditableDescription";
+import { EditableGuestbookText } from "@/components/public/EditableGuestbookText";
+import { EditableSectionText } from "@/components/public/EditableSectionText";
+import { AudioMessagePlayer } from "@/components/public/AudioMessagePlayer";
+import { VideoMessagePlayer } from "@/components/public/VideoMessagePlayer";
+import { EditableWishlist } from "@/components/public/EditableWishlist";
+import { WISHLIST_TYPE_LABEL, WISHLIST_TYPES, type WishlistItemData } from "@/lib/wishlist";
 import { cardTextZone } from "@/lib/card-frames";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
@@ -23,13 +32,6 @@ import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, submitGuestb
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
-
-const WISHLIST_TYPE_LABEL: Record<string, string> = {
-  GIFT: "Geschenke",
-  CASH: "Geldgeschenke",
-  HONEYMOON: "Flitterwochen",
-  EXTERNAL: "Weitere Wünsche",
-};
 
 const MENU_COURSE_LABEL: Record<string, string> = {
   STARTER: "Vorspeise",
@@ -41,7 +43,16 @@ const MENU_COURSE_LABEL: Record<string, string> = {
 async function getEvent(slug: string) {
   return prisma.event.findUnique({
     where: { slug },
-    include: { eventType: true, template: true, coverImage: true, owner: true, envelopeVideo: true, backgroundMusic: true },
+    include: {
+      eventType: true,
+      template: true,
+      coverImage: true,
+      owner: true,
+      envelopeVideo: true,
+      backgroundMusic: true,
+      audioInvitation: true,
+      videoMessage: true,
+    },
   });
 }
 
@@ -168,6 +179,41 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // Anlass-Label/Familiennamen werden dagegen jetzt in HeroCard.tsx live
   // (per postMessage) berechnet, siehe initialDesignState weiter unten.
   const descriptionOverride = elementOverrideStyle(style.elements, "description");
+  const locationOverride = elementOverrideStyle(style.elements, "location");
+  const guestbookHeadingOverride = elementOverrideStyle(style.elements, "guestbookHeading");
+  const guestbookHintOverride = elementOverrideStyle(style.elements, "guestbookHint");
+  const guestbookButtonOverride = elementOverrideStyle(style.elements, "guestbookButtonText");
+  const wishlistHeadingOverride = elementOverrideStyle(style.elements, "wishlistHeading");
+  const wishlistHintOverride = elementOverrideStyle(style.elements, "wishlistHint");
+  const musicHeadingOverride = elementOverrideStyle(style.elements, "musicHeading");
+  const musicHintOverride = elementOverrideStyle(style.elements, "musicHint");
+  const musicButtonOverride = elementOverrideStyle(style.elements, "musicButtonText");
+  const rsvpHeadingOverride = elementOverrideStyle(style.elements, "rsvpHeading");
+  const rsvpYesOverride = elementOverrideStyle(style.elements, "rsvpYesLabel");
+  const rsvpMaybeOverride = elementOverrideStyle(style.elements, "rsvpMaybeLabel");
+  const rsvpNoOverride = elementOverrideStyle(style.elements, "rsvpNoLabel");
+  const rsvpButtonOverride = elementOverrideStyle(style.elements, "rsvpButtonText");
+  const seatingHeadingOverride = elementOverrideStyle(style.elements, "seatingHeading");
+  const seatingHintOverride = elementOverrideStyle(style.elements, "seatingHint");
+  const seatingButtonOverride = elementOverrideStyle(style.elements, "seatingButtonText");
+  const galleryHeadingOverride = elementOverrideStyle(style.elements, "galleryHeading");
+  const galleryHintOverride = elementOverrideStyle(style.elements, "galleryHint");
+  const galleryButtonOverride = elementOverrideStyle(style.elements, "galleryButtonText");
+  const dresscodeHeadingOverride = elementOverrideStyle(style.elements, "dresscodeHeading");
+  const dresscodeTextOverride = elementOverrideStyle(style.elements, "dresscodeText");
+  const socialMediaHeadingOverride = elementOverrideStyle(style.elements, "socialMediaHeading");
+  const socialMediaTextOverride = elementOverrideStyle(style.elements, "socialMediaText");
+  const menuHeadingOverride = elementOverrideStyle(style.elements, "menuHeading");
+  const menuHintOverride = elementOverrideStyle(style.elements, "menuHint");
+  const thankYouHeadingOverride = elementOverrideStyle(style.elements, "thankYouHeading");
+  const thankYouMessageOverride = elementOverrideStyle(style.elements, "thankYouMessage");
+  const audioInvitationHeadingOverride = elementOverrideStyle(style.elements, "audioInvitationHeading");
+  const audioInvitationHintOverride = elementOverrideStyle(style.elements, "audioInvitationHint");
+  const videoMessageHeadingOverride = elementOverrideStyle(style.elements, "videoMessageHeading");
+  const videoMessageHintOverride = elementOverrideStyle(style.elements, "videoMessageHint");
+  // Eigenes Event-Feld statt StyleElements-Bag (siehe agenda.ts) — jeder
+  // Eintrag traegt seinen Stil selbst, kein einzelner globaler "agenda"-Stil.
+  const agendaItems: AgendaItem[] = event.agendaJson ? JSON.parse(event.agendaJson) : [];
   const eventLabelText = event.eventLabel || event.eventType.name;
   const hasFamilyNames = Boolean(event.familyLeft || event.familyRight);
   // Echte Schriftart-Wahl aus dem Dashboard-Editor hat Vorrang — ohne
@@ -227,6 +273,14 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       ? prisma.menuItem.findMany({ where: { eventId: event.id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] })
       : Promise.resolve([]),
   ]);
+
+  const wishlistItemsData: WishlistItemData[] = wishlistItems.map((w) => ({
+    id: w.id,
+    type: w.type,
+    title: w.title,
+    description: w.description ?? "",
+    url: w.url ?? "",
+  }));
 
   // Fuer PhotoWall/PhotoTagger auf ein schlankes Format reduziert, statt die
   // volle Prisma-Struktur (media.photoTags[].guest) durchzureichen.
@@ -295,6 +349,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       countdownOn={isModuleOn("countdown")}
       templateFontFallback={templateFontFallback}
       initial={initialDesignState}
+      countdownDaysLabel={event.countdownDaysLabel ?? "TAGE"}
+      countdownHoursLabel={event.countdownHoursLabel ?? "STD"}
+      countdownMinutesLabel={event.countdownMinutesLabel ?? "MIN"}
+      calendarSaveText={event.calendarSaveText ?? "In Kalender speichern"}
+      calendarGoogleText={event.calendarGoogleText ?? "Google Kalender"}
     />
   );
 
@@ -409,38 +468,80 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         )
       )}
 
-      {isModuleOn("location") && event.locationName && (
+      {isModuleOn("location") && (event.locationName || editMode) && (
         <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 10 }}>
               Ort
             </div>
-            <div style={{ fontFamily: headingFont, fontSize: 19 }}>{event.locationName}</div>
-            {event.locationAddress && <div style={{ fontSize: 13, opacity: 0.75, marginTop: 6 }}>{event.locationAddress}</div>}
-            {(() => {
-              const mapQuery = encodeURIComponent([event.locationName, event.locationAddress].filter(Boolean).join(", "));
-              return (
-                <>
-                  {GOOGLE_MAPS_API_KEY && (
-                    <iframe
-                      title="Karte"
-                      src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${mapQuery}`}
-                      style={{ width: "100%", height: 220, border: "none", marginTop: 16 }}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  )}
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: "inline-block", marginTop: 12, fontSize: 12.5, color: colors.accent }}
-                  >
-                    In Google Maps öffnen →
-                  </a>
-                </>
-              );
-            })()}
+            {editMode ? (
+              <EditableLocation
+                initialLocationName={event.locationName}
+                initialLocationAddress={event.locationAddress}
+                headingStyle={{ fontFamily: headingFont, fontSize: 19, ...locationOverride }}
+                addressStyle={{ fontSize: 13, opacity: 0.75, marginTop: 6, color: locationOverride.color }}
+              />
+            ) : (
+              <>
+                <div style={{ fontFamily: headingFont, fontSize: 19, ...locationOverride }}>{event.locationName}</div>
+                {event.locationAddress && (
+                  <div style={{ fontSize: 13, opacity: 0.75, marginTop: 6, color: locationOverride.color }}>{event.locationAddress}</div>
+                )}
+              </>
+            )}
+            {(event.locationName || event.locationAddress) &&
+              (() => {
+                const mapQuery = encodeURIComponent([event.locationName, event.locationAddress].filter(Boolean).join(", "));
+                return (
+                  <>
+                    {GOOGLE_MAPS_API_KEY && (
+                      <iframe
+                        title="Karte"
+                        src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${mapQuery}`}
+                        style={{ width: "100%", height: 220, border: "none", marginTop: 16 }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    )}
+                    <a
+                      href={googleMapsSearchUrl([event.locationName, event.locationAddress])}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-block", marginTop: 12, fontSize: 12.5, color: colors.accent }}
+                    >
+                      In Google Maps öffnen →
+                    </a>
+                  </>
+                );
+              })()}
+          </div>
+        </section>
+      )}
+
+      {isModuleOn("agenda") && (agendaItems.length > 0 || editMode) && (
+        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
+          <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 14 }}>
+              Ablaufplan
+            </div>
+            {editMode ? (
+              <EditableAgenda initialItems={agendaItems} baseStyle={{ fontFamily: headingFont, color: colors.primary }} accentColor={colors.accent} />
+            ) : (
+              <div className="customizer-card-agenda">
+                {agendaItems.map((it) => {
+                  const override = elementOverrideStyle({ agenda: it.style }, "agenda");
+                  return (
+                    <div key={it.id} className="customizer-card-agenda-row" style={{ fontFamily: headingFont, color: colors.primary, ...override }}>
+                      <span className="customizer-card-agenda-dot" style={{ background: colors.accent }} />
+                      <span className="customizer-card-agenda-time" style={{ color: colors.accent }}>
+                        {it.time}
+                      </span>
+                      <span>{it.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -488,7 +589,22 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       {isModuleOn("rsvp") && (
         <section id="rsvp" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px" }}>
-            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>Zusagen</div>
+            {editMode ? (
+              <div style={{ marginBottom: 20 }}>
+                <EditableSectionText
+                  eventId={event.id}
+                  field="rsvpHeading"
+                  label="Zusagen-Überschrift"
+                  value={event.rsvpHeading ?? "Zusagen"}
+                  placeholder="Zusagen"
+                  style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...rsvpHeadingOverride }}
+                />
+              </div>
+            ) : (
+              <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20, ...rsvpHeadingOverride }}>
+                {event.rsvpHeading || "Zusagen"}
+              </div>
+            )}
             {guestDisplayName && (
               <p style={{ fontSize: 13, textAlign: "center", opacity: 0.8, marginTop: -10, marginBottom: 20 }}>
                 Hallo {linkedGuest!.firstName}! Schön, dass ihr dabei seid.
@@ -511,13 +627,57 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 />
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <label style={{ flex: "1 1 100px", display: "flex", alignItems: "center", gap: 6, padding: "10px 0", fontSize: 12.5, cursor: "pointer" }}>
-                    <input type="radio" name="attending" value="yes" defaultChecked /> Wir kommen
+                    {/* disabled im Editor-Modus: ein <label>-Klick auf den
+                        Text zum Bearbeiten wuerde sonst immer auch das
+                        Radio umschalten (native Label-Verhalten,
+                        unabhaengig von Verschachtelung) — harmlos, aber
+                        verwirrend beim gezielten Text-Anklicken. */}
+                    <input type="radio" name="attending" value="yes" defaultChecked disabled={editMode} />{" "}
+                    {editMode ? (
+                      <EditableSectionText
+                        eventId={event.id}
+                        field="rsvpYesLabel"
+                        label='"Wir kommen"-Beschriftung'
+                        value={event.rsvpYesLabel ?? "Wir kommen"}
+                        placeholder="Wir kommen"
+                        as="span"
+                        style={{ ...rsvpYesOverride }}
+                      />
+                    ) : (
+                      <span style={rsvpYesOverride}>{event.rsvpYesLabel || "Wir kommen"}</span>
+                    )}
                   </label>
                   <label style={{ flex: "1 1 100px", display: "flex", alignItems: "center", gap: 6, padding: "10px 0", fontSize: 12.5, cursor: "pointer" }}>
-                    <input type="radio" name="attending" value="unsure" /> Noch unsicher
+                    <input type="radio" name="attending" value="unsure" disabled={editMode} />{" "}
+                    {editMode ? (
+                      <EditableSectionText
+                        eventId={event.id}
+                        field="rsvpMaybeLabel"
+                        label='"Noch unsicher"-Beschriftung'
+                        value={event.rsvpMaybeLabel ?? "Noch unsicher"}
+                        placeholder="Noch unsicher"
+                        as="span"
+                        style={{ ...rsvpMaybeOverride }}
+                      />
+                    ) : (
+                      <span style={rsvpMaybeOverride}>{event.rsvpMaybeLabel || "Noch unsicher"}</span>
+                    )}
                   </label>
                   <label style={{ flex: "1 1 100px", display: "flex", alignItems: "center", gap: 6, padding: "10px 0", fontSize: 12.5, cursor: "pointer" }}>
-                    <input type="radio" name="attending" value="no" /> Leider nicht
+                    <input type="radio" name="attending" value="no" disabled={editMode} />{" "}
+                    {editMode ? (
+                      <EditableSectionText
+                        eventId={event.id}
+                        field="rsvpNoLabel"
+                        label='"Leider nicht"-Beschriftung'
+                        value={event.rsvpNoLabel ?? "Leider nicht"}
+                        placeholder="Leider nicht"
+                        as="span"
+                        style={{ ...rsvpNoOverride }}
+                      />
+                    ) : (
+                      <span style={rsvpNoOverride}>{event.rsvpNoLabel || "Leider nicht"}</span>
+                    )}
                   </label>
                 </div>
                 <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5, opacity: 0.8 }}>
@@ -556,12 +716,33 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   rows={2}
                   style={{ padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5, fontFamily: "inherit" }}
                 />
-                <button
-                  type="submit"
-                  style={{ marginTop: 6, padding: 14, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-                >
-                  Zusage senden
-                </button>
+                {editMode ? (
+                  <EditableSectionText
+                    eventId={event.id}
+                    field="rsvpButtonText"
+                    label="Zusagen-Button"
+                    value={event.rsvpButtonText ?? "Zusage senden"}
+                    placeholder="Zusage senden"
+                    as="div"
+                    style={{
+                      marginTop: 6,
+                      padding: 14,
+                      background: colors.accent,
+                      color: colors.background,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: "center",
+                      ...rsvpButtonOverride,
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="submit"
+                    style={{ marginTop: 6, padding: 14, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", ...rsvpButtonOverride }}
+                  >
+                    {event.rsvpButtonText || "Zusage senden"}
+                  </button>
+                )}
               </form>
             )}
           </div>
@@ -571,8 +752,39 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       {isModuleOn("seating") && (
         <section id="sitzplatz" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
-            <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8 }}>Finde deinen Sitzplatz</div>
-            <p style={{ fontSize: 12.5, opacity: 0.75, marginBottom: 18 }}>Gib deinen Namen ein.</p>
+            {editMode ? (
+              <div style={{ marginBottom: 8 }}>
+                <EditableSectionText
+                  eventId={event.id}
+                  field="seatingHeading"
+                  label="Sitzplan-Überschrift"
+                  value={event.seatingHeading ?? "Finde deinen Sitzplatz"}
+                  placeholder="Finde deinen Sitzplatz"
+                  style={{ fontFamily: headingFont, fontSize: 20, ...seatingHeadingOverride }}
+                />
+              </div>
+            ) : (
+              <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8, ...seatingHeadingOverride }}>
+                {event.seatingHeading || "Finde deinen Sitzplatz"}
+              </div>
+            )}
+            {editMode ? (
+              <div style={{ marginBottom: 18 }}>
+                <EditableSectionText
+                  eventId={event.id}
+                  field="seatingHint"
+                  label="Sitzplan-Hinweistext"
+                  value={event.seatingHint ?? "Gib deinen Namen ein."}
+                  placeholder="Gib deinen Namen ein."
+                  as="p"
+                  style={{ fontSize: 12.5, opacity: 0.75, ...seatingHintOverride }}
+                />
+              </div>
+            ) : (
+              <p style={{ fontSize: 12.5, opacity: 0.75, marginBottom: 18, ...seatingHintOverride }}>
+                {event.seatingHint || "Gib deinen Namen ein."}
+              </p>
+            )}
             <form action={findSeat.bind(null, event.id, event.slug)} style={{ display: "flex", gap: 8 }}>
               <GuestNameField
                 name="seatName"
@@ -581,9 +793,33 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 defaultValue={guestDisplayName}
                 style={{ flex: 1, padding: "12px 14px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13.5 }}
               />
-              <button type="submit" style={{ padding: "0 18px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                Suchen
-              </button>
+              {editMode ? (
+                <EditableSectionText
+                  eventId={event.id}
+                  field="seatingButtonText"
+                  label="Sitzplan-Such-Button"
+                  value={event.seatingButtonText ?? "Suchen"}
+                  placeholder="Suchen"
+                  as="div"
+                  style={{
+                    padding: "0 18px",
+                    background: colors.accent,
+                    color: colors.background,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    ...seatingButtonOverride,
+                  }}
+                />
+              ) : (
+                <button
+                  type="submit"
+                  style={{ padding: "0 18px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", ...seatingButtonOverride }}
+                >
+                  {event.seatingButtonText || "Suchen"}
+                </button>
+              )}
             </form>
             {seatResult && (
               <p style={{ fontSize: 14, marginTop: 18, fontWeight: 600 }}>
@@ -594,11 +830,42 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </section>
       )}
 
-      {isModuleOn("menu") && menuItems.length > 0 && (
+      {isModuleOn("menu") && (menuItems.length > 0 || editMode) && (
         <section id="menu" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
-          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
-            Menü
-          </div>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="menuHeading"
+                label="Menükarte-Überschrift"
+                value={event.menuHeading ?? "Menü"}
+                placeholder="Menü"
+                style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...menuHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...menuHeadingOverride }}>
+              {event.menuHeading || "Menü"}
+            </div>
+          )}
+          {editMode ? (
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="menuHint"
+                label="Menükarte-Hinweistext"
+                value={event.menuHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...menuHintOverride }}
+              />
+            </div>
+          ) : (
+            event.menuHint && (
+              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...menuHintOverride }}>
+                {event.menuHint}
+              </div>
+            )
+          )}
           {(["STARTER", "MAIN", "DESSERT", "DRINK"] as const)
             .map((course) => ({ course, items: menuItems.filter((m) => m.course === course) }))
             .filter((group) => group.items.length > 0)
@@ -622,9 +889,41 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
       {isModuleOn("gallery") && (
         <section id="galerie" style={{ maxWidth: 640, margin: "0 auto", padding: "0 28px 72px" }}>
-          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
-            Teilt eure schönsten Momente
-          </div>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="galleryHeading"
+                label="Galerie-Überschrift"
+                value={event.galleryHeading ?? "Teilt eure schönsten Momente"}
+                placeholder="Teilt eure schönsten Momente"
+                style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...galleryHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...galleryHeadingOverride }}>
+              {event.galleryHeading || "Teilt eure schönsten Momente"}
+            </div>
+          )}
+
+          {editMode ? (
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="galleryHint"
+                label="Galerie-Hinweistext"
+                value={event.galleryHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...galleryHintOverride }}
+              />
+            </div>
+          ) : (
+            event.galleryHint && (
+              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...galleryHintOverride }}>
+                {event.galleryHint}
+              </div>
+            )
+          )}
 
           {galleryPhotos.length > 0 && (
             <PhotoWall eventId={event.id} photos={galleryPhotos} taggedGuests={taggedGuests} colors={colors} />
@@ -666,7 +965,38 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   </p>
                 )}
                 <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
-                <FileField name="file" accept={mediaAccept} required autoSubmit label="Foto oder Video auswählen" colors={colors} />
+                {editMode ? (
+                  // <div> statt FileField im Editor-Vorschaumodus — ein Klick
+                  // wuerde sonst den Datei-Auswahldialog oeffnen (siehe
+                  // FileField.tsx), statt nur den Button-Text auszuwaehlen.
+                  <EditableSectionText
+                    eventId={event.id}
+                    field="galleryButtonText"
+                    label="Galerie-Upload-Button"
+                    value={event.galleryButtonText ?? "Foto oder Video auswählen"}
+                    placeholder="Foto oder Video auswählen"
+                    as="div"
+                    style={{
+                      width: "100%",
+                      padding: "11px 13px",
+                      border: `1px solid ${colors.accent}55`,
+                      color: colors.primary,
+                      fontSize: 13,
+                      textAlign: "left",
+                      ...galleryButtonOverride,
+                    }}
+                  />
+                ) : (
+                  <FileField
+                    name="file"
+                    accept={mediaAccept}
+                    required
+                    autoSubmit
+                    label={event.galleryButtonText || "Foto oder Video auswählen"}
+                    colors={colors}
+                    style={galleryButtonOverride}
+                  />
+                )}
               </form>
             )}
           </div>
@@ -675,9 +1005,41 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
       {isModuleOn("guestbook") && (
         <section id="gaestebuch" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
-          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
-            Eure Nachrichten
-          </div>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableGuestbookText
+                eventId={event.id}
+                field="guestbookHeading"
+                label="Gästebuch-Überschrift"
+                value={event.guestbookHeading ?? "Eure Nachrichten"}
+                placeholder="Eure Nachrichten"
+                style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...guestbookHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...guestbookHeadingOverride }}>
+              {event.guestbookHeading || "Eure Nachrichten"}
+            </div>
+          )}
+
+          {editMode ? (
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <EditableGuestbookText
+                eventId={event.id}
+                field="guestbookHint"
+                label="Gästebuch-Hinweistext"
+                value={event.guestbookHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...guestbookHintOverride }}
+              />
+            </div>
+          ) : (
+            event.guestbookHint && (
+              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...guestbookHintOverride }}>
+                {event.guestbookHint}
+              </div>
+            )
+          )}
 
           {guestbookEntries.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
@@ -715,9 +1077,39 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
                 />
                 <FileField name="file" accept={mediaAccept} label="Foto oder Video anhängen (optional)" colors={colors} />
-                <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Nachricht senden
-                </button>
+                {editMode ? (
+                  // <div> statt <button> im Editor-Vorschaumodus: der
+                  // Eigentuemer bearbeitet hier nur die Beschriftung (Design)
+                  // per contentEditable — ein <button> in einem <form> ist
+                  // ohne explizites type="button" per Default type="submit",
+                  // ein Klick zum Reinfokussieren wuerde also versehentlich
+                  // das leere Formular absenden. Gaeste sehen unten den
+                  // echten, funktionsfaehigen submit-Button.
+                  <EditableGuestbookText
+                    eventId={event.id}
+                    field="guestbookButtonText"
+                    label="Gästebuch-Button"
+                    value={event.guestbookButtonText ?? "Nachricht senden"}
+                    placeholder="Nachricht senden"
+                    as="div"
+                    style={{
+                      padding: 12,
+                      background: colors.accent,
+                      color: colors.background,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: "center",
+                      ...guestbookButtonOverride,
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="submit"
+                    style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", ...guestbookButtonOverride }}
+                  >
+                    {event.guestbookButtonText || "Nachricht senden"}
+                  </button>
+                )}
               </form>
             )}
           </div>
@@ -726,9 +1118,41 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
 
       {isModuleOn("music-requests") && (
         <section id="musikwuensche" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
-          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
-            Musikwünsche
-          </div>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="musicHeading"
+                label="Musikwünsche-Überschrift"
+                value={event.musicHeading ?? "Musikwünsche"}
+                placeholder="Musikwünsche"
+                style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...musicHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...musicHeadingOverride }}>
+              {event.musicHeading || "Musikwünsche"}
+            </div>
+          )}
+
+          {editMode ? (
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="musicHint"
+                label="Musikwünsche-Hinweistext"
+                value={event.musicHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...musicHintOverride }}
+              />
+            </div>
+          ) : (
+            event.musicHint && (
+              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...musicHintOverride }}>
+                {event.musicHint}
+              </div>
+            )
+          )}
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px" }}>
             {musicStatus === "success" ? (
               <p style={{ fontSize: 13.5, textAlign: "center" }}>Danke für euren Musikwunsch!</p>
@@ -762,54 +1186,292 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   rows={2}
                   style={{ padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13, fontFamily: "inherit" }}
                 />
-                <button type="submit" style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  Wunsch senden
-                </button>
+                {editMode ? (
+                  // <div> statt <button> im Editor-Vorschaumodus — siehe
+                  // Kommentar beim Gaestebuch-Button (Schritt 3): ein
+                  // <button> ohne explizites type="button" ist in einem
+                  // <form> per Default type="submit".
+                  <EditableSectionText
+                    eventId={event.id}
+                    field="musicButtonText"
+                    label="Musikwünsche-Button"
+                    value={event.musicButtonText ?? "Wunsch senden"}
+                    placeholder="Wunsch senden"
+                    as="div"
+                    style={{
+                      padding: 12,
+                      background: colors.accent,
+                      color: colors.background,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: "center",
+                      ...musicButtonOverride,
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="submit"
+                    style={{ padding: 12, background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", ...musicButtonOverride }}
+                  >
+                    {event.musicButtonText || "Wunsch senden"}
+                  </button>
+                )}
               </form>
             )}
           </div>
         </section>
       )}
 
-      {isModuleOn("wishlist") && wishlistItems.length > 0 && (
+      {isModuleOn("wishlist") && (wishlistItemsData.length > 0 || editMode) && (
         <section id="wunschliste" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
-          <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 20 }}>
-            Wunschliste
-          </div>
-          {(["GIFT", "CASH", "HONEYMOON", "EXTERNAL"] as const)
-            .map((type) => ({ type, items: wishlistItems.filter((w) => w.type === type) }))
-            .filter((group) => group.items.length > 0)
-            .map((group) => (
-              <div key={group.type} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.6, marginBottom: 10 }}>
-                  {WISHLIST_TYPE_LABEL[group.type]}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {group.items.map((item) => (
-                    <div key={item.id} style={{ border: `1px solid ${colors.accent}55`, padding: "14px 16px" }}>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{item.title}</div>
-                      {item.description && <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 4 }}>{item.description}</p>}
-                      {item.url && (
-                        <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: colors.accent, marginTop: 6, display: "inline-block" }}>
-                          Öffnen →
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
+          {editMode ? (
+            <EditableSectionText
+              eventId={event.id}
+              field="wishlistHeading"
+              label="Wunschliste-Überschrift"
+              value={event.wishlistHeading ?? "Wunschliste"}
+              placeholder="Wunschliste"
+              style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...wishlistHeadingOverride }}
+            />
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...wishlistHeadingOverride }}>
+              {event.wishlistHeading || "Wunschliste"}
+            </div>
+          )}
+
+          {editMode ? (
+            <div style={{ textAlign: "center", marginBottom: 20 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="wishlistHint"
+                label="Wunschliste-Hinweistext"
+                value={event.wishlistHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...wishlistHintOverride }}
+              />
+            </div>
+          ) : (
+            event.wishlistHint && (
+              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...wishlistHintOverride }}>
+                {event.wishlistHint}
               </div>
-            ))}
+            )
+          )}
+
+          {editMode ? (
+            <EditableWishlist
+              initialItems={wishlistItemsData}
+              baseStyle={{ color: colors.primary }}
+              accentColor={colors.accent}
+            />
+          ) : (
+            WISHLIST_TYPES.map((type) => ({ type, items: wishlistItemsData.filter((w) => w.type === type) }))
+              .filter((group) => group.items.length > 0)
+              .map((group) => (
+                <div key={group.type} style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.6, marginBottom: 10 }}>
+                    {WISHLIST_TYPE_LABEL[group.type]}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {group.items.map((item) => (
+                      <div key={item.id} style={{ border: `1px solid ${colors.accent}55`, padding: "14px 16px" }}>
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{item.title}</div>
+                        {item.description && <p style={{ fontSize: 12.5, opacity: 0.8, marginTop: 4 }}>{item.description}</p>}
+                        {item.url && (
+                          <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: colors.accent, marginTop: 6, display: "inline-block" }}>
+                            Öffnen →
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+          )}
         </section>
       )}
 
-      {isModuleOn("thank-you-card") && isPastEvent && (
+      {isModuleOn("dresscode") && (event.dresscodeText || editMode) && (
+        <section id="dresscode" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="dresscodeHeading"
+                label="Dresscode-Überschrift"
+                value={event.dresscodeHeading ?? "Dresscode"}
+                placeholder="Dresscode"
+                style={{ fontFamily: headingFont, fontSize: 20, ...dresscodeHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8, ...dresscodeHeadingOverride }}>
+              {event.dresscodeHeading || "Dresscode"}
+            </div>
+          )}
+          {editMode ? (
+            <EditableSectionText
+              eventId={event.id}
+              field="dresscodeText"
+              label="Dresscode-Text"
+              value={event.dresscodeText ?? ""}
+              placeholder="z. B. Elegant / Smart Casual"
+              style={{ fontSize: 14, opacity: 0.85, ...dresscodeTextOverride }}
+            />
+          ) : (
+            <div style={{ fontSize: 14, opacity: 0.85, ...dresscodeTextOverride }}>{event.dresscodeText}</div>
+          )}
+        </section>
+      )}
+
+      {isModuleOn("social-media") && (event.socialMediaText || editMode) && (
+        <section id="social-media" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="socialMediaHeading"
+                label="Social-Media-Überschrift"
+                value={event.socialMediaHeading ?? "Social Media"}
+                placeholder="Social Media"
+                style={{ fontFamily: headingFont, fontSize: 20, ...socialMediaHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8, ...socialMediaHeadingOverride }}>
+              {event.socialMediaHeading || "Social Media"}
+            </div>
+          )}
+          {editMode ? (
+            <EditableSectionText
+              eventId={event.id}
+              field="socialMediaText"
+              label="Hashtag-Text"
+              value={event.socialMediaText ?? ""}
+              placeholder="z. B. #EureHochzeit2026"
+              style={{ fontSize: 14, opacity: 0.85, ...socialMediaTextOverride }}
+            />
+          ) : (
+            <div style={{ fontSize: 14, opacity: 0.85, ...socialMediaTextOverride }}>{event.socialMediaText}</div>
+          )}
+        </section>
+      )}
+
+      {isModuleOn("audio-invitation") && event.audioInvitation && (
+        <section id="audio-einladung" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="audioInvitationHeading"
+                label="Audio-Einladung-Überschrift"
+                value={event.audioInvitationHeading ?? "Eine Nachricht für euch"}
+                placeholder="Eine Nachricht für euch"
+                style={{ fontFamily: headingFont, fontSize: 20, ...audioInvitationHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8, ...audioInvitationHeadingOverride }}>
+              {event.audioInvitationHeading || "Eine Nachricht für euch"}
+            </div>
+          )}
+          {editMode ? (
+            <div style={{ marginBottom: 20 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="audioInvitationHint"
+                label="Audio-Einladung-Hinweistext"
+                value={event.audioInvitationHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...audioInvitationHintOverride }}
+              />
+            </div>
+          ) : (
+            event.audioInvitationHint && (
+              <div style={{ marginBottom: 20, fontSize: 13, opacity: 0.75, ...audioInvitationHintOverride }}>
+                {event.audioInvitationHint}
+              </div>
+            )
+          )}
+          <AudioMessagePlayer url={event.audioInvitation.url} accent={colors.accent} primary={colors.background} />
+        </section>
+      )}
+
+      {isModuleOn("video-invitation") && event.videoMessage && (
+        <section id="video-einladung" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+          {editMode ? (
+            <div style={{ marginBottom: 8 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="videoMessageHeading"
+                label="Video-Einladung-Überschrift"
+                value={event.videoMessageHeading ?? "Unsere Videobotschaft"}
+                placeholder="Unsere Videobotschaft"
+                style={{ fontFamily: headingFont, fontSize: 20, ...videoMessageHeadingOverride }}
+              />
+            </div>
+          ) : (
+            <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 8, ...videoMessageHeadingOverride }}>
+              {event.videoMessageHeading || "Unsere Videobotschaft"}
+            </div>
+          )}
+          {editMode ? (
+            <div style={{ marginBottom: 20 }}>
+              <EditableSectionText
+                eventId={event.id}
+                field="videoMessageHint"
+                label="Video-Einladung-Hinweistext"
+                value={event.videoMessageHint ?? ""}
+                placeholder="Hinweistext hinzufügen…"
+                style={{ fontSize: 13, opacity: 0.75, ...videoMessageHintOverride }}
+              />
+            </div>
+          ) : (
+            event.videoMessageHint && (
+              <div style={{ marginBottom: 20, fontSize: 13, opacity: 0.75, ...videoMessageHintOverride }}>
+                {event.videoMessageHint}
+              </div>
+            )
+          )}
+          <VideoMessagePlayer url={event.videoMessage.url} accent={colors.accent} primary={colors.primary} background={colors.background} />
+        </section>
+      )}
+
+      {isModuleOn("thank-you-card") && (isPastEvent || editMode) && (
         <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "32px 28px", textAlign: "center" }}>
             <div style={{ fontSize: 22, marginBottom: 10, color: colors.accent }}>♥</div>
-            <div style={{ fontFamily: headingFont, fontSize: 19, marginBottom: 12 }}>Danke euch von Herzen</div>
-            <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85 }}>
-              {thankYouMessage || `Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
-            </p>
+            {editMode ? (
+              <div style={{ marginBottom: 12 }}>
+                <EditableSectionText
+                  eventId={event.id}
+                  field="thankYouHeading"
+                  label="Dankeskarte-Überschrift"
+                  value={event.thankYouHeading ?? "Danke euch von Herzen"}
+                  placeholder="Danke euch von Herzen"
+                  style={{ fontFamily: headingFont, fontSize: 19, ...thankYouHeadingOverride }}
+                />
+              </div>
+            ) : (
+              <div style={{ fontFamily: headingFont, fontSize: 19, marginBottom: 12, ...thankYouHeadingOverride }}>
+                {event.thankYouHeading || "Danke euch von Herzen"}
+              </div>
+            )}
+            {editMode ? (
+              <EditableSectionText
+                eventId={event.id}
+                field="thankYouMessage"
+                label="Dankestext"
+                value={thankYouMessage}
+                placeholder={`Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
+                as="p"
+                style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, ...thankYouMessageOverride }}
+              />
+            ) : (
+              <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, ...thankYouMessageOverride }}>
+                {thankYouMessage || `Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
+              </p>
+            )}
           </div>
         </section>
       )}

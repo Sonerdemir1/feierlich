@@ -1368,20 +1368,7 @@ a.card:hover {
 .customizer-card-countdown {
   position: relative;
   z-index: 1;
-  display: flex;
-  gap: 16px;
   margin-top: 18px;
-}
-.customizer-card-countdown > div {
-  text-align: center;
-}
-.customizer-card-countdown > div > div:first-child {
-  font-size: 19px;
-}
-.customizer-card-countdown > div > div:last-child {
-  font-size: 8px;
-  letter-spacing: 0.1em;
-  opacity: 0.75;
 }
 .customizer-card-actions {
   position: relative;
@@ -1390,11 +1377,14 @@ a.card:hover {
   gap: 8px;
   margin-top: 18px;
 }
-.customizer-card-actions span {
+.customizer-card-actions span,
+.customizer-card-actions a {
   font-size: 9.5px;
   font-weight: 600;
   padding: 6px 12px;
   border: 1px solid;
+  text-decoration: none;
+  cursor: pointer;
   border-radius: 999px;
 }
 .customizer-card-rsvp {
@@ -1405,22 +1395,11 @@ a.card:hover {
   border-top: 1px solid;
   width: 100%;
 }
-.customizer-card-rsvp > div:first-child {
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-.customizer-card-rsvp > div:last-child {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-.customizer-card-rsvp span {
-  font-size: 9.5px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border: 1px solid;
-}
+/* Ueberschrift/Pillen/Button sind seit Schritt 5 einzeln klickbar
+   (SelectableElement-Wrapper dazwischen) — Groesse/Abstand/Umriss werden
+   deshalb direkt inline in DesignStudio.tsx gesetzt statt ueber
+   Struktur-Selektoren wie ":first-child"/":last-child", die die neue
+   Verschachtelung nicht mehr treffen wuerden. */
 .customizer-card-section {
   position: relative;
   z-index: 1;
@@ -1474,10 +1453,12 @@ a.card:hover {
   padding: 5px 10px;
   border: 1px solid;
 }
-/* Statische Beispiel-Vorschaubloecke fuer die restlichen 10 Paket-Module
-   (Ablaufplan, Gaestebuch, Musikwuensche, Audio-/Video-Einladung) —
-   gleiches Wrapper-Muster wie .customizer-card-section, nur der Inhalt je
-   Modul unterscheidet sich. Keine echte Interaktivitaet noetig (siehe Plan). */
+/* Statische Beispiel-Vorschaubloecke fuer die restlichen Paket-Module
+   (Gaestebuch, Musikwuensche, Audio-/Video-Einladung) — gleiches Wrapper-
+   Muster wie .customizer-card-section, nur der Inhalt je Modul
+   unterscheidet sich. Keine echte Interaktivitaet noetig (siehe Plan).
+   Ablaufplan (.customizer-card-agenda*) ist seit dem Klick-Auswahl-Umbau
+   die Ausnahme — echtes Datenmodell, siehe AgendaList.tsx/lib/agenda.ts. */
 .customizer-card-agenda {
   display: flex;
   flex-direction: column;
@@ -1486,7 +1467,14 @@ a.card:hover {
   margin: 0 auto;
   width: fit-content;
 }
-.customizer-card-agenda > div {
+/* Eigene Klasse statt ".customizer-card-agenda > div", weil jeder Eintrag
+   jetzt in einen position:relative-Wrapper (fuer die Entfernen/Umsortieren-
+   Icons) UND SelectableElement's eigenen Wrapper eingebettet ist — der
+   direkte Kind-Selektor wuerde sonst diese Wrapper statt der Inhaltszeile treffen. */
+.customizer-card-agenda-item-wrap {
+  position: relative;
+}
+.customizer-card-agenda-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1502,6 +1490,47 @@ a.card:hover {
   font-weight: 700;
   min-width: 34px;
 }
+.customizer-card-agenda-icons {
+  position: absolute;
+  top: -14px;
+  left: 100%;
+  margin-left: 6px;
+  display: flex;
+  gap: 2px;
+  white-space: nowrap;
+  z-index: 2;
+}
+.customizer-card-agenda-icons button {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.customizer-card-agenda-icons button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.customizer-card-agenda-add {
+  margin-top: 4px;
+  padding: 6px 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px dashed var(--line);
+  background: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.customizer-card-agenda-add:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
 .customizer-card-info-line {
   font-size: 10.5px;
 }
@@ -1513,6 +1542,73 @@ a.card:hover {
   font-size: 10px;
   text-align: left;
   line-height: 1.4;
+}
+/* Wunschlisten-Editor (Schritt 4) — anders als beim Ablaufplan (schmale,
+   fit-content-Zeile) sind Artikel hier fast kartenbreit, deshalb liegen die
+   Auf/Ab/Entfernen-Icons INNERHALB der Artikel-Box oben rechts statt rechts
+   daneben (sonst wuerden sie ausserhalb der Karte landen). */
+.customizer-card-wishlist {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+.customizer-card-wishlist-group-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+.customizer-card-wishlist-item-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+.customizer-card-wishlist-row {
+  border: 1px solid;
+  padding: 8px 34px 8px 10px;
+  font-size: 11px;
+  position: relative;
+}
+.customizer-card-wishlist-icons {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  z-index: 2;
+}
+.customizer-card-wishlist-icons button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 9px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.customizer-card-wishlist-icons button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.customizer-card-wishlist-add {
+  margin-top: 4px;
+  padding: 6px 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border: 1px dashed var(--line);
+  background: none;
+  cursor: pointer;
+  color: var(--ink-soft);
+  align-self: flex-start;
+}
+.customizer-card-wishlist-add:hover {
+  border-color: var(--ink);
+  color: var(--ink);
 }
 .customizer-card-play-mock {
   display: inline-flex;

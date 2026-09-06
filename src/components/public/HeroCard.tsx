@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ElementType } from "react";
+import { useCallback, useEffect, useState, type CSSProperties, type ElementType } from "react";
 import { Countdown } from "@/components/public/Countdown";
 import { EnvelopeReveal } from "@/components/marketing/EnvelopeReveal";
 import { CornerMotif } from "@/components/marketing/TemplatePreview";
@@ -8,6 +8,9 @@ import { InlineEditableText } from "@/components/public/InlineEditableText";
 import { SelectableElement } from "@/components/editor/SelectableElement";
 import { fontOptionById } from "@/lib/fonts";
 import { elementOverrideStyle, type StyleElements, type TextElementKey } from "@/lib/text-style";
+import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
+import type { AgendaItem } from "@/lib/agenda";
+import type { WishlistItemData } from "@/lib/wishlist";
 
 type Colors = { primary: string; accent: string; background: string };
 type TextZone = { top: number; right: number; bottom: number; left: number };
@@ -22,6 +25,21 @@ export type LiveDesignState = {
   // gesetzt aktualisiert Datumszeile + Countdown sofort ohne Seiten-Reload.
   eventDateIso?: string;
   eventTime?: string | null;
+  // Live-Override fuer die Location (LocationQuickEdit.tsx) — wird von
+  // HeroCard.tsx selbst nicht gerendert (die Karte zeigt keine Location,
+  // siehe e/[slug]/page.tsx "Ort"-Sektion), aber ueber denselben
+  // "einladi-style-preview"-Broadcast an EditableLocation.tsx weitergereicht,
+  // die unabhaengig von HeroCard denselben State-Kanal mitliest.
+  locationName?: string | null;
+  locationAddress?: string | null;
+  // Live-Override fuer den Ablaufplan (siehe EditableAgenda.tsx) — wie
+  // locationName/-Address von HeroCard.tsx selbst nicht gerendert, aber
+  // ueber denselben Broadcast an EditableAgenda.tsx weitergereicht.
+  agendaItems?: AgendaItem[];
+  // Live-Override fuer die Wunschliste (siehe EditableWishlist.tsx) — wie
+  // agendaItems von HeroCard.tsx selbst nicht gerendert, aber ueber
+  // denselben Broadcast weitergereicht (Schritt 4).
+  wishlistItems?: WishlistItemData[];
 };
 
 // Eigenstaendige Client-Komponente statt eines reinen Server-Blocks: haelt
@@ -54,6 +72,11 @@ export function HeroCard({
   countdownOn,
   templateFontFallback,
   initial,
+  countdownDaysLabel,
+  countdownHoursLabel,
+  countdownMinutesLabel,
+  calendarSaveText,
+  calendarGoogleText,
 }: {
   eventId: string;
   eventSlug: string;
@@ -75,6 +98,11 @@ export function HeroCard({
   countdownOn: boolean;
   templateFontFallback: "var(--font-body)" | "var(--font-display)";
   initial: LiveDesignState;
+  countdownDaysLabel: string;
+  countdownHoursLabel: string;
+  countdownMinutesLabel: string;
+  calendarSaveText: string;
+  calendarGoogleText: string;
 }) {
   const [live, setLive] = useState<LiveDesignState>(initial);
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
@@ -95,9 +123,19 @@ export function HeroCard({
   // (DesignEditor.tsx) wird nur per postMessage informiert, welches Element
   // gerade aktiv ist, und zeigt dafuer die passenden Controls — keine
   // Rueck-Synchronisation noetig, die Karte ist immer die Quelle der Auswahl.
+  // Elemente AUSSERHALB von HeroCard.tsx (Ort, Beschreibung, Ablaufplan,
+  // Gaestebuch, Wunschliste, Musikwuensche, RSVP) haben ihre eigene
+  // Auswahl-Anzeige und wuerden ohne diesen Broadcast-Kanal (siehe
+  // lib/local-selection.ts) faelschlich weiter selektiert bleiben, wenn
+  // hier auf der Karte etwas anderes angeklickt wird — und umgekehrt: ohne
+  // diesen Listener bliebe z.B. "Titel" hier selektiert, waehrend "Ort"
+  // andernorts angeklickt wird. Gefunden waehrend Schritt 5 (RSVP).
+  useSelectionBroadcast(useCallback((identity) => setSelectedKey(identity as TextElementKey), []));
+
   function selectElement(key: TextElementKey) {
     if (!editMode) return;
     setSelectedKey(key);
+    broadcastSelection(key);
     window.parent.postMessage({ type: "einladi-element-selected", key }, window.location.origin);
   }
 
@@ -114,6 +152,9 @@ export function HeroCard({
   const dateOverride = elementOverrideStyle(live.elements, "date");
   const eventLabelOverride = elementOverrideStyle(live.elements, "eventLabel");
   const familyOverride = elementOverrideStyle(live.elements, "family");
+  const countdownLabelOverride = elementOverrideStyle(live.elements, "countdownLabel");
+  const calendarSaveOverride = elementOverrideStyle(live.elements, "calendarSaveText");
+  const calendarGoogleOverride = elementOverrideStyle(live.elements, "calendarGoogleText");
 
   // live.eventDateIso/eventTime (gesetzt von DateQuickEdit.tsx ueber
   // DesignEditor.tsx, siehe LiveDesignState oben) haben Vorrang vor den
@@ -310,25 +351,77 @@ export function HeroCard({
 
       {countdownOn && (
         <div style={{ marginTop: 32 }}>
-          <Countdown key={effectiveDate.toISOString()} targetIso={effectiveDate.toISOString()} accent={colors.accent} />
+          <Countdown
+            key={effectiveDate.toISOString()}
+            targetIso={effectiveDate.toISOString()}
+            accent={colors.accent}
+            editMode={editMode}
+            eventId={eventId}
+            daysLabel={countdownDaysLabel}
+            hoursLabel={countdownHoursLabel}
+            minutesLabel={countdownMinutesLabel}
+            labelOverride={countdownLabelOverride}
+            selected={selectedKey === "countdownLabel"}
+            onSelect={() => selectElement("countdownLabel")}
+          />
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 24 }}>
-        <a
-          href={`/e/${eventSlug}/ics`}
-          style={{ padding: "9px 16px", fontSize: 12, border: `1px solid ${colors.accent}88`, color: colors.primary, textDecoration: "none" }}
-        >
-          In Kalender speichern
-        </a>
-        <a
-          href={calendarUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ padding: "9px 16px", fontSize: 12, border: `1px solid ${colors.accent}88`, color: colors.primary, textDecoration: "none" }}
-        >
-          Google Kalender
-        </a>
+        {editMode ? (
+          // <span> statt <a> im Editor-Modus: ein echter Link wuerde beim
+          // Reinklicken zum Bearbeiten sofort navigieren/downloaden (siehe
+          // gleiches Muster bei den Gaestebuch-/Musikwuensche-Buttons,
+          // Schritt 3/4) — Gaeste sehen unten den echten, funktionsfaehigen Link.
+          <SelectableElement
+            kind="text"
+            label='"In Kalender speichern"-Button'
+            selected={selectedKey === "calendarSaveText"}
+            onSelect={() => selectElement("calendarSaveText")}
+          >
+            <InlineEditableText
+              eventId={eventId}
+              field="calendarSaveText"
+              value={calendarSaveText}
+              as="span"
+              onFocus={() => selectElement("calendarSaveText")}
+              style={{ display: "inline-block", padding: "9px 16px", fontSize: 12, border: `1px solid ${colors.accent}88`, color: colors.primary, ...calendarSaveOverride }}
+            />
+          </SelectableElement>
+        ) : (
+          <a
+            href={`/e/${eventSlug}/ics`}
+            style={{ padding: "9px 16px", fontSize: 12, border: `1px solid ${colors.accent}88`, color: colors.primary, textDecoration: "none", ...calendarSaveOverride }}
+          >
+            {calendarSaveText}
+          </a>
+        )}
+        {editMode ? (
+          <SelectableElement
+            kind="text"
+            label='"Google Kalender"-Button'
+            selected={selectedKey === "calendarGoogleText"}
+            onSelect={() => selectElement("calendarGoogleText")}
+          >
+            <InlineEditableText
+              eventId={eventId}
+              field="calendarGoogleText"
+              value={calendarGoogleText}
+              as="span"
+              onFocus={() => selectElement("calendarGoogleText")}
+              style={{ display: "inline-block", padding: "9px 16px", fontSize: 12, border: `1px solid ${colors.accent}88`, color: colors.primary, ...calendarGoogleOverride }}
+            />
+          </SelectableElement>
+        ) : (
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ padding: "9px 16px", fontSize: 12, border: `1px solid ${colors.accent}88`, color: colors.primary, textDecoration: "none", ...calendarGoogleOverride }}
+          >
+            {calendarGoogleText}
+          </a>
+        )}
       </div>
     </div>
   );
