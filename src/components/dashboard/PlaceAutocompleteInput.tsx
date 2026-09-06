@@ -1,33 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-declare global {
-  interface Window {
-    google?: typeof google;
-    __einladiGoogleMapsLoading?: Promise<void>;
-  }
-}
+import { loadGoogleMapsScript } from "@/lib/google-maps";
 
 const inputStyle = { padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 };
-
-// Laedt die Google-Maps-JS-API (places-Bibliothek) genau einmal pro
-// Seitenaufruf, auch wenn mehrere Instanzen dieser Komponente gleichzeitig
-// gemountet sind (verhindert doppelt eingefuegte <script>-Tags).
-function loadGoogleMapsScript(apiKey: string): Promise<void> {
-  if (window.google?.maps?.places) return Promise.resolve();
-  if (window.__einladiGoogleMapsLoading) return window.__einladiGoogleMapsLoading;
-
-  window.__einladiGoogleMapsLoading = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google Maps konnte nicht geladen werden."));
-    document.head.appendChild(script);
-  });
-  return window.__einladiGoogleMapsLoading;
-}
 
 // Adressfeld mit Google-Places-Autovervollstaendigung — bei Auswahl eines
 // Vorschlags werden zusaetzlich Breiten-/Laengengrad in verstecken Feldern
