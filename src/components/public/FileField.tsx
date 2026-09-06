@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 
 type Colors = { primary: string; accent: string; background: string };
 
@@ -16,6 +16,7 @@ export function FileField({
   label,
   colors,
   autoSubmit,
+  style,
 }: {
   name: string;
   accept: string;
@@ -28,6 +29,9 @@ export function FileField({
   // hochgeladenen Foto). Nicht bei Gaestebuch-Anhaengen genutzt, dort soll
   // ein Anhang die restliche Nachricht nicht vorzeitig abschicken.
   autoSubmit?: boolean;
+  // Optionaler Text-Style-Override (galleryButtonText, Schritt 6) — gleiches
+  // Muster wie bei den anderen Buttons in e/[slug]/page.tsx.
+  style?: CSSProperties;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -58,6 +62,7 @@ export function FileField({
           fontSize: 13,
           textAlign: "left",
           cursor: "pointer",
+          ...style,
         }}
       >
         {fileName ?? label}

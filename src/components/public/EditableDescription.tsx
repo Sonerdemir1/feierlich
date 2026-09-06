@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
 import { InlineEditableText } from "@/components/public/InlineEditableText";
 import { SelectableElement } from "@/components/editor/SelectableElement";
+import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
 
 // Duenner Client-Wrapper, weil e/[slug]/page.tsx (Server Component) die
 // Beschreibung ausserhalb von HeroCard.tsx rendert (eigener Abschnitt unter
-// der Karte) und daher nicht dessen lokalen selectedKey-State teilt — die
-// Auswahl der Beschreibung ist bewusst unabhaengig von der Auswahl auf der
-// Karte selbst (zwei getrennte Seitenbereiche).
+// der Karte) und daher nicht dessen lokalen selectedKey-State teilt.
 export function EditableDescription({ eventId, value, style }: { eventId: string; value: string; style: CSSProperties }) {
   const [selected, setSelected] = useState(false);
 
+  useSelectionBroadcast(useCallback((identity) => setSelected(identity === "description"), []));
+
   function select() {
-    setSelected(true);
+    broadcastSelection("description");
     window.parent.postMessage({ type: "einladi-element-selected", key: "description" }, window.location.origin);
   }
 

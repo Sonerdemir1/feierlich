@@ -3,7 +3,49 @@
 import { useState, type CSSProperties, type ElementType } from "react";
 import { InlineEditableField } from "@/components/public/InlineEditableField";
 
-type Field = "title" | "subtitle" | "description" | "eventLabel" | "familyLeft" | "familyRight";
+type Field =
+  | "title"
+  | "subtitle"
+  | "description"
+  | "eventLabel"
+  | "familyLeft"
+  | "familyRight"
+  | "guestbookHeading"
+  | "guestbookHint"
+  | "guestbookButtonText"
+  | "wishlistHeading"
+  | "wishlistHint"
+  | "musicHeading"
+  | "musicHint"
+  | "musicButtonText"
+  | "countdownDaysLabel"
+  | "countdownHoursLabel"
+  | "countdownMinutesLabel"
+  | "calendarSaveText"
+  | "calendarGoogleText"
+  | "rsvpHeading"
+  | "rsvpYesLabel"
+  | "rsvpMaybeLabel"
+  | "rsvpNoLabel"
+  | "rsvpButtonText"
+  | "seatingHeading"
+  | "seatingHint"
+  | "seatingButtonText"
+  | "galleryHeading"
+  | "galleryHint"
+  | "galleryButtonText"
+  | "dresscodeHeading"
+  | "dresscodeText"
+  | "socialMediaHeading"
+  | "socialMediaText"
+  | "menuHeading"
+  | "menuHint"
+  | "thankYouHeading"
+  | "thankYouMessage"
+  | "audioInvitationHeading"
+  | "audioInvitationHint"
+  | "videoMessageHeading"
+  | "videoMessageHint";
 
 // Duenner Fetch-Wrapper um InlineEditableField.tsx (siehe Umsetzungsplan) —
 // speichert per fetch() an die Dashboard-Route, zeigt Speicher-Status, und
@@ -60,7 +102,7 @@ export function InlineEditableText({
       placeholder={placeholder}
       style={style}
       onFocus={onFocus}
-      multiline={field === "description"}
+      multiline={field === "description" || field === "dresscodeText" || field === "socialMediaText" || field === "thankYouMessage"}
       status={status}
     />
   );
