@@ -426,6 +426,146 @@ export function DesignEditor({
             />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Ausgewaehltes Element steht ZUERST im Panel (wie in
+                  DesignStudio.tsx) — Klick auf ein Kartenelement soll das
+                  Panel sofort, ohne Scrollen, auf genau dieses Element
+                  ausrichten. "Abwählen" (bzw. der onDeselect-Callback der
+                  TextControls) fuehrt zurueck zum allgemeinen Karten-
+                  Design-Bereich darunter. */}
+              {selectedKey === "date" ? (
+                <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{TEXT_ELEMENT_LABELS.date}</div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedKey(undefined)}
+                      style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      Abwählen
+                    </button>
+                  </div>
+                  <DateQuickEdit eventDate={currentEventDate} eventTime={currentEventTime} onChange={pushDate} />
+                </div>
+              ) : selectedKey === "location" ? (
+                <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                  <LocationQuickEdit
+                    apiKey={GOOGLE_MAPS_API_KEY}
+                    locationName={currentLocationName}
+                    locationAddress={currentLocationAddress}
+                    onChange={pushLocation}
+                  />
+                  <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                    <TextControls
+                      elementKey="location"
+                      label={TEXT_ELEMENT_LABELS.location}
+                      style={state.elements?.location ?? {}}
+                      defaultColor={state.colors.primary}
+                      onChange={(patch) => setElementStyle("location", patch)}
+                      onDeselect={() => setSelectedKey(undefined)}
+                    />
+                  </div>
+                </div>
+              ) : selectedKey === "agenda" && selectedAgendaItemId ? (
+                (() => {
+                  const item = (state.agendaItems ?? []).find((it) => it.id === selectedAgendaItemId);
+                  if (!item) return null;
+                  return (
+                    <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                      <TextControls
+                        elementKey="agenda"
+                        label={TEXT_ELEMENT_LABELS.agenda}
+                        style={item.style ?? {}}
+                        defaultColor={state.colors.primary}
+                        onChange={(patch) => updateAgendaItemStyle(item.id, patch)}
+                        onDeselect={() => {
+                          setSelectedKey(undefined);
+                          setSelectedAgendaItemId(undefined);
+                        }}
+                      />
+                      <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                        <AgendaItemQuickEdit
+                          time={item.time}
+                          label={item.label}
+                          onChange={(patch) => updateAgendaItem(item.id, patch)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            pushAgenda((state.agendaItems ?? []).filter((it) => it.id !== item.id));
+                            setSelectedKey(undefined);
+                            setSelectedAgendaItemId(undefined);
+                          }}
+                          className="btn btn-ghost"
+                          style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                        >
+                          Eintrag löschen
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : selectedWishlistItemId ? (
+                (() => {
+                  const item = (state.wishlistItems ?? []).find((it) => it.id === selectedWishlistItemId);
+                  if (!item) return null;
+                  return (
+                    <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Wunschlisten-Artikel</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedKey(undefined);
+                            setSelectedWishlistItemId(undefined);
+                          }}
+                          style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          Abwählen
+                        </button>
+                      </div>
+                      <WishlistItemQuickEdit
+                        type={item.type}
+                        title={item.title}
+                        description={item.description}
+                        url={item.url}
+                        onChange={(patch) => updateWishlistItem(item.id, patch)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          pushWishlist((state.wishlistItems ?? []).filter((it) => it.id !== item.id));
+                          setSelectedKey(undefined);
+                          setSelectedWishlistItemId(undefined);
+                        }}
+                        className="btn btn-ghost"
+                        style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                      >
+                        Artikel löschen
+                      </button>
+                    </div>
+                  );
+                })()
+              ) : selectedKey ? (
+                <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                  <TextControls
+                    elementKey={selectedKey}
+                    label={TEXT_ELEMENT_LABELS[selectedKey]}
+                    style={state.elements?.[selectedKey] ?? {}}
+                    defaultColor={state.colors.primary}
+                    onChange={(patch) => setElementStyle(selectedKey, patch)}
+                    onDeselect={() => setSelectedKey(undefined)}
+                  />
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>
+                  Klicke Anlass-Label, Titel, Untertitel, Familiennamen, Datum, Ort, Ablaufplan-Eintraege,
+                  Gästebuch-, Wunschlisten-, Musikwünsche-, Countdown-, Kalender-, Zusagen-, Sitzplan-,
+                  Galerie-, Dresscode-, Social-Media-, Menükarte-, Dankeskarte-, Audio- oder Video-Einladung-
+                  Texte direkt in der Vorschau an, um genau dieses Element einzustellen.
+                </div>
+              )}
+
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginTop: 4 }}>Karten-Design</div>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
                 Primär (Text)
                 <input type="color" value={state.colors.primary} onChange={(e) => setColor("primary", e.target.value)} style={{ width: "100%", height: 40, border: "1px solid var(--line)", cursor: "pointer" }} />
@@ -462,139 +602,6 @@ export function DesignEditor({
                 <span className="customizer-switch" aria-hidden="true" />
                 <span className="customizer-toggle-text">Verzierungen (Eck-Ornamente) anzeigen</span>
               </label>
-
-              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 4 }}>
-                {selectedKey === "date" ? (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{TEXT_ELEMENT_LABELS.date}</div>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedKey(undefined)}
-                        style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                      >
-                        Abwählen
-                      </button>
-                    </div>
-                    <DateQuickEdit eventDate={currentEventDate} eventTime={currentEventTime} onChange={pushDate} />
-                  </>
-                ) : selectedKey === "location" ? (
-                  <>
-                    <LocationQuickEdit
-                      apiKey={GOOGLE_MAPS_API_KEY}
-                      locationName={currentLocationName}
-                      locationAddress={currentLocationAddress}
-                      onChange={pushLocation}
-                    />
-                    <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
-                      <TextControls
-                        elementKey="location"
-                        label={TEXT_ELEMENT_LABELS.location}
-                        style={state.elements?.location ?? {}}
-                        defaultColor={state.colors.primary}
-                        onChange={(patch) => setElementStyle("location", patch)}
-                        onDeselect={() => setSelectedKey(undefined)}
-                      />
-                    </div>
-                  </>
-                ) : selectedKey === "agenda" && selectedAgendaItemId ? (
-                  (() => {
-                    const item = (state.agendaItems ?? []).find((it) => it.id === selectedAgendaItemId);
-                    if (!item) return null;
-                    return (
-                      <>
-                        <TextControls
-                          elementKey="agenda"
-                          label={TEXT_ELEMENT_LABELS.agenda}
-                          style={item.style ?? {}}
-                          defaultColor={state.colors.primary}
-                          onChange={(patch) => updateAgendaItemStyle(item.id, patch)}
-                          onDeselect={() => {
-                            setSelectedKey(undefined);
-                            setSelectedAgendaItemId(undefined);
-                          }}
-                        />
-                        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
-                          <AgendaItemQuickEdit
-                            time={item.time}
-                            label={item.label}
-                            onChange={(patch) => updateAgendaItem(item.id, patch)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              pushAgenda((state.agendaItems ?? []).filter((it) => it.id !== item.id));
-                              setSelectedKey(undefined);
-                              setSelectedAgendaItemId(undefined);
-                            }}
-                            className="btn btn-ghost"
-                            style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
-                          >
-                            Eintrag löschen
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()
-                ) : selectedWishlistItemId ? (
-                  (() => {
-                    const item = (state.wishlistItems ?? []).find((it) => it.id === selectedWishlistItemId);
-                    if (!item) return null;
-                    return (
-                      <>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Wunschlisten-Artikel</div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedKey(undefined);
-                              setSelectedWishlistItemId(undefined);
-                            }}
-                            style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                          >
-                            Abwählen
-                          </button>
-                        </div>
-                        <WishlistItemQuickEdit
-                          type={item.type}
-                          title={item.title}
-                          description={item.description}
-                          url={item.url}
-                          onChange={(patch) => updateWishlistItem(item.id, patch)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            pushWishlist((state.wishlistItems ?? []).filter((it) => it.id !== item.id));
-                            setSelectedKey(undefined);
-                            setSelectedWishlistItemId(undefined);
-                          }}
-                          className="btn btn-ghost"
-                          style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
-                        >
-                          Artikel löschen
-                        </button>
-                      </>
-                    );
-                  })()
-                ) : selectedKey ? (
-                  <TextControls
-                    elementKey={selectedKey}
-                    label={TEXT_ELEMENT_LABELS[selectedKey]}
-                    style={state.elements?.[selectedKey] ?? {}}
-                    defaultColor={state.colors.primary}
-                    onChange={(patch) => setElementStyle(selectedKey, patch)}
-                    onDeselect={() => setSelectedKey(undefined)}
-                  />
-                ) : (
-                  <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>
-                    Klicke Anlass-Label, Titel, Untertitel, Familiennamen, Datum, Ort, Ablaufplan-Eintraege,
-                    Gästebuch-, Wunschlisten-, Musikwünsche-, Countdown-, Kalender-, Zusagen-, Sitzplan-,
-                    Galerie-, Dresscode-, Social-Media-, Menükarte-, Dankeskarte-, Audio- oder Video-Einladung-
-                    Texte direkt in der Vorschau an, um genau dieses Element einzustellen.
-                  </div>
-                )}
-              </div>
 
               <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>Änderungen werden automatisch gespeichert.</span>
 
