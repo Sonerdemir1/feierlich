@@ -1392,7 +1392,17 @@ export function DesignStudio({
   }
 
   function applyAndContinue() {
-    saveDrafts(drafts);
+    // Bugfix: drafts[item.id] ist nur gefuellt, sobald tatsaechlich per
+    // updateDraft() etwas geaendert wurde. Bei einem komplett unangetasteten
+    // Entwurf (Kunde uebernimmt die Vorlage 1:1) blieb `drafts` leer und
+    // saveDrafts(drafts) persistierte dann nichts unter item.id —
+    // ApplyPendingDraft.tsx fand nach dem Login keinen Eintrag mehr und
+    // brach ab, ohne ein Event zu erzeugen. Deshalb hier ausdruecklich den
+    // bereits angezeigten, vollstaendig gemergten `draft` (defaultDraft() +
+    // evtl. Aenderungen) unter item.id ablegen statt des rohen States.
+    const next = { ...drafts, [item.id]: draft };
+    setDrafts(next);
+    saveDrafts(next);
     // Marker fuer ApplyPendingDraft.tsx (gemountet auf /dashboard) — liest
     // nach dem Login genau diesen Draft aus localStorage und erzeugt daraus
     // ein echtes Event (siehe /dashboard/apply-draft/route.ts). Ohne diesen
