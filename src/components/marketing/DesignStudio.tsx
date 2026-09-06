@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,8 +15,16 @@ import { SelectableElement } from "@/components/editor/SelectableElement";
 import { TextControls } from "@/components/editor/TextControls";
 import { DateQuickEdit } from "@/components/editor/DateQuickEdit";
 import { FontPicker } from "@/components/editor/FontPicker";
+import { PlaceAutocompleteField } from "@/components/editor/PlaceAutocompleteField";
+import { GOOGLE_MAPS_API_KEY, googleMapsSearchUrl } from "@/lib/google-maps";
 import { InlineEditableField } from "@/components/public/InlineEditableField";
 import { SectionsList } from "@/components/dashboard/panels/SectionsList";
+import { AgendaList } from "@/components/editor/AgendaList";
+import { AgendaItemQuickEdit } from "@/components/editor/AgendaItemQuickEdit";
+import { defaultAgendaItems, newAgendaItem, moveAgendaItem, type AgendaItem } from "@/lib/agenda";
+import { WishlistList } from "@/components/editor/WishlistList";
+import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
+import { defaultWishlistItems, newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
 import { elementOverrideStyle, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey, type TextElementStyle } from "@/lib/text-style";
 
 type PhotoShape = "rect" | "circle" | "star" | "polaroid";
@@ -60,6 +68,11 @@ type Draft = {
   eventDate: string; // "YYYY-MM-DD" oder "" (noch nicht gesetzt)
   eventTime: string; // "HH:MM" oder ""
   locationText: string;
+  // Gesetzt, sobald die Adresse per Google-Places-Autocomplete ausgewaehlt
+  // wurde (siehe renderLocation/PlaceAutocompleteField) — null solange nur
+  // Freitext eingegeben wurde, ohne einen Vorschlag auszuwaehlen.
+  locationLat: number | null;
+  locationLng: number | null;
   familyLeft: string;
   familyRight: string;
   fontId: string;
@@ -77,6 +90,76 @@ type Draft = {
   showGallery: boolean;
   showPhotoBackground: boolean;
   extraFeatures: Record<string, boolean>;
+  // Echtes Datenmodell statt statischer Beispielinhalte (siehe
+  // Umsetzungsplan "Ablaufplan"-Schritt) — Liste bleibt leer relevant fuer
+  // die Karte, solange extraFeatures.agenda nicht aktiv ist.
+  agendaItems: AgendaItem[];
+  // Feste Einzeltexte (kein Array wie beim Ablaufplan) fuer den
+  // Gaestebuch-Vorschaublock, siehe Schritt 3 — analog zu Event.guestbook*
+  // auf der echten Event-Seite.
+  guestbookHeading: string;
+  guestbookHint: string;
+  guestbookButtonText: string;
+  // Wunschliste (Schritt 4): echtes Datenmodell wie Ablaufplan (die reale
+  // WishlistItem-Tabelle hat bereits Typ/Titel/Beschreibung/Link, siehe
+  // lib/wishlist.ts) — kein Button-Text, dafuer gibt es keine Gaeste-Aktion.
+  wishlistHeading: string;
+  wishlistHint: string;
+  wishlistItems: WishlistItemData[];
+  // Musikwuensche (Schritt 4): fester Einzeltext wie Gaestebuch (echtes
+  // Gaeste-Formular, kein vom Paar gepflegtes Artikel-Datenmodell).
+  musicHeading: string;
+  musicHint: string;
+  musicButtonText: string;
+  // Countdown-Beschriftungen (Schritt 5) — die Zahlen bleiben dynamisch
+  // (14/06/32 als reine Vorschau-Beispielwerte), nur die drei
+  // Einheiten-Woerter sind editierbar, siehe Countdown.tsx fuer die echte
+  // Event-Seite (gleiches Prinzip, dort per Timer berechnet).
+  countdownDaysLabel: string;
+  countdownHoursLabel: string;
+  countdownMinutesLabel: string;
+  // Kalender-Buttons unter dem Countdown (nicht der "Google Maps"-Chip der
+  // Location-Sektion, siehe customizer-card-actions weiter unten).
+  calendarSaveText: string;
+  calendarGoogleText: string;
+  // RSVP-Bereich — Ueberschrift + drei Options-Beschriftungen + Button.
+  // Das echte Formular hat statt zwei Pillen drei Radio-Optionen plus
+  // Absende-Button (siehe e/[slug]/page.tsx), deshalb fuenf statt zwei
+  // editierbare Texte, fuer Deckungsgleichheit mit dem echten Editor.
+  rsvpHeading: string;
+  rsvpYesLabel: string;
+  rsvpMaybeLabel: string;
+  rsvpNoLabel: string;
+  rsvpButtonText: string;
+  // Sitzplan-Suche — Ueberschrift + Hinweistext + Such-Button (Schritt 6).
+  // Das echte Sitzplan-Datenmodell bleibt unangetastet, siehe e/[slug]/page.tsx.
+  seatingHeading: string;
+  seatingHint: string;
+  seatingButtonText: string;
+  // Foto-/Videogalerie — Ueberschrift + Hinweistext + Upload-Button (Schritt 6).
+  galleryHeading: string;
+  galleryHint: string;
+  galleryButtonText: string;
+  // Dresscode/Social Media (Schritt 7) — komplett neu, kein Datenmodell.
+  dresscodeHeading: string;
+  dresscodeText: string;
+  socialMediaHeading: string;
+  socialMediaText: string;
+  // Digitale Menuekarte — nur Ueberschrift + Hinweistext, das echte
+  // MenuItem-Datenmodell bleibt unangetastet (siehe Nutzer-Rueckfrage).
+  menuHeading: string;
+  menuHint: string;
+  // Digitale Dankeskarte — nur die Ueberschrift ist neu, der Dankestext
+  // selbst liegt serverseitig im EventModule.config (siehe Kommentar in
+  // schema.prisma), im anonymen Customizer aber ganz normal als String-Feld
+  // im Draft, genau wie alle anderen Texte hier.
+  thankYouHeading: string;
+  thankYouMessage: string;
+  // Audio-/Video-Einladung — komplett neue Features (Schritt 7).
+  audioInvitationHeading: string;
+  audioInvitationHint: string;
+  videoMessageHeading: string;
+  videoMessageHint: string;
   // Reihenfolge aller 14 umschaltbaren Kartenabschnitte (4 Kern-Keys +
   // EXTRA_FEATURES-Keys) — steuert die Renderreihenfolge in der Karte.
   sectionOrder: string[];
@@ -193,6 +276,8 @@ function defaultDraft(item: GalleryTemplate): Draft {
     eventDate: "",
     eventTime: "",
     locationText: "",
+    locationLat: null,
+    locationLng: null,
     familyLeft: "",
     familyRight: "",
     fontId: "cormorant",
@@ -211,6 +296,44 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showPhotoBackground: true,
     extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, true])),
     sectionOrder: DEFAULT_SECTION_ORDER,
+    agendaItems: defaultAgendaItems(),
+    guestbookHeading: "Gästebuch",
+    guestbookHint: "Hinterlasst uns eure schönsten Wünsche und Erinnerungen.",
+    guestbookButtonText: "Nachricht hinterlassen",
+    wishlistHeading: "Wunschliste",
+    wishlistHint: "Über jeden Herzenswunsch freuen wir uns.",
+    wishlistItems: defaultWishlistItems(),
+    musicHeading: "Musikwünsche",
+    musicHint: "Welcher Song darf auf der Tanzfläche nicht fehlen?",
+    musicButtonText: "Musikwunsch einreichen",
+    countdownDaysLabel: "TAGE",
+    countdownHoursLabel: "STD",
+    countdownMinutesLabel: "MIN",
+    calendarSaveText: "In Kalender speichern",
+    calendarGoogleText: "Google Kalender",
+    rsvpHeading: "Kommt ihr?",
+    rsvpYesLabel: "Zusagen",
+    rsvpMaybeLabel: "Unsicher",
+    rsvpNoLabel: "Absagen",
+    rsvpButtonText: "Zusage senden",
+    seatingHeading: "Finde deinen Sitzplatz",
+    seatingHint: "Gib deinen Namen ein.",
+    seatingButtonText: "Suchen",
+    galleryHeading: "Teilt eure schönsten Momente",
+    galleryHint: "",
+    galleryButtonText: "Foto oder Video auswählen",
+    dresscodeHeading: "Dresscode",
+    dresscodeText: "Elegant / Smart Casual",
+    socialMediaHeading: "Social Media",
+    socialMediaText: "#EureHochzeit2026",
+    menuHeading: "Menü",
+    menuHint: "",
+    thankYouHeading: "Danke euch von Herzen",
+    thankYouMessage: "",
+    audioInvitationHeading: "Eine Nachricht für euch",
+    audioInvitationHint: "",
+    videoMessageHeading: "Unsere Videobotschaft",
+    videoMessageHint: "",
   };
 }
 
@@ -245,12 +368,53 @@ export function DesignStudio({
   // `category` bleibt intern der tuerkische Rohwert (Anker-Logik, Sünnet-
   // Nazar-Check unten) — nur die Anzeige uebersetzt sich mit der Sprache.
   const categoryDisplay = categoryLabel(category, locale);
-  // Lazy initializer statt Effect: laeuft einmalig bei Mount, liest sicher
-  // {} waehrend SSR (loadDrafts prueft `typeof window`).
-  const [drafts, setDrafts] = useState<Record<string, Draft>>(loadDrafts);
+  // Bewusst NICHT als Lazy-Initializer (frueher: useState(loadDrafts)) —
+  // das lieferte serverseitig immer {} (kein window), aber clientseitig
+  // beim ersten Render bereits den echten localStorage-Inhalt, was bei
+  // jedem Aufruf mit gespeichertem Entwurf einen echten Hydration-Fehler
+  // ausloeste (Server- und Client-Baum wichen sofort voneinander ab,
+  // React verwarf den SSR-Baum und rendert neu — reproduzierbar in der
+  // Konsole als "Hydration failed"). Stattdessen startet der Client
+  // identisch zum Server mit {} und laedt den Entwurf erst NACH der
+  // Hydration per Effect nach — das ist ein normales, hydration-sicheres
+  // Nachladen statt eines SSR/CSR-Wertunterschieds.
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  useEffect(() => {
+    // Bewusstes einmaliges Nachladen nach der Hydration (siehe Kommentar
+    // oben) statt eines Lazy-Initializers — die einzige Alternative ohne
+    // setState-im-Effect waere useSyncExternalStore, was hier unverhaeltnis-
+    // maessig waere, da drafts danach auch lokal (nicht nur extern) über
+    // updateDraft() mutiert wird.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDrafts(loadDrafts());
+  }, []);
   const [savedHint, setSavedHint] = useState(false);
   const [activeTab, setActiveTab] = useState("design");
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
+  // Eigener Auswahl-State fuer den Ablaufplan statt selectedKey: eine
+  // variable Liste hat keinen festen TextElementKey, jeder Eintrag braucht
+  // seine eigene id. Beide Auswahlen schliessen sich gegenseitig aus (siehe
+  // selectKey()/selectAgendaItem() unten), damit das Panel nie zwei
+  // widerspruechliche Editier-Ansichten gleichzeitig anzeigen will.
+  const [selectedAgendaId, setSelectedAgendaId] = useState<string | undefined>(undefined);
+  function selectKey(key: TextElementKey) {
+    setSelectedKey(key);
+    setSelectedAgendaId(undefined);
+    setSelectedWishlistId(undefined);
+  }
+  function selectAgendaItem(id: string) {
+    setSelectedAgendaId(id);
+    setSelectedKey(undefined);
+    setSelectedWishlistId(undefined);
+  }
+  // Analog zum Ablaufplan (Schritt 4): eigener Auswahl-State fuer die
+  // Wunschliste, alle drei Auswahlen schliessen sich gegenseitig aus.
+  const [selectedWishlistId, setSelectedWishlistId] = useState<string | undefined>(undefined);
+  function selectWishlistItem(id: string) {
+    setSelectedWishlistId(id);
+    setSelectedKey(undefined);
+    setSelectedAgendaId(undefined);
+  }
 
   // Merge statt reinem Fallback: ein in localStorage gespeicherter Entwurf
   // aus einer aelteren Version (vor neuen Draft-Feldern) soll die neuen
@@ -291,13 +455,50 @@ export function DesignStudio({
     updateDraft({ elements: { ...draft.elements, [key]: { ...draft.elements?.[key], ...patch } } });
   }
 
+  function updateAgendaItem(id: string, patch: Partial<AgendaItem>) {
+    updateDraft({ agendaItems: draft.agendaItems.map((it) => (it.id === id ? { ...it, ...patch } : it)) });
+  }
+  function updateAgendaItemStyle(id: string, patch: Partial<TextElementStyle>) {
+    updateAgendaItem(id, { style: { ...draft.agendaItems.find((it) => it.id === id)?.style, ...patch } });
+  }
+  function addAgendaItem() {
+    const item = newAgendaItem();
+    updateDraft({ agendaItems: [...draft.agendaItems, item] });
+    selectAgendaItem(item.id);
+  }
+  function removeAgendaItem(id: string) {
+    updateDraft({ agendaItems: draft.agendaItems.filter((it) => it.id !== id) });
+    if (selectedAgendaId === id) setSelectedAgendaId(undefined);
+  }
+  function moveAgendaItemHandler(id: string, direction: "up" | "down") {
+    updateDraft({ agendaItems: moveAgendaItem(draft.agendaItems, id, direction) });
+  }
+
+  // Wunschliste (Schritt 4): kein updateWishlistItemStyle noetig, ein
+  // Wunschartikel hat keinen eigenen Stil (siehe lib/wishlist.ts).
+  function updateWishlistItem(id: string, patch: Partial<WishlistItemData>) {
+    updateDraft({ wishlistItems: draft.wishlistItems.map((it) => (it.id === id ? { ...it, ...patch } : it)) });
+  }
+  function addWishlistItem() {
+    const item = newWishlistItem();
+    updateDraft({ wishlistItems: [...draft.wishlistItems, item] });
+    selectWishlistItem(item.id);
+  }
+  function removeWishlistItem(id: string) {
+    updateDraft({ wishlistItems: draft.wishlistItems.filter((it) => it.id !== id) });
+    if (selectedWishlistId === id) setSelectedWishlistId(undefined);
+  }
+  function moveWishlistItemHandler(id: string, direction: "up" | "down") {
+    updateDraft({ wishlistItems: moveWishlistItem(draft.wishlistItems, id, direction) });
+  }
+
   // Kleine Render-Helfer statt doppelt kopierter Klick-Auswahl-Logik in den
   // beiden Karten-Layouts (mit/ohne Kartengrafik) — gleiches Muster wie
   // renderEventLabel/renderTitle/renderFamily in HeroCard.tsx.
   function renderEventLabel(style: CSSProperties) {
     const override = elementOverrideStyle(draft.elements, "eventLabel");
     return (
-      <SelectableElement kind="text" label="Anlass-Label" selected={selectedKey === "eventLabel"} onSelect={() => setSelectedKey("eventLabel")}>
+      <SelectableElement kind="text" label="Anlass-Label" selected={selectedKey === "eventLabel"} onSelect={() => selectKey("eventLabel")}>
         <InlineEditableField
           value={draft.eventLabel}
           onChange={(text) => updateDraft({ eventLabel: text })}
@@ -312,7 +513,7 @@ export function DesignStudio({
   function renderTitle(style: CSSProperties) {
     const override = elementOverrideStyle(draft.elements, "title");
     return (
-      <SelectableElement kind="text" label="Name / Titel" selected={selectedKey === "title"} onSelect={() => setSelectedKey("title")}>
+      <SelectableElement kind="text" label="Name / Titel" selected={selectedKey === "title"} onSelect={() => selectKey("title")}>
         <InlineEditableField
           value={draft.text}
           onChange={(text) => updateDraft({ text })}
@@ -329,7 +530,7 @@ export function DesignStudio({
     const override = elementOverrideStyle(draft.elements, "family");
     const nameStyle: CSSProperties = { ...override };
     return (
-      <SelectableElement kind="text" label="Familiennamen" selected={selectedKey === "family"} onSelect={() => setSelectedKey("family")}>
+      <SelectableElement kind="text" label="Familiennamen" selected={selectedKey === "family"} onSelect={() => selectKey("family")}>
         <div className="customizer-card-families" style={containerStyle}>
           <div>
             <InlineEditableField value={draft.familyLeft} onChange={(text) => updateDraft({ familyLeft: text })} placeholder="—" onFocus={() => setSelectedKey("family")} style={nameStyle} />
@@ -347,9 +548,27 @@ export function DesignStudio({
 
   function renderDate(style: CSSProperties) {
     return (
-      <SelectableElement kind="date" label={TEXT_ELEMENT_LABELS.date} selected={selectedKey === "date"} onSelect={() => setSelectedKey("date")} style={style}>
+      <SelectableElement kind="date" label={TEXT_ELEMENT_LABELS.date} selected={selectedKey === "date"} onSelect={() => selectKey("date")} style={style}>
         <div className="customizer-card-date" style={{ color: style.color }}>
           {draftDateText() || "Datum & Uhrzeit"}
+        </div>
+      </SelectableElement>
+    );
+  }
+
+  // Wie renderDate: Adresse braucht Places-Autocomplete statt Freitext-
+  // Tippen, deshalb "kind=date" (Klick waehlt nur aus) statt kind="text" —
+  // die eigentliche Eingabe passiert im Panel (siehe unten, selectedKey
+  // === "location"), nicht per contentEditable direkt auf der Karte.
+  function renderLocation(style: CSSProperties) {
+    const override = elementOverrideStyle(draft.elements, "location");
+    return (
+      <SelectableElement kind="date" label={TEXT_ELEMENT_LABELS.location} selected={selectedKey === "location"} onSelect={() => selectKey("location")} style={style}>
+        <div className="customizer-card-location" style={{ color: style.color, ...override }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
+            <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
+          </svg>
+          {draft.locationText || "Ort / Location eingeben"}
         </div>
       </SelectableElement>
     );
@@ -363,41 +582,224 @@ export function DesignStudio({
   // steuerbar statt fest im JSX zu stehen.
   function renderSection(key: string): ReactNode {
     switch (key) {
-      case "countdown":
+      case "countdown": {
         if (!draft.showCountdown) return null;
+        const countdownLabelOverride = elementOverrideStyle(draft.elements, "countdownLabel");
+        const countdownUnits: { n: string; field: "countdownDaysLabel" | "countdownHoursLabel" | "countdownMinutesLabel"; value: string }[] = [
+          { n: "14", field: "countdownDaysLabel", value: draft.countdownDaysLabel },
+          { n: "06", field: "countdownHoursLabel", value: draft.countdownHoursLabel },
+          { n: "32", field: "countdownMinutesLabel", value: draft.countdownMinutesLabel },
+        ];
         return (
           <div className="customizer-card-countdown" key={key}>
-            {[
-              ["14", "TAGE"],
-              ["06", "STD"],
-              ["32", "MIN"],
-            ].map(([n, l]) => (
-              <div key={l} style={{ color: draft.primary }}>
-                <div style={{ fontFamily: font.cssVar, color: draft.accent }}>{n}</div>
-                <div>{l}</div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.countdownLabel}
+              selected={selectedKey === "countdownLabel"}
+              onSelect={() => selectKey("countdownLabel")}
+            >
+              <div style={{ display: "flex", gap: 16 }}>
+                {countdownUnits.map(({ n, field, value }) => (
+                  <div key={field} style={{ color: draft.primary, textAlign: "center" }}>
+                    <div style={{ fontFamily: font.cssVar, color: draft.accent, fontSize: 19 }}>{n}</div>
+                    <InlineEditableField
+                      value={value}
+                      onChange={(text) => updateDraft({ [field]: text } as Partial<Draft>)}
+                      onFocus={() => setSelectedKey("countdownLabel")}
+                      style={{ fontSize: 8, letterSpacing: "0.1em", opacity: 0.75, ...countdownLabelOverride }}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            </SelectableElement>
           </div>
         );
-      case "rsvp":
+      }
+      case "rsvp": {
         if (!draft.showRsvp) return null;
+        const rsvpHeadingOverride = elementOverrideStyle(draft.elements, "rsvpHeading");
+        const rsvpYesOverride = elementOverrideStyle(draft.elements, "rsvpYesLabel");
+        const rsvpMaybeOverride = elementOverrideStyle(draft.elements, "rsvpMaybeLabel");
+        const rsvpNoOverride = elementOverrideStyle(draft.elements, "rsvpNoLabel");
+        const rsvpButtonOverride = elementOverrideStyle(draft.elements, "rsvpButtonText");
         return (
           <div className="customizer-card-rsvp" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <div style={{ color: draft.primary }}>Kommt ihr?</div>
-            <div>
-              <span style={{ background: draft.accent, color: draft.background }}>Zusagen</span>
-              <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Absagen</span>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.rsvpHeading}
+              selected={selectedKey === "rsvpHeading"}
+              onSelect={() => selectKey("rsvpHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.rsvpHeading}
+                onChange={(text) => updateDraft({ rsvpHeading: text })}
+                placeholder="Kommt ihr?"
+                onFocus={() => setSelectedKey("rsvpHeading")}
+                style={{ fontSize: 11, fontWeight: 600, marginBottom: 10, color: draft.primary, ...rsvpHeadingOverride }}
+              />
+            </SelectableElement>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              <SelectableElement
+                kind="text"
+                label={TEXT_ELEMENT_LABELS.rsvpYesLabel}
+                selected={selectedKey === "rsvpYesLabel"}
+                onSelect={() => selectKey("rsvpYesLabel")}
+              >
+                <InlineEditableField
+                  value={draft.rsvpYesLabel}
+                  onChange={(text) => updateDraft({ rsvpYesLabel: text })}
+                  placeholder="Zusagen"
+                  onFocus={() => setSelectedKey("rsvpYesLabel")}
+                  style={{
+                    display: "inline-block",
+                    fontSize: 9.5,
+                    fontWeight: 600,
+                    padding: "6px 14px",
+                    border: "1px solid",
+                    background: draft.accent,
+                    color: draft.background,
+                    ...rsvpYesOverride,
+                  }}
+                />
+              </SelectableElement>
+              <SelectableElement
+                kind="text"
+                label={TEXT_ELEMENT_LABELS.rsvpMaybeLabel}
+                selected={selectedKey === "rsvpMaybeLabel"}
+                onSelect={() => selectKey("rsvpMaybeLabel")}
+              >
+                <InlineEditableField
+                  value={draft.rsvpMaybeLabel}
+                  onChange={(text) => updateDraft({ rsvpMaybeLabel: text })}
+                  placeholder="Unsicher"
+                  onFocus={() => setSelectedKey("rsvpMaybeLabel")}
+                  style={{
+                    display: "inline-block",
+                    fontSize: 9.5,
+                    fontWeight: 600,
+                    padding: "6px 14px",
+                    border: "1px solid",
+                    borderColor: `${draft.accent}88`,
+                    color: draft.primary,
+                    ...rsvpMaybeOverride,
+                  }}
+                />
+              </SelectableElement>
+              <SelectableElement
+                kind="text"
+                label={TEXT_ELEMENT_LABELS.rsvpNoLabel}
+                selected={selectedKey === "rsvpNoLabel"}
+                onSelect={() => selectKey("rsvpNoLabel")}
+              >
+                <InlineEditableField
+                  value={draft.rsvpNoLabel}
+                  onChange={(text) => updateDraft({ rsvpNoLabel: text })}
+                  placeholder="Absagen"
+                  onFocus={() => setSelectedKey("rsvpNoLabel")}
+                  style={{
+                    display: "inline-block",
+                    fontSize: 9.5,
+                    fontWeight: 600,
+                    padding: "6px 14px",
+                    border: "1px solid",
+                    borderColor: `${draft.accent}88`,
+                    color: draft.primary,
+                    ...rsvpNoOverride,
+                  }}
+                />
+              </SelectableElement>
             </div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.rsvpButtonText}
+              selected={selectedKey === "rsvpButtonText"}
+              onSelect={() => selectKey("rsvpButtonText")}
+              style={{ display: "block", marginTop: 10 }}
+            >
+              <InlineEditableField
+                value={draft.rsvpButtonText}
+                onChange={(text) => updateDraft({ rsvpButtonText: text })}
+                placeholder="Zusage senden"
+                onFocus={() => setSelectedKey("rsvpButtonText")}
+                style={{
+                  display: "block",
+                  padding: "8px 14px",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  background: draft.accent,
+                  color: draft.background,
+                  textAlign: "center",
+                  ...rsvpButtonOverride,
+                }}
+              />
+            </SelectableElement>
           </div>
         );
-      case "seating":
+      }
+      case "seating": {
         if (!draft.showSeating) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "seatingHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "seatingHint");
+        const buttonOverride = elementOverrideStyle(draft.elements, "seatingButtonText");
         return (
           <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <div style={{ color: draft.primary }}>Sitzplan-Suche</div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.seatingHeading}
+              selected={selectedKey === "seatingHeading"}
+              onSelect={() => selectKey("seatingHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.seatingHeading}
+                onChange={(text) => updateDraft({ seatingHeading: text })}
+                placeholder="Finde deinen Sitzplatz"
+                onFocus={() => setSelectedKey("seatingHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.seatingHint}
+              selected={selectedKey === "seatingHint"}
+              onSelect={() => selectKey("seatingHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.seatingHint}
+                onChange={(text) => updateDraft({ seatingHint: text })}
+                placeholder="Gib deinen Namen ein."
+                onFocus={() => setSelectedKey("seatingHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
             <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
               Euer Name …
             </div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.seatingButtonText}
+              selected={selectedKey === "seatingButtonText"}
+              onSelect={() => selectKey("seatingButtonText")}
+              style={{ display: "block", marginTop: 8 }}
+            >
+              <InlineEditableField
+                value={draft.seatingButtonText}
+                onChange={(text) => updateDraft({ seatingButtonText: text })}
+                placeholder="Suchen"
+                onFocus={() => setSelectedKey("seatingButtonText")}
+                style={{
+                  display: "inline-block",
+                  padding: "6px 14px",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  background: draft.accent,
+                  color: draft.background,
+                  ...buttonOverride,
+                }}
+              />
+            </SelectableElement>
             <div className="customizer-card-seating-grid">
               {Array.from({ length: 8 }).map((_, i) => (
                 <span key={i} style={i === 2 ? { background: draft.accent } : { borderColor: `${draft.accent}55` }} />
@@ -405,18 +807,542 @@ export function DesignStudio({
             </div>
           </div>
         );
-      case "gallery":
+      }
+      case "gallery": {
         if (!draft.showGallery) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "galleryHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "galleryHint");
+        const buttonOverride = elementOverrideStyle(draft.elements, "galleryButtonText");
         return (
           <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <div style={{ color: draft.primary }}>Foto- &amp; Videogalerie</div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.galleryHeading}
+              selected={selectedKey === "galleryHeading"}
+              onSelect={() => selectKey("galleryHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.galleryHeading}
+                onChange={(text) => updateDraft({ galleryHeading: text })}
+                placeholder="Teilt eure schönsten Momente"
+                onFocus={() => setSelectedKey("galleryHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.galleryHint}
+              selected={selectedKey === "galleryHint"}
+              onSelect={() => selectKey("galleryHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.galleryHint}
+                onChange={(text) => updateDraft({ galleryHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("galleryHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
             <div className="customizer-card-gallery-grid">
               {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
                 <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
               ))}
             </div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.galleryButtonText}
+              selected={selectedKey === "galleryButtonText"}
+              onSelect={() => selectKey("galleryButtonText")}
+              style={{ display: "block", marginTop: 8 }}
+            >
+              <InlineEditableField
+                value={draft.galleryButtonText}
+                onChange={(text) => updateDraft({ galleryButtonText: text })}
+                placeholder="Foto oder Video auswählen"
+                onFocus={() => setSelectedKey("galleryButtonText")}
+                style={{
+                  display: "block",
+                  padding: "6px 14px",
+                  fontSize: 10.5,
+                  border: `1px solid ${draft.accent}55`,
+                  color: draft.primary,
+                  textAlign: "left",
+                  ...buttonOverride,
+                }}
+              />
+            </SelectableElement>
           </div>
         );
+      }
+      case "guestbook": {
+        if (!draft.extraFeatures.guestbook) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "guestbookHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "guestbookHint");
+        const buttonOverride = elementOverrideStyle(draft.elements, "guestbookButtonText");
+        const sampleOverride = elementOverrideStyle(draft.elements, "guestbookSample");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.guestbookHeading}
+              selected={selectedKey === "guestbookHeading"}
+              onSelect={() => selectKey("guestbookHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.guestbookHeading}
+                onChange={(text) => updateDraft({ guestbookHeading: text })}
+                placeholder="Gästebuch"
+                onFocus={() => setSelectedKey("guestbookHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.guestbookHint}
+              selected={selectedKey === "guestbookHint"}
+              onSelect={() => selectKey("guestbookHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.guestbookHint}
+                onChange={(text) => updateDraft({ guestbookHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("guestbookHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+              Eure Nachricht …
+            </div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.guestbookButtonText}
+              selected={selectedKey === "guestbookButtonText"}
+              onSelect={() => selectKey("guestbookButtonText")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.guestbookButtonText}
+                onChange={(text) => updateDraft({ guestbookButtonText: text })}
+                placeholder="Nachricht hinterlassen"
+                onFocus={() => setSelectedKey("guestbookButtonText")}
+                style={{
+                  display: "inline-block",
+                  marginTop: 8,
+                  padding: "6px 14px",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  background: draft.accent,
+                  color: draft.background,
+                  ...buttonOverride,
+                }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="date"
+              label={TEXT_ELEMENT_LABELS.guestbookSample}
+              selected={selectedKey === "guestbookSample"}
+              onSelect={() => selectKey("guestbookSample")}
+              style={{ display: "block", marginTop: 8 }}
+            >
+              <div className="customizer-card-note" style={{ borderColor: `${draft.accent}55`, color: draft.primary, ...sampleOverride }}>
+                „Wir freuen uns riesig für euch — alles Liebe!“ – Familie Kaya
+              </div>
+            </SelectableElement>
+          </div>
+        );
+      }
+      case "wishlist": {
+        if (!draft.extraFeatures.wishlist) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "wishlistHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "wishlistHint");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.wishlistHeading}
+              selected={selectedKey === "wishlistHeading"}
+              onSelect={() => selectKey("wishlistHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.wishlistHeading}
+                onChange={(text) => updateDraft({ wishlistHeading: text })}
+                placeholder="Wunschliste"
+                onFocus={() => setSelectedKey("wishlistHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.wishlistHint}
+              selected={selectedKey === "wishlistHint"}
+              onSelect={() => selectKey("wishlistHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.wishlistHint}
+                onChange={(text) => updateDraft({ wishlistHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("wishlistHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <WishlistList
+              items={draft.wishlistItems}
+              selectedId={selectedWishlistId}
+              onSelect={selectWishlistItem}
+              onAdd={addWishlistItem}
+              onRemove={removeWishlistItem}
+              onMove={moveWishlistItemHandler}
+              baseStyle={{ color: draft.primary }}
+              accentColor={draft.accent}
+            />
+          </div>
+        );
+      }
+      case "music-requests": {
+        if (!draft.extraFeatures["music-requests"]) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "musicHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "musicHint");
+        const buttonOverride = elementOverrideStyle(draft.elements, "musicButtonText");
+        const sampleOverride = elementOverrideStyle(draft.elements, "musicSample");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.musicHeading}
+              selected={selectedKey === "musicHeading"}
+              onSelect={() => selectKey("musicHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.musicHeading}
+                onChange={(text) => updateDraft({ musicHeading: text })}
+                placeholder="Musikwünsche"
+                onFocus={() => setSelectedKey("musicHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.musicHint}
+              selected={selectedKey === "musicHint"}
+              onSelect={() => selectKey("musicHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.musicHint}
+                onChange={(text) => updateDraft({ musicHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("musicHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+              Song oder Interpret …
+            </div>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.musicButtonText}
+              selected={selectedKey === "musicButtonText"}
+              onSelect={() => selectKey("musicButtonText")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.musicButtonText}
+                onChange={(text) => updateDraft({ musicButtonText: text })}
+                placeholder="Musikwunsch einreichen"
+                onFocus={() => setSelectedKey("musicButtonText")}
+                style={{
+                  display: "inline-block",
+                  marginTop: 8,
+                  padding: "6px 14px",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  background: draft.accent,
+                  color: draft.background,
+                  ...buttonOverride,
+                }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="date"
+              label={TEXT_ELEMENT_LABELS.musicSample}
+              selected={selectedKey === "musicSample"}
+              onSelect={() => selectKey("musicSample")}
+              style={{ display: "block", marginTop: 8 }}
+            >
+              <div className="customizer-card-chips" style={{ justifyContent: "flex-start" }}>
+                <span style={{ borderColor: `${draft.accent}88`, color: draft.primary, ...sampleOverride }}>♪ Perfect – Ed Sheeran</span>
+              </div>
+            </SelectableElement>
+          </div>
+        );
+      }
+      case "dresscode": {
+        if (!draft.extraFeatures.dresscode) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "dresscodeHeading");
+        const textOverride = elementOverrideStyle(draft.elements, "dresscodeText");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.dresscodeHeading}
+              selected={selectedKey === "dresscodeHeading"}
+              onSelect={() => selectKey("dresscodeHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.dresscodeHeading}
+                onChange={(text) => updateDraft({ dresscodeHeading: text })}
+                placeholder="Dresscode"
+                onFocus={() => setSelectedKey("dresscodeHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.dresscodeText}
+              selected={selectedKey === "dresscodeText"}
+              onSelect={() => selectKey("dresscodeText")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.dresscodeText}
+                onChange={(text) => updateDraft({ dresscodeText: text })}
+                placeholder="z. B. Elegant / Smart Casual"
+                onFocus={() => setSelectedKey("dresscodeText")}
+                style={{ fontSize: 11, color: draft.primary, opacity: 0.85, ...textOverride }}
+              />
+            </SelectableElement>
+          </div>
+        );
+      }
+      case "social-media": {
+        if (!draft.extraFeatures["social-media"]) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "socialMediaHeading");
+        const textOverride = elementOverrideStyle(draft.elements, "socialMediaText");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.socialMediaHeading}
+              selected={selectedKey === "socialMediaHeading"}
+              onSelect={() => selectKey("socialMediaHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.socialMediaHeading}
+                onChange={(text) => updateDraft({ socialMediaHeading: text })}
+                placeholder="Social Media"
+                onFocus={() => setSelectedKey("socialMediaHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.socialMediaText}
+              selected={selectedKey === "socialMediaText"}
+              onSelect={() => selectKey("socialMediaText")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.socialMediaText}
+                onChange={(text) => updateDraft({ socialMediaText: text })}
+                placeholder="z. B. #EureHochzeit2026"
+                onFocus={() => setSelectedKey("socialMediaText")}
+                style={{ fontSize: 11, color: draft.primary, opacity: 0.85, ...textOverride }}
+              />
+            </SelectableElement>
+          </div>
+        );
+      }
+      case "menu": {
+        if (!draft.extraFeatures.menu) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "menuHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "menuHint");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.menuHeading}
+              selected={selectedKey === "menuHeading"}
+              onSelect={() => selectKey("menuHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.menuHeading}
+                onChange={(text) => updateDraft({ menuHeading: text })}
+                placeholder="Menü"
+                onFocus={() => setSelectedKey("menuHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.menuHint}
+              selected={selectedKey === "menuHint"}
+              onSelect={() => selectKey("menuHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.menuHint}
+                onChange={(text) => updateDraft({ menuHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("menuHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <div className="customizer-card-chips">
+              {["Vorspeise", "Hauptgang", "Dessert"].map((label) => (
+                <span key={label} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      case "thank-you-card": {
+        if (!draft.extraFeatures["thank-you-card"]) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "thankYouHeading");
+        const messageOverride = elementOverrideStyle(draft.elements, "thankYouMessage");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.thankYouHeading}
+              selected={selectedKey === "thankYouHeading"}
+              onSelect={() => selectKey("thankYouHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.thankYouHeading}
+                onChange={(text) => updateDraft({ thankYouHeading: text })}
+                placeholder="Danke euch von Herzen"
+                onFocus={() => setSelectedKey("thankYouHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.thankYouMessage}
+              selected={selectedKey === "thankYouMessage"}
+              onSelect={() => selectKey("thankYouMessage")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.thankYouMessage}
+                onChange={(text) => updateDraft({ thankYouMessage: text })}
+                placeholder={`Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${draft.text || "euch"}`}
+                onFocus={() => setSelectedKey("thankYouMessage")}
+                style={{ fontSize: 10.5, color: draft.primary, opacity: 0.85, ...messageOverride }}
+              />
+            </SelectableElement>
+            <div className="customizer-card-info-line" style={{ color: draft.primary, opacity: 0.6, marginTop: 6 }}>
+              Erscheint automatisch nach dem Fest
+            </div>
+          </div>
+        );
+      }
+      case "audio-invitation": {
+        if (!draft.extraFeatures["audio-invitation"]) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "audioInvitationHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "audioInvitationHint");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.audioInvitationHeading}
+              selected={selectedKey === "audioInvitationHeading"}
+              onSelect={() => selectKey("audioInvitationHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.audioInvitationHeading}
+                onChange={(text) => updateDraft({ audioInvitationHeading: text })}
+                placeholder="Eine Nachricht für euch"
+                onFocus={() => setSelectedKey("audioInvitationHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.audioInvitationHint}
+              selected={selectedKey === "audioInvitationHint"}
+              onSelect={() => selectKey("audioInvitationHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.audioInvitationHint}
+                onChange={(text) => updateDraft({ audioInvitationHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("audioInvitationHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
+              <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
+                ▶
+              </span>
+              <div className="customizer-card-audio-wave" aria-hidden="true">
+                {[6, 11, 15, 9, 16, 7, 12].map((h, i) => (
+                  <span key={i} style={{ height: h, background: `${draft.accent}99` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      }
+      case "video-invitation": {
+        if (!draft.extraFeatures["video-invitation"]) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "videoMessageHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "videoMessageHint");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.videoMessageHeading}
+              selected={selectedKey === "videoMessageHeading"}
+              onSelect={() => selectKey("videoMessageHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.videoMessageHeading}
+                onChange={(text) => updateDraft({ videoMessageHeading: text })}
+                placeholder="Unsere Videobotschaft"
+                onFocus={() => setSelectedKey("videoMessageHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.videoMessageHint}
+              selected={selectedKey === "videoMessageHint"}
+              onSelect={() => selectKey("videoMessageHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.videoMessageHint}
+                onChange={(text) => updateDraft({ videoMessageHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("videoMessageHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
+              <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
+                ▶
+              </span>
+              <span style={{ color: draft.primary, fontSize: 10.5 }}>Videobotschaft ansehen</span>
+            </div>
+          </div>
+        );
+      }
       default: {
         if (!draft.extraFeatures[key]) return null;
         const feature = EXTRA_FEATURES.find((f) => f.key === key);
@@ -438,103 +1364,16 @@ export function DesignStudio({
     switch (key) {
       case "agenda":
         return (
-          <div className="customizer-card-agenda">
-            {[
-              ["16:00", "Sektempfang"],
-              ["17:00", "Zeremonie"],
-              ["19:00", "Feier"],
-            ].map(([time, label]) => (
-              <div key={label}>
-                <span className="customizer-card-agenda-dot" style={{ background: draft.accent }} />
-                <span className="customizer-card-agenda-time" style={{ color: draft.accent }}>
-                  {time}
-                </span>
-                <span style={{ color: draft.primary }}>{label}</span>
-              </div>
-            ))}
-          </div>
-        );
-      case "guestbook":
-        return (
-          <>
-            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-              Eure Nachricht …
-            </div>
-            <div className="customizer-card-note" style={{ borderColor: `${draft.accent}55`, color: draft.primary }}>
-              „Wir freuen uns riesig für euch — alles Liebe!“ – Familie Kaya
-            </div>
-          </>
-        );
-      case "dresscode":
-        return (
-          <div className="customizer-card-info-line" style={{ color: draft.primary }}>
-            Elegant / Smart Casual
-          </div>
-        );
-      case "social-media":
-        return (
-          <div className="customizer-card-info-line" style={{ color: draft.primary }}>
-            #EureHochzeit2026
-          </div>
-        );
-      case "menu":
-        return (
-          <div className="customizer-card-chips">
-            {["Vorspeise", "Hauptgang", "Dessert"].map((label) => (
-              <span key={label} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-                {label}
-              </span>
-            ))}
-          </div>
-        );
-      case "wishlist":
-        return (
-          <div className="customizer-card-chips">
-            {["Geschirr-Set", "Reisegutschein", "Küchenmaschine"].map((label) => (
-              <span key={label} style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-                {label}
-              </span>
-            ))}
-          </div>
-        );
-      case "music-requests":
-        return (
-          <>
-            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-              Song oder Interpret …
-            </div>
-            <div className="customizer-card-chips">
-              <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>♪ Perfect – Ed Sheeran</span>
-            </div>
-          </>
-        );
-      case "thank-you-card":
-        return (
-          <div className="customizer-card-info-line" style={{ color: draft.primary }}>
-            Erscheint automatisch nach dem Fest
-          </div>
-        );
-      case "audio-invitation":
-        return (
-          <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
-            <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
-              ▶
-            </span>
-            <div className="customizer-card-audio-wave" aria-hidden="true">
-              {[6, 11, 15, 9, 16, 7, 12].map((h, i) => (
-                <span key={i} style={{ height: h, background: `${draft.accent}99` }} />
-              ))}
-            </div>
-          </div>
-        );
-      case "video-invitation":
-        return (
-          <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
-            <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
-              ▶
-            </span>
-            <span style={{ color: draft.primary, fontSize: 10.5 }}>Videobotschaft ansehen</span>
-          </div>
+          <AgendaList
+            items={draft.agendaItems}
+            selectedId={selectedAgendaId}
+            onSelect={selectAgendaItem}
+            onAdd={addAgendaItem}
+            onRemove={removeAgendaItem}
+            onMove={moveAgendaItemHandler}
+            baseStyle={{ color: draft.primary }}
+            accentColor={draft.accent}
+          />
         );
       default:
         return null;
@@ -680,12 +1519,7 @@ export function DesignStudio({
                       })}
                       <div>
                         {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 6 })}
-                        <div className="customizer-card-location" style={{ color: draft.primary }}>
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
-                            <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
-                          </svg>
-                          {draft.locationText || "Ort / Location eingeben"}
-                        </div>
+                        {renderLocation({ color: draft.primary })}
                       </div>
                     </div>
                   </div>
@@ -751,12 +1585,7 @@ export function DesignStudio({
 
                     <div className="customizer-card-divider" style={{ background: draft.accent }} />
                     {renderDate({ color: draft.primary })}
-                    <div className="customizer-card-location" style={{ color: draft.primary }}>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill={draft.accent}>
-                        <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
-                      </svg>
-                      {draft.locationText || "Ort / Location eingeben"}
-                    </div>
+                    {renderLocation({ color: draft.primary })}
                   </>
                 )}
 
@@ -765,10 +1594,53 @@ export function DesignStudio({
                     ausserhalb der sectionOrder-Liste, direkt unter dem
                     Kopfbereich. */}
                 <div className="customizer-card-actions">
-                  <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Google Maps</span>
-                  <span style={{ background: draft.accent, borderColor: draft.accent, color: draft.background }}>
-                    Kalender
-                  </span>
+                  {draft.locationText ? (
+                    <a
+                      href={googleMapsSearchUrl([draft.locationText])}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ borderColor: `${draft.accent}88`, color: draft.primary }}
+                    >
+                      Google Maps
+                    </a>
+                  ) : (
+                    <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Google Maps</span>
+                  )}
+                  <SelectableElement
+                    kind="text"
+                    label={TEXT_ELEMENT_LABELS.calendarSaveText}
+                    selected={selectedKey === "calendarSaveText"}
+                    onSelect={() => selectKey("calendarSaveText")}
+                  >
+                    <InlineEditableField
+                      value={draft.calendarSaveText}
+                      onChange={(text) => updateDraft({ calendarSaveText: text })}
+                      placeholder="In Kalender speichern"
+                      onFocus={() => setSelectedKey("calendarSaveText")}
+                      as="span"
+                      style={{ borderColor: `${draft.accent}88`, color: draft.primary, ...elementOverrideStyle(draft.elements, "calendarSaveText") }}
+                    />
+                  </SelectableElement>
+                  <SelectableElement
+                    kind="text"
+                    label={TEXT_ELEMENT_LABELS.calendarGoogleText}
+                    selected={selectedKey === "calendarGoogleText"}
+                    onSelect={() => selectKey("calendarGoogleText")}
+                  >
+                    <InlineEditableField
+                      value={draft.calendarGoogleText}
+                      onChange={(text) => updateDraft({ calendarGoogleText: text })}
+                      placeholder="Google Kalender"
+                      onFocus={() => setSelectedKey("calendarGoogleText")}
+                      as="span"
+                      style={{
+                        background: draft.accent,
+                        borderColor: draft.accent,
+                        color: draft.background,
+                        ...elementOverrideStyle(draft.elements, "calendarGoogleText"),
+                      }}
+                    />
+                  </SelectableElement>
                 </div>
 
                 {draft.sectionOrder.map((key) => (
@@ -795,7 +1667,73 @@ export function DesignStudio({
           <ContextPanel tabs={PANEL_TABS} activeTabId={activeTab} onTabChange={setActiveTab}>
           {activeTab !== "funktionen" && (
         <>
-          {selectedKey === "date" ? (
+          {selectedAgendaId ? (
+            (() => {
+              const item = draft.agendaItems.find((it) => it.id === selectedAgendaId);
+              if (!item) return null;
+              return (
+                <section className="studio-section">
+                  <TextControls
+                    elementKey="agenda"
+                    label={TEXT_ELEMENT_LABELS.agenda}
+                    style={item.style ?? {}}
+                    defaultColor={draft.primary}
+                    onChange={(patch) => updateAgendaItemStyle(item.id, patch)}
+                    onDeselect={() => setSelectedAgendaId(undefined)}
+                  />
+                  <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                    <AgendaItemQuickEdit
+                      time={item.time}
+                      label={item.label}
+                      onChange={(patch) => updateAgendaItem(item.id, patch)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAgendaItem(item.id)}
+                      className="btn btn-ghost"
+                      style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                    >
+                      Eintrag löschen
+                    </button>
+                  </div>
+                </section>
+              );
+            })()
+          ) : selectedWishlistId ? (
+            (() => {
+              const item = draft.wishlistItems.find((it) => it.id === selectedWishlistId);
+              if (!item) return null;
+              return (
+                <section className="studio-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <h4 style={{ margin: 0 }}>Wunschlisten-Artikel</h4>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedWishlistId(undefined)}
+                      style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      Abwählen
+                    </button>
+                  </div>
+                  <WishlistItemQuickEdit
+                    type={item.type}
+                    title={item.title}
+                    description={item.description}
+                    url={item.url}
+                    onChange={(patch) => updateWishlistItem(item.id, patch)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeWishlistItem(item.id)}
+                    className="btn btn-ghost"
+                    style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                  >
+                    Artikel löschen
+                  </button>
+                </section>
+              );
+            })()
+          ) : selectedKey === "date" ? (
             <section className="studio-section">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <h4 style={{ margin: 0 }}>{TEXT_ELEMENT_LABELS.date}</h4>
@@ -808,6 +1746,31 @@ export function DesignStudio({
                 </button>
               </div>
               <DateQuickEdit eventDate={draft.eventDate} eventTime={draft.eventTime} onChange={(next) => updateDraft(next)} />
+            </section>
+          ) : selectedKey === "location" ? (
+            <section className="studio-section">
+              <TextControls
+                elementKey="location"
+                label={TEXT_ELEMENT_LABELS.location}
+                style={draft.elements?.location ?? {}}
+                defaultColor={draft.primary}
+                onChange={(patch) => updateElementStyle("location", patch)}
+                onDeselect={() => setSelectedKey(undefined)}
+              />
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 11, color: "var(--ink-faint)" }} htmlFor={`location-${item.id}`}>
+                  Adresse
+                </label>
+                <PlaceAutocompleteField
+                  id={`location-${item.id}`}
+                  apiKey={GOOGLE_MAPS_API_KEY}
+                  value={draft.locationText}
+                  placeholder="z. B. Dedeman Sarayı, Bremen"
+                  onChange={(text) => updateDraft({ locationText: text, locationLat: null, locationLng: null })}
+                  onPlaceSelected={(place) => updateDraft({ locationText: place.address, locationLat: place.lat, locationLng: place.lng })}
+                  style={{ padding: "9px 10px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: "100%" }}
+                />
+              </div>
             </section>
           ) : selectedKey ? (
             <section className="studio-section">
@@ -823,21 +1786,8 @@ export function DesignStudio({
           ) : null}
           <section className="studio-section">
             <h4>Texte</h4>
-            <p className="studio-section-intro">Name/Titel, Anlass-Label, Familiennamen und Datum direkt in der Karte anklicken und bearbeiten.</p>
+            <p className="studio-section-intro">Name/Titel, Anlass-Label, Familiennamen, Datum und Ort direkt in der Karte anklicken und bearbeiten.</p>
             <div className="customizer-form">
-              <div className="customizer-field">
-                <label htmlFor={`location-${item.id}`}>Ort / Location</label>
-                <input
-                  id={`location-${item.id}`}
-                  className="customizer-text-input"
-                  type="text"
-                  value={draft.locationText}
-                  placeholder="z. B. Dedeman Sarayı, Bremen"
-                  onChange={(e) => updateDraft({ locationText: e.target.value })}
-                />
-                <span className="customizer-hint">Google-Maps-Autovervollständigung folgt hier in Kürze.</span>
-              </div>
-
               <div className="customizer-row">
                 <div className="customizer-field" style={{ flex: 1, minWidth: 140 }}>
                   <label htmlFor={`fam-left-${item.id}`}>Familie (links)</label>
