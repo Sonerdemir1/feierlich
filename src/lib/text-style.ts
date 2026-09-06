@@ -131,6 +131,22 @@ export type TextElementStyle = {
   strikethrough?: boolean;
   italic?: boolean;
 };
+// Laufzeit-Spiegel der TextElementStyle-Feldnamen — TypeScript-Typen
+// existieren zur Laufzeit nicht, ungeprueftes Client-JSON (apply-draft/
+// route.ts, agenda/route.ts) muss trotzdem gegen genau diese Liste
+// pruefen koennen. Zentrale Stelle statt zweier unabhaengiger Kopien
+// (gleiche Lehre wie TEXT_ELEMENT_KEYS aus Schritt 3) — beim Hinzufuegen
+// eines Feldes zu TextElementStyle hier mitpflegen.
+export const STYLE_FIELD_KEYS: (keyof TextElementStyle)[] = [
+  "size",
+  "color",
+  "fontId",
+  "align",
+  "bold",
+  "underline",
+  "strikethrough",
+  "italic",
+];
 export type StyleElements = Partial<Record<TextElementKey, TextElementStyle>>;
 
 export type SizePreset = { id: string; label: string; px: number };

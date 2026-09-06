@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { gatedModuleKeys } from "@/app/dashboard/events/actions";
 import { defaultTextForCategory } from "@/lib/gallery-templates";
-import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS, DEFAULT_DRESSCODE_TEXT, DEFAULT_SOCIAL_MEDIA_TEXT } from "@/lib/text-style";
+import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS, STYLE_FIELD_KEYS, DEFAULT_DRESSCODE_TEXT, DEFAULT_SOCIAL_MEDIA_TEXT } from "@/lib/text-style";
 import { WISHLIST_TYPES, defaultWishlistItems, type WishlistItemType } from "@/lib/wishlist";
 import { defaultAgendaItems } from "@/lib/agenda";
 
@@ -39,7 +39,7 @@ const MANAGED_MODULE_KEYS = new Set([
 // Kopie — genau so eine Kopie war in buildDesignUpdate() (design-style.ts)
 // bereits um "location" veraltet, siehe Schritt 3.
 const TEXT_ELEMENT_KEYS = new Set<string>(ELEMENT_STYLE_KEYS);
-const STYLE_FIELDS = new Set(["size", "color", "fontId", "align", "bold", "underline", "strikethrough", "italic"]);
+const STYLE_FIELDS = new Set<string>(STYLE_FIELD_KEYS);
 const MAX_AGENDA_ITEMS = 30;
 const MAX_WISHLIST_ITEMS = 30;
 

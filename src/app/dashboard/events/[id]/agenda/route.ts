@@ -1,11 +1,15 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { STYLE_FIELD_KEYS } from "@/lib/text-style";
 
 // Erlaubte Stil-Felder je Eintrag — gleiches Vorsichtsprinzip wie
 // EDITABLE_FIELDS in inline-text/route.ts bzw. STYLE_FIELDS in
 // apply-draft/route.ts, damit kein beliebiges JSON in agendaJson landet.
-const STYLE_FIELDS = new Set(["size", "color", "fontId", "align", "bold", "underline", "strikethrough", "italic"]);
+// Zentrale Liste (lib/text-style.ts) statt einer zweiten, unabhaengig
+// gepflegten Kopie — genau das Muster, das bei TEXT_ELEMENT_KEYS in
+// Schritt 3 bereits auseinandergelaufen war.
+const STYLE_FIELDS = new Set<string>(STYLE_FIELD_KEYS);
 const MAX_ITEMS = 30;
 
 function sanitizeStyle(raw: unknown): Record<string, unknown> | undefined {
