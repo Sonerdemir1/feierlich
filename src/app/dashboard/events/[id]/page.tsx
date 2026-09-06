@@ -21,6 +21,10 @@ import {
   removeEnvelopeVideo,
   uploadBackgroundMusic,
   removeBackgroundMusic,
+  uploadAudioInvitation,
+  removeAudioInvitation,
+  uploadVideoMessage,
+  removeVideoMessage,
 } from "../actions";
 import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
@@ -35,6 +39,9 @@ import { aiTextConfigured } from "@/lib/ai-text";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import type { StyleElements } from "@/lib/text-style";
+import type { AgendaItem } from "@/lib/agenda";
+import type { WishlistItemData } from "@/lib/wishlist";
+import { WISHLIST_TYPE_LABEL } from "@/lib/wishlist";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
@@ -50,13 +57,6 @@ const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
   PUBLISHED: "Veröffentlicht",
   ARCHIVED: "Archiviert",
-};
-
-const wishlistTypeLabel: Record<string, string> = {
-  GIFT: "Geschenk",
-  CASH: "Geldgeschenk",
-  HONEYMOON: "Flitterwochen",
-  EXTERNAL: "Externe Liste",
 };
 
 const menuCourseLabel: Record<string, string> = {
@@ -121,6 +121,8 @@ export default async function EventDetailPage({
       coverImage: true,
       envelopeVideo: true,
       backgroundMusic: true,
+      audioInvitation: true,
+      videoMessage: true,
       order: { include: { package: true } },
     },
   });
@@ -167,6 +169,14 @@ export default async function EventDetailPage({
     ? JSON.parse(event.styleJson)
     : {};
   const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
+  const activeAgendaItems: AgendaItem[] = event.agendaJson ? JSON.parse(event.agendaJson) : [];
+  const activeWishlistItems: WishlistItemData[] = wishlistItems.map((w) => ({
+    id: w.id,
+    type: w.type,
+    title: w.title,
+    description: w.description ?? "",
+    url: w.url ?? "",
+  }));
 
   const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
   const templatesByCategory = new Map<string, typeof allTemplates>();
@@ -239,6 +249,10 @@ export default async function EventDetailPage({
           initialElements={activeStyle.elements}
           initialEventDate={event.eventDate.toISOString().slice(0, 10)}
           initialEventTime={event.eventTime ?? ""}
+          initialLocationName={event.locationName ?? ""}
+          initialLocationAddress={event.locationAddress ?? ""}
+          initialAgendaItems={activeAgendaItems}
+          initialWishlistItems={activeWishlistItems}
           hasOverride={hasColorOverride || hasStyleOverride}
           onReset={resetDesign.bind(null, event.id)}
           envelopeVideoUrl={event.envelopeVideo?.url ?? null}
@@ -247,6 +261,12 @@ export default async function EventDetailPage({
           backgroundMusicUrl={event.backgroundMusic?.url ?? null}
           uploadBackgroundMusicAction={uploadBackgroundMusic.bind(null, event.id)}
           removeBackgroundMusicAction={removeBackgroundMusic.bind(null, event.id)}
+          audioInvitationUrl={event.audioInvitation?.url ?? null}
+          uploadAudioInvitationAction={uploadAudioInvitation.bind(null, event.id)}
+          removeAudioInvitationAction={removeAudioInvitation.bind(null, event.id)}
+          videoMessageUrl={event.videoMessage?.url ?? null}
+          uploadVideoMessageAction={uploadVideoMessage.bind(null, event.id)}
+          removeVideoMessageAction={removeVideoMessage.bind(null, event.id)}
         />
 
         <details open style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
@@ -845,7 +865,7 @@ export default async function EventDetailPage({
               }}
             >
               <span style={{ fontWeight: 600 }}>{w.title}</span>
-              <span style={{ color: "var(--ink-faint)", fontSize: 11.5 }}>{wishlistTypeLabel[w.type] ?? w.type}</span>
+              <span style={{ color: "var(--ink-faint)", fontSize: 11.5 }}>{WISHLIST_TYPE_LABEL[w.type] ?? w.type}</span>
               <form action={deleteWishlistItem.bind(null, event.id, w.id)}>
                 <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                   Entfernen
@@ -856,7 +876,7 @@ export default async function EventDetailPage({
         </div>
         <form action={createWishlistItem.bind(null, event.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
           <select name="type" defaultValue="GIFT" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13 }}>
-            {Object.entries(wishlistTypeLabel).map(([value, label]) => (
+            {Object.entries(WISHLIST_TYPE_LABEL).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

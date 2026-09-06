@@ -192,6 +192,60 @@ export async function removeBackgroundMusic(eventId: string) {
   redirect(`/dashboard/events/${eventId}`);
 }
 
+// Audio-Einladung (Schritt 7) — einmalige Sprachnachricht statt einer
+// Endlosschleife, siehe AudioMessagePlayer.tsx. Gleiches Upload-Muster wie
+// uploadBackgroundMusic oben, nur ein anderes Zielfeld.
+export async function uploadAudioInvitation(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const file = formData.get("file");
+  const error = validateAudioFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
+
+  const { url, mimeType, sizeBytes } = await saveEventAudio(eventId, file as File);
+  const media = await prisma.media.create({ data: { eventId, type: "AUDIO", url, mimeType, sizeBytes, status: "APPROVED" } });
+  await prisma.event.update({ where: { id: eventId }, data: { audioInvitationId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+export async function removeAudioInvitation(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { audioInvitationId: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+// Video-Einladung (Schritt 7) — bewusst getrennt vom Umschlag-Video
+// (envelopeVideoId), siehe Schema-Kommentar. Gleiches Upload-Muster wie
+// uploadEnvelopeVideo oben, nur ein anderes Zielfeld.
+export async function uploadVideoMessage(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const file = formData.get("file");
+  const error = validateVideoFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
+
+  const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
+  const media = await prisma.media.create({ data: { eventId, type: "VIDEO", url, mimeType, sizeBytes, status: "APPROVED" } });
+  await prisma.event.update({ where: { id: eventId }, data: { videoMessageId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+export async function removeVideoMessage(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { videoMessageId: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
 // Erzeugt aus dem aktuellen Titelbild eine freigestellte Version (remove.bg)
 // und setzt sie als neues Titelbild. Das Original bleibt als eigener
 // Media-Eintrag erhalten (nicht ueberschrieben) — falls das Ergebnis nicht
