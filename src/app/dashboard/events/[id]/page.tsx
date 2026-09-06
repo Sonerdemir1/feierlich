@@ -16,7 +16,6 @@ import {
   changeTemplate,
   updateSlug,
   updateEventDetails,
-  saveThankYouCard,
   uploadEnvelopeVideo,
   removeEnvelopeVideo,
   uploadBackgroundMusic,
@@ -26,7 +25,6 @@ import {
   uploadVideoMessage,
   removeVideoMessage,
 } from "../actions";
-import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { deleteMusicRequest } from "./music-requests-actions";
 import { checkInGuest } from "./checkin-actions";
@@ -41,7 +39,6 @@ import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import type { StyleElements } from "@/lib/text-style";
 import type { AgendaItem } from "@/lib/agenda";
 import type { WishlistItemData } from "@/lib/wishlist";
-import { WISHLIST_TYPE_LABEL } from "@/lib/wishlist";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
@@ -202,10 +199,6 @@ export default async function EventDetailPage({
   const modulesSaved = sp.modulesSaved === "1";
   const slugSaved = sp.slugSaved === "1";
   const detailsSaved = sp.detailsSaved === "1";
-  const thankYouSaved = sp.thankYouSaved === "1";
-  const thankYouModuleId = allModules.find((m) => m.key === "thank-you-card")?.id;
-  const thankYouModule = thankYouModuleId ? eventModules.find((em) => em.moduleId === thankYouModuleId) : undefined;
-  const thankYouMessage: string = thankYouModule?.config ? (JSON.parse(thankYouModule.config).message ?? "") : "";
   const socialModuleId = allModules.find((m) => m.key === "social-media")?.id;
   const socialModule = socialModuleId ? eventModules.find((em) => em.moduleId === socialModuleId) : undefined;
   const eventHashtag: string = socialModule?.config ? (JSON.parse(socialModule.config).hashtag ?? "") : "";
@@ -423,12 +416,6 @@ export default async function EventDetailPage({
           Details gespeichert.
         </div>
       )}
-      {thankYouSaved && (
-        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
-          Dankeskarte gespeichert.
-        </div>
-      )}
-
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 36 }}>
         <Tile label="Gäste" value={String(event.guests.length)} />
         <Tile
@@ -723,30 +710,6 @@ export default async function EventDetailPage({
         </form>
       </div>
 
-      {/* Dankeskarte */}
-      {thankYouModuleId && (
-        <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Digitale Dankeskarte</div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-            Erscheint automatisch für eure Gäste auf der Event-Seite, sobald das Datum vorbei ist — kein separater
-            Versand nötig. Ohne eigenen Text wird ein Standard-Dank angezeigt.
-          </div>
-          <form action={saveThankYouCard.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <textarea
-              name="thankYouMessage"
-              defaultValue={thankYouMessage}
-              placeholder={`Von Herzen: Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
-              rows={3}
-              maxLength={500}
-              style={{ padding: "11px 13px", border: "1px solid var(--line)", background: "var(--ivory-2)", color: "var(--ink)", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
-            />
-            <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5, alignSelf: "flex-start" }}>
-              Dankeskarte speichern
-            </button>
-          </form>
-        </div>
-      )}
-
       {/* Zusatzpakete */}
       {otherAddOns.length > 0 && (
         <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
@@ -840,54 +803,6 @@ export default async function EventDetailPage({
             ))}
           </div>
         </details>
-      </div>
-
-      {/* Wunschliste */}
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Wunschliste</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Geschenkewünsche für eure Gäste — sichtbar, wenn das Modul &bdquo;Wunschliste&ldquo; aktiviert ist.
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 18 }}>
-          {wishlistItems.map((w) => (
-            <div
-              key={w.id}
-              style={{
-                border: "1px solid var(--line)",
-                background: "var(--ivory-2)",
-                padding: "10px 14px",
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 10,
-                rowGap: 8,
-                fontSize: 13,
-              }}
-            >
-              <span style={{ fontWeight: 600 }}>{w.title}</span>
-              <span style={{ color: "var(--ink-faint)", fontSize: 11.5 }}>{WISHLIST_TYPE_LABEL[w.type] ?? w.type}</span>
-              <form action={deleteWishlistItem.bind(null, event.id, w.id)}>
-                <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  Entfernen
-                </button>
-              </form>
-            </div>
-          ))}
-        </div>
-        <form action={createWishlistItem.bind(null, event.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
-          <select name="type" defaultValue="GIFT" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13 }}>
-            {Object.entries(WISHLIST_TYPE_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <input name="title" placeholder="z. B. Kaffeemaschine" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 200px", minWidth: 0 }} />
-          <input name="url" placeholder="Link (optional)" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 200px", minWidth: 0 }} />
-          <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5 }}>
-            + Eintrag hinzufügen
-          </button>
-        </form>
       </div>
 
       {/* Digitale Menükarte */}

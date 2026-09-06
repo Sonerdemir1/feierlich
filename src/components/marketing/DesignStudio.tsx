@@ -534,19 +534,25 @@ export function DesignStudio({
   }
 
   function renderFamily(containerStyle: CSSProperties) {
-    if (!draft.familyLeft && !draft.familyRight) return null;
+    // Bewusst KEIN "beide leer -> null"-Guard (mehr): die Karte ist seit
+    // Punkt 6 der Review die einzige Stelle, an der Familiennamen ueberhaupt
+    // eingegeben werden koennen (das alte <input>-Paar im Texte-Panel ist
+    // entfernt) — ein komplett unangetasteter Entwurf muss also weiterhin
+    // eine klickbare Platzhalter-Flaeche zeigen, sonst gaebe es fuer einen
+    // frischen Entwurf gar keinen Weg mehr, Familiennamen zu setzen. Gleiches
+    // Muster wie renderDate()/"Ort / Location eingeben" oben auf der Karte.
     const override = elementOverrideStyle(draft.elements, "family");
     const nameStyle: CSSProperties = { ...override };
     return (
       <SelectableElement kind="text" label="Familiennamen" selected={selectedKey === "family"} onSelect={() => selectKey("family")}>
         <div className="customizer-card-families" style={containerStyle}>
           <div>
-            <InlineEditableField value={draft.familyLeft} onChange={(text) => updateDraft({ familyLeft: text })} placeholder="—" onFocus={() => setSelectedKey("family")} style={nameStyle} />
+            <InlineEditableField value={draft.familyLeft} onChange={(text) => updateDraft({ familyLeft: text })} placeholder="z. B. Demir" onFocus={() => setSelectedKey("family")} style={nameStyle} />
             <small>AİLESİ</small>
           </div>
           <div className="customizer-card-families-div" style={{ background: `${draft.accent}66` }} />
           <div>
-            <InlineEditableField value={draft.familyRight} onChange={(text) => updateDraft({ familyRight: text })} placeholder="—" onFocus={() => setSelectedKey("family")} style={nameStyle} />
+            <InlineEditableField value={draft.familyRight} onChange={(text) => updateDraft({ familyRight: text })} placeholder="z. B. Yılmaz" onFocus={() => setSelectedKey("family")} style={nameStyle} />
             <small>AİLESİ</small>
           </div>
         </div>
@@ -1801,37 +1807,13 @@ export function DesignStudio({
                 onDeselect={() => setSelectedKey(undefined)}
               />
             </section>
-          ) : null}
-          <section className="studio-section">
-            <h4>Texte</h4>
-            <p className="studio-section-intro">Name/Titel, Anlass-Label, Familiennamen, Datum und Ort direkt in der Karte anklicken und bearbeiten.</p>
-            <div className="customizer-form">
-              <div className="customizer-row">
-                <div className="customizer-field" style={{ flex: 1, minWidth: 140 }}>
-                  <label htmlFor={`fam-left-${item.id}`}>Familie (links)</label>
-                  <input
-                    id={`fam-left-${item.id}`}
-                    className="customizer-text-input"
-                    type="text"
-                    value={draft.familyLeft}
-                    placeholder="z. B. Demir"
-                    onChange={(e) => updateDraft({ familyLeft: e.target.value })}
-                  />
-                </div>
-                <div className="customizer-field" style={{ flex: 1, minWidth: 140 }}>
-                  <label htmlFor={`fam-right-${item.id}`}>Familie (rechts)</label>
-                  <input
-                    id={`fam-right-${item.id}`}
-                    className="customizer-text-input"
-                    type="text"
-                    value={draft.familyRight}
-                    placeholder="z. B. Yılmaz"
-                    onChange={(e) => updateDraft({ familyRight: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
+          ) : (
+            <section className="studio-section">
+              <p className="studio-section-intro">
+                Name/Titel, Anlass-Label, Familiennamen, Datum und Ort direkt in der Karte anklicken und bearbeiten.
+              </p>
+            </section>
+          )}
 
           <section className="studio-section">
             <h4>Schrift &amp; Farbe</h4>
