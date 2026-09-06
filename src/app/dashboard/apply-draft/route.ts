@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { gatedModuleKeys } from "@/app/dashboard/events/actions";
 import { defaultTextForCategory } from "@/lib/gallery-templates";
-import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS } from "@/lib/text-style";
-import { WISHLIST_TYPES, type WishlistItemType } from "@/lib/wishlist";
+import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS, DEFAULT_DRESSCODE_TEXT, DEFAULT_SOCIAL_MEDIA_TEXT } from "@/lib/text-style";
+import { WISHLIST_TYPES, defaultWishlistItems, type WishlistItemType } from "@/lib/wishlist";
+import { defaultAgendaItems } from "@/lib/agenda";
 
 // Ordnet die tuerkischen Hochzeitssaal-Kategorien und die generischen
 // Design-Stil-Kategorien (siehe gallery-templates.ts) je einem echten
@@ -186,8 +187,32 @@ export async function POST(request: Request) {
   const elements = sanitizeElements(draft.elements);
   if (Object.keys(elements).length > 0) styleObj.elements = elements;
 
-  const agendaItems = sanitizeAgendaItems(draft.agendaItems);
-  const wishlistItems = sanitizeWishlistItems(draft.wishlistItems);
+  // Bugfix: ein komplett unangetasteter Entwurf enthaelt fuer Ablaufplan/
+  // Wunschliste weiterhin die erfundenen Beispieleintraege aus
+  // defaultAgendaItems()/defaultWishlistItems() (Kunde hat den Bereich nie
+  // geoeffnet) — die duerfen NICHT als echte Angaben auf der oeffentlichen
+  // Einladungsseite landen ("Sektempfang 16:00" etc., "Geschirr-Set" etc.).
+  // Deshalb wird hier explizit gegen den Default verglichen (Zeit/
+  // Beschriftung bzw. Typ/Titel/Beschreibung/Link, ohne die instabile id)
+  // und bei exakter Uebereinstimmung verworfen, statt die erfundenen Werte
+  // in ein echtes Event zu uebernehmen.
+  function isUnchangedAgenda(items: { time: string; label: string; style?: Record<string, unknown> }[]): boolean {
+    const def = defaultAgendaItems();
+    if (items.length !== def.length) return false;
+    return items.every((it, i) => it.time === def[i].time && it.label === def[i].label && !it.style);
+  }
+  function isUnchangedWishlist(items: { type: WishlistItemType; title: string; description: string | null; url: string | null }[]): boolean {
+    const def = defaultWishlistItems();
+    if (items.length !== def.length) return false;
+    return items.every(
+      (it, i) => it.type === def[i].type && it.title === def[i].title && (it.description ?? "") === def[i].description && (it.url ?? "") === def[i].url
+    );
+  }
+
+  const sanitizedAgendaItems = sanitizeAgendaItems(draft.agendaItems);
+  const agendaItems = isUnchangedAgenda(sanitizedAgendaItems) ? [] : sanitizedAgendaItems;
+  const sanitizedWishlistItems = sanitizeWishlistItems(draft.wishlistItems);
+  const wishlistItems = isUnchangedWishlist(sanitizedWishlistItems) ? [] : sanitizedWishlistItems;
 
   // guestbook*/wishlist*/music* — reiner Einzeiler-Text, gleiches
   // "leer -> null (eingebauter Standardtext)"-Prinzip wie eventLabel oben.
@@ -195,6 +220,17 @@ export async function POST(request: Request) {
   // dieser Gelegenheit mitbehoben, da dieselbe Funktion betroffen ist).
   function textOrNull(value: unknown): string | null {
     return typeof value === "string" && value.trim() ? value.trim() : null;
+  }
+  // Gleiches Bugfix-Prinzip wie bei Ablaufplan/Wunschliste oben: Dresscode-
+  // und Social-Media-Text sind reiner Freitext ohne "leerer Standard"-Wert
+  // (anders als z.B. menuHint/thankYouMessage, die default leer sind) — im
+  // anonymen Customizer stehen stattdessen erfundene Beispielwerte
+  // (DEFAULT_DRESSCODE_TEXT/DEFAULT_SOCIAL_MEDIA_TEXT). Bleiben sie
+  // unveraendert, wuerden sie sonst als echte Angabe des Kunden auf der
+  // oeffentlichen Einladungsseite erscheinen.
+  function textOrNullUnlessDefault(value: unknown, defaultValue: string): string | null {
+    const text = textOrNull(value);
+    return text === defaultValue ? null : text;
   }
   const guestbookHeading = textOrNull(draft.guestbookHeading);
   const guestbookHint = textOrNull(draft.guestbookHint);
@@ -221,9 +257,9 @@ export async function POST(request: Request) {
   const galleryHint = textOrNull(draft.galleryHint);
   const galleryButtonText = textOrNull(draft.galleryButtonText);
   const dresscodeHeading = textOrNull(draft.dresscodeHeading);
-  const dresscodeText = textOrNull(draft.dresscodeText);
+  const dresscodeText = textOrNullUnlessDefault(draft.dresscodeText, DEFAULT_DRESSCODE_TEXT);
   const socialMediaHeading = textOrNull(draft.socialMediaHeading);
-  const socialMediaText = textOrNull(draft.socialMediaText);
+  const socialMediaText = textOrNullUnlessDefault(draft.socialMediaText, DEFAULT_SOCIAL_MEDIA_TEXT);
   const menuHeading = textOrNull(draft.menuHeading);
   const menuHint = textOrNull(draft.menuHint);
   const thankYouHeading = textOrNull(draft.thankYouHeading);

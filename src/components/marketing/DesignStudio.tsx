@@ -25,7 +25,15 @@ import { defaultAgendaItems, newAgendaItem, moveAgendaItem, type AgendaItem } fr
 import { WishlistList } from "@/components/editor/WishlistList";
 import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
 import { defaultWishlistItems, newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
-import { elementOverrideStyle, TEXT_ELEMENT_LABELS, type StyleElements, type TextElementKey, type TextElementStyle } from "@/lib/text-style";
+import {
+  elementOverrideStyle,
+  TEXT_ELEMENT_LABELS,
+  DEFAULT_DRESSCODE_TEXT,
+  DEFAULT_SOCIAL_MEDIA_TEXT,
+  type StyleElements,
+  type TextElementKey,
+  type TextElementStyle,
+} from "@/lib/text-style";
 
 type PhotoShape = "rect" | "circle" | "star" | "polaroid";
 
@@ -323,9 +331,9 @@ function defaultDraft(item: GalleryTemplate): Draft {
     galleryHint: "",
     galleryButtonText: "Foto oder Video auswählen",
     dresscodeHeading: "Dresscode",
-    dresscodeText: "Elegant / Smart Casual",
+    dresscodeText: DEFAULT_DRESSCODE_TEXT,
     socialMediaHeading: "Social Media",
-    socialMediaText: "#EureHochzeit2026",
+    socialMediaText: DEFAULT_SOCIAL_MEDIA_TEXT,
     menuHeading: "Menü",
     menuHint: "",
     thankYouHeading: "Danke euch von Herzen",

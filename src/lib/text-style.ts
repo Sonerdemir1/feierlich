@@ -1,5 +1,14 @@
 import { fontOptionById } from "./fonts";
 
+// Erfundene Beispielwerte fuer Dresscode/Social-Media-Text im anonymen
+// Customizer (DesignStudio.tsx defaultDraft()) — als benannte Konstanten
+// statt Inline-Strings, damit apply-draft/route.ts denselben Wert zum
+// Vergleich heranziehen kann (Bugfix: diese Platzhalter duerfen NICHT
+// unveraendert auf einer echten, oeffentlichen Einladungsseite landen,
+// siehe Kommentar dort).
+export const DEFAULT_DRESSCODE_TEXT = "Elegant / Smart Casual";
+export const DEFAULT_SOCIAL_MEDIA_TEXT = "#EureHochzeit2026";
+
 // Pro-Element Textfeinsteuerung (Groesse + Farbe) fuer die vier
 // frei formulierten Textstellen der echten Event-Seite — Titel
 // (Namen), Untertitel, Datumszeile, Beschreibung. Kunden-Feedback:
