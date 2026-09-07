@@ -84,6 +84,7 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
   // — sonst waere bei dunklen Vorlagen (helle Schrift auf dunklem Vorlagen-
   // hintergrund) der Titel auf dem hellen Kartenhintergrund unsichtbar.
   const { dark: safePrimary, light: safeBackground } = safeQrColorsFromEvent(activeColors.primary, activeColors.background);
+  const activeStyle: { fontId?: string } = event.styleJson ? JSON.parse(event.styleJson) : {};
 
   const svg = await buildQrDesignSvg({
     size,
@@ -94,6 +95,7 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
     primary: safePrimary,
     accent: activeColors.accent,
     background: safeBackground,
+    fontId: activeStyle.fontId,
   });
 
   const to = session.user!.email!;

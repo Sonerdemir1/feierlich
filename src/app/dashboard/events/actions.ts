@@ -192,6 +192,60 @@ export async function removeBackgroundMusic(eventId: string) {
   redirect(`/dashboard/events/${eventId}`);
 }
 
+// Audio-Einladung (Schritt 7) — einmalige Sprachnachricht statt einer
+// Endlosschleife, siehe AudioMessagePlayer.tsx. Gleiches Upload-Muster wie
+// uploadBackgroundMusic oben, nur ein anderes Zielfeld.
+export async function uploadAudioInvitation(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const file = formData.get("file");
+  const error = validateAudioFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
+
+  const { url, mimeType, sizeBytes } = await saveEventAudio(eventId, file as File);
+  const media = await prisma.media.create({ data: { eventId, type: "AUDIO", url, mimeType, sizeBytes, status: "APPROVED" } });
+  await prisma.event.update({ where: { id: eventId }, data: { audioInvitationId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+export async function removeAudioInvitation(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { audioInvitationId: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+// Video-Einladung (Schritt 7) — bewusst getrennt vom Umschlag-Video
+// (envelopeVideoId), siehe Schema-Kommentar. Gleiches Upload-Muster wie
+// uploadEnvelopeVideo oben, nur ein anderes Zielfeld.
+export async function uploadVideoMessage(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  const file = formData.get("file");
+  const error = validateVideoFile(file);
+  if (error) redirect(`/dashboard/events/${eventId}?error=${error}`);
+
+  const { url, mimeType, sizeBytes } = await saveEventMedia(eventId, file as File);
+  const media = await prisma.media.create({ data: { eventId, type: "VIDEO", url, mimeType, sizeBytes, status: "APPROVED" } });
+  await prisma.event.update({ where: { id: eventId }, data: { videoMessageId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+export async function removeVideoMessage(eventId: string) {
+  const { event } = await requireOwnedEvent(eventId);
+  await prisma.event.update({ where: { id: eventId }, data: { videoMessageId: null } });
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
 // Erzeugt aus dem aktuellen Titelbild eine freigestellte Version (remove.bg)
 // und setzt sie als neues Titelbild. Das Original bleibt als eigener
 // Media-Eintrag erhalten (nicht ueberschrieben) — falls das Ergebnis nicht
@@ -364,24 +418,30 @@ export async function saveModules(eventId: string, formData: FormData) {
   redirect(`/dashboard/events/${eventId}?modulesSaved=1`);
 }
 
-// Modul-spezifische Konfiguration ("thank-you-card") liegt im generischen
-// EventModule.config-JSON-Feld — gleiches Muster wie Event.colorOverride,
-// keine eigene Spalte noetig.
-export async function saveThankYouCard(eventId: string, formData: FormData) {
+// Schaltet genau ein Modul an/aus, ohne die anderen anzufassen — im
+// Unterschied zu saveModules() (das die komplette Checkbox-Liste als neuen
+// Gesamtzustand behandelt und alles Fehlende deaktiviert). Fuer eigene,
+// direkt bei der jeweiligen Funktion sitzende Ein/Aus-Schalter, z.B. bei der
+// Digitalen Menuekarte, statt eines Umwegs ueber das Modul-Raster weiter
+// oben auf der Seite.
+export async function toggleModule(eventId: string, moduleKey: string, formData: FormData) {
   await requireOwnedEvent(eventId);
 
-  const message = String(formData.get("thankYouMessage") ?? "").trim().slice(0, 500);
-  const thankYouModule = await prisma.module.findUnique({ where: { key: "thank-you-card" } });
-  if (!thankYouModule) redirect(`/dashboard/events/${eventId}`);
+  const gated = await gatedModuleKeys(eventId);
+  if (gated.has(moduleKey)) redirect(`/dashboard/events/${eventId}`);
 
+  const mod = await prisma.module.findUnique({ where: { key: moduleKey } });
+  if (!mod) redirect(`/dashboard/events/${eventId}`);
+
+  const enabled = formData.get("enabled") === "1";
   await prisma.eventModule.upsert({
-    where: { eventId_moduleId: { eventId, moduleId: thankYouModule.id } },
-    update: { config: message ? JSON.stringify({ message }) : null },
-    create: { eventId, moduleId: thankYouModule.id, enabled: true, config: message ? JSON.stringify({ message }) : null },
+    where: { eventId_moduleId: { eventId, moduleId: mod.id } },
+    update: { enabled },
+    create: { eventId, moduleId: mod.id, enabled },
   });
 
   revalidatePath(`/dashboard/events/${eventId}`);
-  redirect(`/dashboard/events/${eventId}?thankYouSaved=1`);
+  redirect(`/dashboard/events/${eventId}?modulesSaved=1`);
 }
 
 // Non-JS-Fallback (progressive enhancement) fuer das Design-Formular —

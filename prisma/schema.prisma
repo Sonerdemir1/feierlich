@@ -228,6 +228,108 @@ model Event {
   // Editor-Einstellungen fuer die oeffentliche Event-Seite (Schriftart,
   // Eck-Ornamente), analog zu colorOverride. null = Template-Standard.
   styleJson       String?
+  // JSON-Array von Ablaufplan-Eintraegen [{id,time,label,style?}] — gleiche
+  // Speicherlogik wie colorOverride/styleJson (ein Event-Feld statt eigener
+  // Tabelle, da die Liste ausschliesslich ueber den Klick-Auswahl-Editor
+  // verwaltet wird, siehe EditableAgenda.tsx/DesignEditor.tsx). null/leer =
+  // noch keine Eintraege.
+  agendaJson      String?
+  // Ueberschreibt die drei festen Texte im Gaestebuch-Bereich der Event-
+  // Seite (Ueberschrift, Hinweistext, Button-Beschriftung) — gleiche
+  // Speicherlogik wie title/subtitle/description (einzelne Spalten statt
+  // JSON-Bag, da es nur je EIN Textfeld pro Zweck ist, kein Array wie beim
+  // Ablaufplan). null = eingebauter Standardtext (siehe e/[slug]/page.tsx).
+  guestbookHeading    String?
+  guestbookHint       String?
+  guestbookButtonText String?
+  // Ueberschrift/Hinweistext der Wunschliste-Sektion — kein Button, siehe
+  // Schritt 4: die Wunschliste hat keine Gäste-Aktion, auf die ein Button
+  // verweisen könnte (reine Anzeige der WishlistItem-Einträge unten).
+  wishlistHeading String?
+  wishlistHint    String?
+  // Analog zu guestbook* oben, fuer die Musikwuensche-Sektion (echtes
+  // Gaeste-Formular, siehe submitMusicRequest in e/[slug]/page.tsx).
+  musicHeading    String?
+  musicHint       String?
+  musicButtonText String?
+  // Beschriftungen im Countdown-Bereich (Schritt 5) — die Zahlen selbst
+  // bleiben dynamisch berechnet (siehe Countdown.tsx), nur die drei
+  // Einheiten-Woerter sind editierbar. null = "TAGE"/"STD"/"MIN".
+  countdownDaysLabel    String?
+  countdownHoursLabel   String?
+  countdownMinutesLabel String?
+  // Die beiden Kalender-Buttons direkt unter dem Countdown (ICS-Download
+  // bzw. Google-Kalender-Link) — nicht zu verwechseln mit dem
+  // "Google Maps"-Chip der Location-Sektion (Schritt 1, unangetastet).
+  calendarSaveText   String?
+  calendarGoogleText String?
+  // RSVP-Sektion (Schritt 5) — Ueberschrift + die drei Radio-Beschriftungen
+  // + Absende-Button. Das Antwort-Datenmodell selbst (RSVP-Model) bleibt
+  // unangetastet, nur die Formular-Beschriftungen werden editierbar.
+  rsvpHeading   String?
+  rsvpYesLabel  String?
+  rsvpMaybeLabel String?
+  rsvpNoLabel   String?
+  rsvpButtonText String?
+  // Sitzplan-Suche (Schritt 6) — Ueberschrift + Hinweistext + Such-Button.
+  // Das echte Sitzplan-Datenmodell (Tisch-Zuordnung, findSeat()) bleibt
+  // unangetastet, nur die Formular-Beschriftungen werden editierbar.
+  seatingHeading    String?
+  seatingHint       String?
+  seatingButtonText String?
+  // Foto-/Videogalerie (Schritt 6) — Ueberschrift + Hinweistext +
+  // Upload-Button (FileField-Label). Das echte Upload-Datenmodell
+  // (GalleryMedia) bleibt unangetastet, nur die Beschriftungen werden
+  // editierbar.
+  galleryHeading    String?
+  galleryHint       String?
+  galleryButtonText String?
+  // Dresscode-Sektion (Schritt 7) — Ueberschrift + der eigentliche
+  // Dresscode-Text selbst (kein Datenmodell dahinter, reiner Freitext,
+  // anders als z.B. RSVP/Sitzplan). Bislang gab es auf der echten Event-
+  // Seite ueberhaupt keine Dresscode-Anzeige, nur ein Mockup im Marketing-
+  // Customizer — diese Sektion ist komplett neu.
+  dresscodeHeading String?
+  dresscodeText    String?
+  // Social-Media-Sektion (Schritt 7) — Ueberschrift + der eigentliche
+  // Hashtag-/Hinweistext. Gleiches Muster wie Dresscode, ebenfalls komplett
+  // neu (vorher nur Marketing-Mockup, keine echte Anzeige).
+  socialMediaHeading String?
+  socialMediaText    String?
+  // Digitale Menuekarte (Schritt 7) — nur Ueberschrift + Hinweistext neu.
+  // Das echte Menuepunkt-Datenmodell (MenuItem, eigene Tabelle mit
+  // Hinzufuegen/Entfernen ueber die bestehende Alt-Verwaltung in
+  // menu-actions.ts) bleibt bewusst unangetastet, siehe Nutzer-Rueckfrage
+  // zu Schritt 7 — dort existiert bereits ein echtes Datenmodell.
+  menuHeading String?
+  menuHint    String?
+  // Digitale Dankeskarte (Schritt 7) — NUR die Ueberschrift ist neu. Der
+  // eigentliche Dankestext liegt weiterhin NICHT hier, sondern wie bisher im
+  // config-JSON des "thank-you-card"-EventModule-Datensatzes (siehe
+  // e/[slug]/page.tsx moduleConfig(), dashboard/events/[id]/page.tsx
+  // Alt-Formular, actions.ts) — die neue Klick-Bearbeitung liest/schreibt
+  // bewusst dieselbe Stelle statt eine zweite Quelle der Wahrheit
+  // einzufuehren (siehe inline-text/route.ts MODULE_CONFIG_FIELDS).
+  thankYouHeading String?
+  // Audio-Einladung (Schritt 7) — komplett neues Feature, vorher nur ein
+  // rein dekoratives, nicht-funktionales Mockup im Marketing-Customizer.
+  // Gleiches Muster wie envelopeVideoId/backgroundMusicId oben: eine
+  // optionale hochgeladene Sprachnachricht, die Gaeste sich einmalig
+  // anhoeren koennen (siehe AudioMessagePlayer.tsx, kein Loop/Autoplay).
+  audioInvitationHeading String?
+  audioInvitationHint    String?
+  audioInvitationId      String?
+  // Video-Einladung (Schritt 7) — bewusst NICHT dasselbe Feld wie
+  // envelopeVideoId: envelopeVideoId ersetzt die Umschlag-Oeffnen-Animation
+  // komplett, dieser neue eigenstaendige Bereich zeigt ein SEPARAT
+  // hochgeladenes zweites Video in einer eigenen Sektion weiter unten auf
+  // der Seite (Nutzer-Entscheidung: kein Wiederverwenden des Umschlag-
+  // Videos). "videoMessage" statt "videoInvitation" benannt, um Verwechslung
+  // mit dem gleichnamigen Modul-Key ("video-invitation", steuert beide
+  // Funktionen gemeinsam) zu vermeiden.
+  videoMessageHeading String?
+  videoMessageHint    String?
+  videoMessageId      String?
   // Steuert NUR die Saal-Live-Wand (/live/[eventId]), nicht die normale
   // Gaeste-Galerie auf dem Handy: "immediate" zeigt frisch freigegebene
   // Fotos sofort auf der grossen Leinwand, "next-morning" haelt sie dort
@@ -247,6 +349,8 @@ model Event {
   coverImage  Media?    @relation("EventCoverImage", fields: [coverImageId], references: [id])
   envelopeVideo   Media? @relation("EventEnvelopeVideo", fields: [envelopeVideoId], references: [id])
   backgroundMusic Media? @relation("EventBackgroundMusic", fields: [backgroundMusicId], references: [id])
+  audioInvitation Media? @relation("EventAudioInvitation", fields: [audioInvitationId], references: [id])
+  videoMessage    Media? @relation("EventVideoMessage", fields: [videoMessageId], references: [id])
   order       Order?
 
   modules           EventModule[]
@@ -306,6 +410,10 @@ model EventModule {
   moduleId String
   enabled  Boolean @default(true)
   config   String? // JSON-String fuer modul-spezifische Einstellungen
+  // Reihenfolge der Abschnitte auf der Event-Seite, pro Event individuell
+  // umsortierbar (Editor-Umbau) — null bedeutet "noch nicht umsortiert",
+  // dann gilt die bisherige feste Reihenfolge im JSX als Fallback.
+  sortOrder Int?
 
   event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   module Module @relation(fields: [moduleId], references: [id])
@@ -452,6 +560,8 @@ model Media {
   eventCoverFor    Event[]          @relation("EventCoverImage")
   eventEnvelopeFor Event[]          @relation("EventEnvelopeVideo")
   eventMusicFor    Event[]          @relation("EventBackgroundMusic")
+  eventAudioInvitationFor Event[]   @relation("EventAudioInvitation")
+  eventVideoMessageFor    Event[]   @relation("EventVideoMessage")
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
   photoTags        PhotoTag[]

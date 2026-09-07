@@ -9,19 +9,22 @@ import {
   startAddOnCheckout,
   generateAiDesignForCover,
   saveModules,
+  toggleModule,
   publishEvent,
   gatedModuleKeys,
   resetDesign,
   changeTemplate,
   updateSlug,
   updateEventDetails,
-  saveThankYouCard,
   uploadEnvelopeVideo,
   removeEnvelopeVideo,
   uploadBackgroundMusic,
   removeBackgroundMusic,
+  uploadAudioInvitation,
+  removeAudioInvitation,
+  uploadVideoMessage,
+  removeVideoMessage,
 } from "../actions";
-import { createWishlistItem, deleteWishlistItem } from "./wishlist-actions";
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { deleteMusicRequest } from "./music-requests-actions";
 import { checkInGuest } from "./checkin-actions";
@@ -34,6 +37,8 @@ import { aiTextConfigured } from "@/lib/ai-text";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import type { StyleElements } from "@/lib/text-style";
+import type { AgendaItem } from "@/lib/agenda";
+import type { WishlistItemData } from "@/lib/wishlist";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
@@ -49,13 +54,6 @@ const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
   PUBLISHED: "Veröffentlicht",
   ARCHIVED: "Archiviert",
-};
-
-const wishlistTypeLabel: Record<string, string> = {
-  GIFT: "Geschenk",
-  CASH: "Geldgeschenk",
-  HONEYMOON: "Flitterwochen",
-  EXTERNAL: "Externe Liste",
 };
 
 const menuCourseLabel: Record<string, string> = {
@@ -120,6 +118,8 @@ export default async function EventDetailPage({
       coverImage: true,
       envelopeVideo: true,
       backgroundMusic: true,
+      audioInvitation: true,
+      videoMessage: true,
       order: { include: { package: true } },
     },
   });
@@ -166,6 +166,14 @@ export default async function EventDetailPage({
     ? JSON.parse(event.styleJson)
     : {};
   const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
+  const activeAgendaItems: AgendaItem[] = event.agendaJson ? JSON.parse(event.agendaJson) : [];
+  const activeWishlistItems: WishlistItemData[] = wishlistItems.map((w) => ({
+    id: w.id,
+    type: w.type,
+    title: w.title,
+    description: w.description ?? "",
+    url: w.url ?? "",
+  }));
 
   const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
   const templatesByCategory = new Map<string, typeof allTemplates>();
@@ -191,13 +199,11 @@ export default async function EventDetailPage({
   const modulesSaved = sp.modulesSaved === "1";
   const slugSaved = sp.slugSaved === "1";
   const detailsSaved = sp.detailsSaved === "1";
-  const thankYouSaved = sp.thankYouSaved === "1";
-  const thankYouModuleId = allModules.find((m) => m.key === "thank-you-card")?.id;
-  const thankYouModule = thankYouModuleId ? eventModules.find((em) => em.moduleId === thankYouModuleId) : undefined;
-  const thankYouMessage: string = thankYouModule?.config ? (JSON.parse(thankYouModule.config).message ?? "") : "";
   const socialModuleId = allModules.find((m) => m.key === "social-media")?.id;
   const socialModule = socialModuleId ? eventModules.find((em) => em.moduleId === socialModuleId) : undefined;
   const eventHashtag: string = socialModule?.config ? (JSON.parse(socialModule.config).hashtag ?? "") : "";
+  const menuModuleId = allModules.find((m) => m.key === "menu")?.id;
+  const menuEnabled = menuModuleId ? (enabledByModuleId.get(menuModuleId) ?? true) : true;
   // Gleiche Vorschaubild-Logik wie generateMetadata in /e/[slug] — eigenes
   // Titelbild zuerst, sonst das Kartendesign der Vorlage, damit der Kunde
   // hier sieht, was beim Teilen in WhatsApp/Facebook/Instagram ankommt.
@@ -234,12 +240,29 @@ export default async function EventDetailPage({
           initialFontId={activeStyle.fontId}
           initialOrnaments={Boolean(activeStyle.ornaments)}
           initialElements={activeStyle.elements}
+          initialEventDate={event.eventDate.toISOString().slice(0, 10)}
+          initialEventTime={event.eventTime ?? ""}
+          initialLocationName={event.locationName ?? ""}
+          initialLocationAddress={event.locationAddress ?? ""}
+          initialAgendaItems={activeAgendaItems}
+          initialWishlistItems={activeWishlistItems}
           hasOverride={hasColorOverride || hasStyleOverride}
           onReset={resetDesign.bind(null, event.id)}
+          envelopeVideoUrl={event.envelopeVideo?.url ?? null}
+          uploadEnvelopeVideoAction={uploadEnvelopeVideo.bind(null, event.id)}
+          removeEnvelopeVideoAction={removeEnvelopeVideo.bind(null, event.id)}
+          backgroundMusicUrl={event.backgroundMusic?.url ?? null}
+          uploadBackgroundMusicAction={uploadBackgroundMusic.bind(null, event.id)}
+          removeBackgroundMusicAction={removeBackgroundMusic.bind(null, event.id)}
+          audioInvitationUrl={event.audioInvitation?.url ?? null}
+          uploadAudioInvitationAction={uploadAudioInvitation.bind(null, event.id)}
+          removeAudioInvitationAction={removeAudioInvitation.bind(null, event.id)}
+          videoMessageUrl={event.videoMessage?.url ?? null}
+          uploadVideoMessageAction={uploadVideoMessage.bind(null, event.id)}
+          removeVideoMessageAction={removeVideoMessage.bind(null, event.id)}
         />
-      </div>
 
-      <details open style={{ marginBottom: 32 }}>
+        <details open style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
         <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
           Details bearbeiten
         </summary>
@@ -370,7 +393,8 @@ export default async function EventDetailPage({
             Speichern
           </button>
         </form>
-      </details>
+        </details>
+      </div>
 
       {errorKey && (
         <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
@@ -392,12 +416,6 @@ export default async function EventDetailPage({
           Details gespeichert.
         </div>
       )}
-      {thankYouSaved && (
-        <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "12px 16px", fontSize: 13, marginBottom: 24 }}>
-          Dankeskarte gespeichert.
-        </div>
-      )}
-
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 36 }}>
         <Tile label="Gäste" value={String(event.guests.length)} />
         <Tile
@@ -581,6 +599,7 @@ export default async function EventDetailPage({
             required
             label="Bild auswählen"
             colors={{ primary: "var(--ink)", accent: "var(--terracotta)", background: "var(--ivory)" }}
+            autoSubmit
           />
           <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
             {event.coverImage ? "Bild ersetzen" : "Bild hochladen"}
@@ -634,70 +653,6 @@ export default async function EventDetailPage({
               </p>
             )}
           </div>
-        )}
-      </div>
-
-      {/* Video-Umschlag */}
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Video-Umschlag</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Statt der Standard-Animation spielt beim Antippen euer eigenes Video, danach erscheint die Einladung — Modul
-          &bdquo;Video-Einladung&ldquo; muss dafür aktiviert sein.
-        </div>
-        {event.envelopeVideo && (
-          <div style={{ marginBottom: 14, maxWidth: 240 }}>
-            <video src={event.envelopeVideo.url} controls style={{ width: "100%", display: "block", border: "1px solid var(--line)" }} />
-          </div>
-        )}
-        <form action={uploadEnvelopeVideo.bind(null, event.id)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", maxWidth: 360 }}>
-          <FileField
-            name="file"
-            accept="video/mp4,video/quicktime,video/webm"
-            required
-            label="Video auswählen"
-            colors={{ primary: "var(--ink)", accent: "var(--terracotta)", background: "var(--ivory)" }}
-          />
-          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
-            {event.envelopeVideo ? "Video ersetzen" : "Video hochladen"}
-          </button>
-        </form>
-        {event.envelopeVideo && (
-          <form action={removeEnvelopeVideo.bind(null, event.id)} style={{ marginTop: 10 }}>
-            <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
-              Video entfernen
-            </button>
-          </form>
-        )}
-      </div>
-
-      {/* Hintergrundmusik */}
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Hintergrundmusik</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Gäste schalten den Titel per Button auf der Einladungsseite selbst ein (kein Autoplay) — Modul
-          &bdquo;Hintergrundmusik&ldquo; muss dafür aktiviert sein.
-        </div>
-        {event.backgroundMusic && (
-          <audio src={event.backgroundMusic.url} controls style={{ display: "block", marginBottom: 14, maxWidth: 320 }} />
-        )}
-        <form action={uploadBackgroundMusic.bind(null, event.id)} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", maxWidth: 360 }}>
-          <FileField
-            name="file"
-            accept="audio/mpeg,audio/mp4,audio/wav,audio/ogg"
-            required
-            label="Musik auswählen"
-            colors={{ primary: "var(--ink)", accent: "var(--terracotta)", background: "var(--ivory)" }}
-          />
-          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
-            {event.backgroundMusic ? "Titel ersetzen" : "Titel hochladen"}
-          </button>
-        </form>
-        {event.backgroundMusic && (
-          <form action={removeBackgroundMusic.bind(null, event.id)} style={{ marginTop: 10 }}>
-            <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5 }}>
-              Musik entfernen
-            </button>
-          </form>
         )}
       </div>
 
@@ -755,30 +710,6 @@ export default async function EventDetailPage({
         </form>
       </div>
 
-      {/* Dankeskarte */}
-      {thankYouModuleId && (
-        <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Digitale Dankeskarte</div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-            Erscheint automatisch für eure Gäste auf der Event-Seite, sobald das Datum vorbei ist — kein separater
-            Versand nötig. Ohne eigenen Text wird ein Standard-Dank angezeigt.
-          </div>
-          <form action={saveThankYouCard.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <textarea
-              name="thankYouMessage"
-              defaultValue={thankYouMessage}
-              placeholder={`Von Herzen: Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
-              rows={3}
-              maxLength={500}
-              style={{ padding: "11px 13px", border: "1px solid var(--line)", background: "var(--ivory-2)", color: "var(--ink)", fontSize: 13, fontFamily: "inherit", resize: "vertical" }}
-            />
-            <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5, alignSelf: "flex-start" }}>
-              Dankeskarte speichern
-            </button>
-          </form>
-        </div>
-      )}
-
       {/* Zusatzpakete */}
       {otherAddOns.length > 0 && (
         <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
@@ -831,103 +762,77 @@ export default async function EventDetailPage({
         </div>
       )}
 
-      {/* QR-Codes */}
+      {/* QR-Codes & Karte — ein Bereich statt zwei getrennter Karten, da
+          beide dasselbe Ziel bedienen (QR-Code zum Aufstellen/Verteilen). */}
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>QR-Codes</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>QR-Codes &amp; Karte</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Rohe QR-Codes zum direkten Download. Für die gestaltete Karte samt Druckauftrag siehe unten.
-        </div>
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          {[
-            ["EVENT_PAGE", "Eventseite"],
-            ["RSVP", "RSVP"],
-          ].map(([type, label]) => (
-            <div key={type} style={{ textAlign: "center" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element -- server-generated SVG, not an optimizable asset */}
-              <img
-                src={`/dashboard/events/${event.id}/qr/${type}?format=svg`}
-                alt={`QR-Code ${label}`}
-                width={110}
-                height={110}
-                style={{ border: "1px solid var(--line)", background: "var(--ivory)" }}
-              />
-              <div style={{ fontSize: 12, fontWeight: 600, marginTop: 8 }}>{label}</div>
-              <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 6 }}>
-                <a href={`/dashboard/events/${event.id}/qr/${type}?format=svg&download=1`} style={{ fontSize: 11 }}>
-                  SVG
-                </a>
-                <a href={`/dashboard/events/${event.id}/qr/${type}?format=png&download=1`} style={{ fontSize: 11 }}>
-                  PNG
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Karte herunterladen */}
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Karte herunterladen</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Gestaltete Tisch-/Aufsteller-Karte mit eurem QR-Code — Design wählen, herunterladen, selbst ausdrucken.
+          Gestaltete Tisch-/Aufsteller-Karte mit eurem QR-Code — Design, Format und Schriftart wählen, herunterladen,
+          selbst ausdrucken.
         </div>
         <QrPrintDesignFields eventId={event.id} tables={tables} />
-      </div>
 
-      {/* Wunschliste */}
-      <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Wunschliste</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Geschenkewünsche für eure Gäste — sichtbar, wenn das Modul &bdquo;Wunschliste&ldquo; aktiviert ist.
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 18 }}>
-          {wishlistItems.map((w) => (
-            <div
-              key={w.id}
-              style={{
-                border: "1px solid var(--line)",
-                background: "var(--ivory-2)",
-                padding: "10px 14px",
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 10,
-                rowGap: 8,
-                fontSize: 13,
-              }}
-            >
-              <span style={{ fontWeight: 600 }}>{w.title}</span>
-              <span style={{ color: "var(--ink-faint)", fontSize: 11.5 }}>{wishlistTypeLabel[w.type] ?? w.type}</span>
-              <form action={deleteWishlistItem.bind(null, event.id, w.id)}>
-                <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  Entfernen
-                </button>
-              </form>
-            </div>
-          ))}
-        </div>
-        <form action={createWishlistItem.bind(null, event.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10 }}>
-          <select name="type" defaultValue="GIFT" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13 }}>
-            {Object.entries(wishlistTypeLabel).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
+        <details style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
+          <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+            Nur den rohen QR-Code (ohne Kartendesign)
+          </summary>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", marginTop: 16 }}>
+            {[
+              ["EVENT_PAGE", "Eventseite"],
+              ["RSVP", "RSVP"],
+            ].map(([type, label]) => (
+              <div key={type} style={{ textAlign: "center" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- server-generated SVG, not an optimizable asset */}
+                <img
+                  src={`/dashboard/events/${event.id}/qr/${type}?format=svg`}
+                  alt={`QR-Code ${label}`}
+                  width={110}
+                  height={110}
+                  style={{ border: "1px solid var(--line)", background: "var(--ivory)" }}
+                />
+                <div style={{ fontSize: 12, fontWeight: 600, marginTop: 8 }}>{label}</div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 6 }}>
+                  <a href={`/dashboard/events/${event.id}/qr/${type}?format=svg&download=1`} style={{ fontSize: 11 }}>
+                    SVG
+                  </a>
+                  <a href={`/dashboard/events/${event.id}/qr/${type}?format=png&download=1`} style={{ fontSize: 11 }}>
+                    PNG
+                  </a>
+                </div>
+              </div>
             ))}
-          </select>
-          <input name="title" placeholder="z. B. Kaffeemaschine" required style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 200px", minWidth: 0 }} />
-          <input name="url" placeholder="Link (optional)" style={{ padding: "10px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, flex: "1 1 200px", minWidth: 0 }} />
-          <button type="submit" className="btn btn-ghost" style={{ padding: "10px 18px", fontSize: 12.5 }}>
-            + Eintrag hinzufügen
-          </button>
-        </form>
+          </div>
+        </details>
       </div>
 
       {/* Digitale Menükarte */}
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Digitale Menükarte</div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Gänge und Gerichte — Hauptgänge stehen euren Gästen bei der RSVP zur Auswahl.
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Digitale Menükarte</div>
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
+              Gänge und Gerichte — Hauptgänge stehen euren Gästen bei der RSVP zur Auswahl.
+            </div>
+          </div>
+          {menuModuleId && (
+            <form action={toggleModule.bind(null, event.id, "menu")}>
+              <input type="hidden" name="enabled" value={menuEnabled ? "0" : "1"} />
+              <button
+                type="submit"
+                className="btn btn-ghost"
+                style={{ padding: "8px 14px", fontSize: 12, whiteSpace: "nowrap" }}
+              >
+                {menuEnabled ? "Aktiv — ausschalten" : "Ausgeschaltet — einschalten"}
+              </button>
+            </form>
+          )}
         </div>
+        {!menuEnabled && (
+          <div style={{ fontSize: 11.5, color: "var(--terracotta-dark)", marginBottom: 16 }}>
+            Ausgeschaltet — Gäste sehen diesen Bereich auf der Event-Seite nicht, auch wenn unten schon Gerichte
+            eingetragen sind.
+          </div>
+        )}
         {Object.entries(menuCourseLabel).map(([course, label]) => {
           const items = menuItems.filter((m) => m.course === course);
           return (

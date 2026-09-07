@@ -52,3 +52,12 @@ next-env.d.ts
 # user uploads (local filesystem storage — dev only, see actions.ts)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# ad-hoc lokale Dev-/Debug-Skripte (direkter DB-Zugriff, Auth-Bypass zum
+# Testen) — nie committen, siehe scripts/measure-gallery-upload.ts fuer
+# ein Beispiel eines echten, tracked Skripts.
+scripts/tmp-*.ts
+
+# lokal abgelegtes Referenzmaterial (Design-Rohbilder), gehoert nicht ins Repo
+/Einladi Hochzeit Karten/
+/QR CARD/

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { ApplyPendingDraft } from "@/components/dashboard/ApplyPendingDraft";
 
 const statusLabel: Record<string, string> = {
   DRAFT: "Entwurf",
@@ -25,6 +26,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      <ApplyPendingDraft />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
         <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 30, color: "var(--ink)" }}>
           Meine Events
