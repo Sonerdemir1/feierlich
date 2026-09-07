@@ -75,6 +75,10 @@ type Draft = {
   // Umwandlung in ein echtes Event.eventDate gebraucht (siehe apply-draft).
   eventDate: string; // "YYYY-MM-DD" oder "" (noch nicht gesetzt)
   eventTime: string; // "HH:MM" oder ""
+  // Kurzer, einladender Fließtext zwischen Namen und Datum/Ort — fuellt bei
+  // Vorlagen mit fester Kartengrafik (siehe renderDescription) sonst leeren
+  // Raum und gibt der Karte einen dritten, klar hierarchischen Textblock.
+  descriptionText: string;
   locationText: string;
   // Gesetzt, sobald die Adresse per Google-Places-Autocomplete ausgewaehlt
   // wurde (siehe renderLocation/PlaceAutocompleteField) — null solange nur
@@ -283,6 +287,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     eventLabel: item.defaultEventLabel,
     eventDate: "",
     eventTime: "",
+    descriptionText: item.defaultDescription,
     locationText: "",
     locationLat: null,
     locationLng: null,
@@ -569,6 +574,28 @@ export function DesignStudio({
             <small>AİLESİ</small>
           </div>
         </div>
+      </SelectableElement>
+    );
+  }
+
+  // Dritter Textblock zwischen Namen und Datum/Ort (Problem: "kein
+  // einladender Beschreibungstext, der den Raum sinnvoll fuellt" +
+  // "Leerraum bei Vorlagen mit fester Kartengrafik") — gleiches
+  // SelectableElement/InlineEditableField-Muster wie renderTitle(), nur mit
+  // multiline (Enter = Zeilenumbruch statt Fokus verlassen, siehe
+  // InlineEditableField-Kommentar) fuer den 2-3-zeiligen Fließtext.
+  function renderDescription(style: CSSProperties) {
+    const override = elementOverrideStyle(draft.elements, "description");
+    return (
+      <SelectableElement kind="text" label={TEXT_ELEMENT_LABELS.description} selected={selectedKey === "description"} onSelect={() => selectKey("description")}>
+        <InlineEditableField
+          value={draft.descriptionText}
+          onChange={(text) => updateDraft({ descriptionText: text })}
+          placeholder={item.defaultDescription}
+          onFocus={() => setSelectedKey("description")}
+          multiline
+          style={{ display: "block", ...style, ...override }}
+        />
       </SelectableElement>
     );
   }
@@ -1554,8 +1581,9 @@ export function DesignStudio({
                         fontSize: draft.fontSize,
                         color: draft.primary,
                       })}
-                      <div>
-                        {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 6 })}
+                      {renderDescription({ fontSize: 11, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 230, margin: "0 auto" })}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                        {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 0 })}
                         {renderLocation({ color: draft.primary })}
                       </div>
                     </div>
@@ -1619,6 +1647,8 @@ export function DesignStudio({
                     })}
 
                     {renderFamily({ color: draft.primary })}
+
+                    {renderDescription({ fontSize: 12.5, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 260, margin: "18px auto 0" })}
 
                     <div className="customizer-card-divider" style={{ background: draft.accent }} />
                     {renderDate({ color: draft.primary })}

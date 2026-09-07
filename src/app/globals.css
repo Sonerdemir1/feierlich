@@ -1387,7 +1387,9 @@ a.card:hover {
   z-index: 1;
   font-size: 11.5px;
   letter-spacing: 0.04em;
-  margin-bottom: 6px;
+  /* Vorher 6px — wirkte mit Ort direkt darunter wie eine gequetschte
+     Zeile statt zwei bewusst platzierten, eigenstaendigen Zeilen. */
+  margin-bottom: 12px;
 }
 .customizer-card-location {
   position: relative;
