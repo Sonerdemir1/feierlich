@@ -1931,32 +1931,46 @@ export function DesignStudio({
                 )}
               </div>
 
-              <div className="customizer-field">
-                <label>Verzierungen</label>
-                <div className="customizer-toggles">
-                  <label className="customizer-toggle">
-                    <input type="checkbox" checked={draft.showFloral} onChange={(e) => updateDraft({ showFloral: e.target.checked })} />
-                    <span className="customizer-switch" aria-hidden="true" />
-                    <span className="customizer-toggle-text">Floral-Muster</span>
-                  </label>
-                  <label className="customizer-toggle">
-                    <input type="checkbox" checked={draft.showOrnaments} onChange={(e) => updateDraft({ showOrnaments: e.target.checked })} />
-                    <span className="customizer-switch" aria-hidden="true" />
-                    <span className="customizer-toggle-text">Eck-Ornamente &amp; Streumuster</span>
-                  </label>
-                  {item.photoBackground && (
-                    <label className="customizer-toggle">
-                      <input
-                        type="checkbox"
-                        checked={draft.showPhotoBackground}
-                        onChange={(e) => updateDraft({ showPhotoBackground: e.target.checked })}
-                      />
-                      <span className="customizer-switch" aria-hidden="true" />
-                      <span className="customizer-toggle-text">Foto-Hintergrund</span>
-                    </label>
-                  )}
+              {/* Floral-Muster/Eck-Ornamente steuern nur das generische SVG-
+                  Overlay (siehe renderTitle-Zweig ohne item.cardImageUrl weiter
+                  unten) — bei den Vorlagen mit echter Kartengrafik (die 12
+                  aktiven Düğün-"Blanko"-Designs, Template.previewUrl gesetzt)
+                  ist die Verzierung fest Teil des Bildes, diese Regler haetten
+                  dort keine Wirkung. Vorher wurden sie trotzdem angezeigt
+                  (wirkungslos, verwirrend) — jetzt nur sichtbar, wenn es
+                  ueberhaupt etwas zum Umschalten gibt. Nutzer-Bugfix-Folge. */}
+              {(!item.cardImageUrl || item.photoBackground) && (
+                <div className="customizer-field">
+                  <label>Verzierungen</label>
+                  <div className="customizer-toggles">
+                    {!item.cardImageUrl && (
+                      <>
+                        <label className="customizer-toggle">
+                          <input type="checkbox" checked={draft.showFloral} onChange={(e) => updateDraft({ showFloral: e.target.checked })} />
+                          <span className="customizer-switch" aria-hidden="true" />
+                          <span className="customizer-toggle-text">Floral-Muster</span>
+                        </label>
+                        <label className="customizer-toggle">
+                          <input type="checkbox" checked={draft.showOrnaments} onChange={(e) => updateDraft({ showOrnaments: e.target.checked })} />
+                          <span className="customizer-switch" aria-hidden="true" />
+                          <span className="customizer-toggle-text">Eck-Ornamente &amp; Streumuster</span>
+                        </label>
+                      </>
+                    )}
+                    {item.photoBackground && (
+                      <label className="customizer-toggle">
+                        <input
+                          type="checkbox"
+                          checked={draft.showPhotoBackground}
+                          onChange={(e) => updateDraft({ showPhotoBackground: e.target.checked })}
+                        />
+                        <span className="customizer-switch" aria-hidden="true" />
+                        <span className="customizer-toggle-text">Foto-Hintergrund</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
