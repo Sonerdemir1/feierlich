@@ -25,6 +25,7 @@ import { defaultAgendaItems, newAgendaItem, moveAgendaItem, type AgendaItem } fr
 import { WishlistList } from "@/components/editor/WishlistList";
 import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
 import { defaultWishlistItems, newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
+import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
 import {
   elementOverrideStyle,
   TEXT_ELEMENT_LABELS,
@@ -79,6 +80,11 @@ type Draft = {
   // Vorlagen mit fester Kartengrafik (siehe renderDescription) sonst leeren
   // Raum und gibt der Karte einen dritten, klar hierarchischen Textblock.
   descriptionText: string;
+  // Zaehlt die erfolgreichen KI-Vorschlaege fuer descriptionText in DIESEM
+  // anonymen Entwurf — lebt bewusst im Draft (also localStorage) statt
+  // serverseitig, es gibt vor dem Signup noch kein Event, an das eine
+  // AiTextAttempt-Zeile haengen koennte (siehe suggest-description/route.ts).
+  aiDescriptionAttempts: number;
   locationText: string;
   // Gesetzt, sobald die Adresse per Google-Places-Autocomplete ausgewaehlt
   // wurde (siehe renderLocation/PlaceAutocompleteField) — null solange nur
@@ -288,6 +294,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     eventDate: "",
     eventTime: "",
     descriptionText: item.defaultDescription,
+    aiDescriptionAttempts: 0,
     locationText: "",
     locationLat: null,
     locationLng: null,
@@ -402,6 +409,8 @@ export function DesignStudio({
     setDrafts(loadDrafts());
   }, []);
   const [savedHint, setSavedHint] = useState(false);
+  const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false);
+  const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("design");
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
   // Eigener Auswahl-State fuer den Ablaufplan statt selectedKey: eine
@@ -598,6 +607,34 @@ export function DesignStudio({
         />
       </SelectableElement>
     );
+  }
+
+  // KI-Vorschlag fuer den Beschreibungstext (Teil C) — ruft dieselbe
+  // generateInvitationCopy()-Logik wie die bestehende Text-Assistent-Seite
+  // auf (siehe suggest-description/route.ts), nur ohne Formular/eventId: die
+  // Karte ist im Editor schon sichtbar, ein Klick setzt den Vorschlag direkt
+  // ins Feld. Kontingent zaehlt hier bewusst NUR clientseitig im Draft (siehe
+  // aiDescriptionAttempts-Kommentar oben), da es vor dem Signup noch kein
+  // Event gibt, an das ein serverseitiger Zaehler haengen koennte.
+  const aiDescriptionAttemptsLeft = Math.max(0, AI_TEXT_ATTEMPT_QUOTA - (draft.aiDescriptionAttempts ?? 0));
+  async function suggestDescription() {
+    if (aiDescriptionAttemptsLeft <= 0 || aiDescriptionLoading) return;
+    setAiDescriptionLoading(true);
+    setAiDescriptionError(null);
+    try {
+      const response = await fetch("/gestalten/suggest-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names: draft.text || item.defaultText, category, eventType: item.defaultEventLabel }),
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || !json?.ok) throw new Error("failed");
+      updateDraft({ descriptionText: json.description, aiDescriptionAttempts: (draft.aiDescriptionAttempts ?? 0) + 1 });
+    } catch {
+      setAiDescriptionError("Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+    } finally {
+      setAiDescriptionLoading(false);
+    }
   }
 
   function renderDate(style: CSSProperties) {
@@ -1842,6 +1879,40 @@ export function DesignStudio({
                   onPlaceSelected={(place) => updateDraft({ locationText: place.address, locationLat: place.lat, locationLng: place.lng })}
                   style={{ padding: "9px 10px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13, width: "100%" }}
                 />
+              </div>
+            </section>
+          ) : selectedKey === "description" ? (
+            <section className="studio-section">
+              <TextControls
+                elementKey="description"
+                label={TEXT_ELEMENT_LABELS.description}
+                style={draft.elements?.description ?? {}}
+                defaultColor={draft.primary}
+                onChange={(patch) => updateElementStyle("description", patch)}
+                onDeselect={() => setSelectedKey(undefined)}
+              />
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                {aiDescriptionAttemptsLeft > 0 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={suggestDescription}
+                      disabled={aiDescriptionLoading}
+                      className="btn btn-ghost"
+                      style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
+                    >
+                      {aiDescriptionLoading ? "Generiert …" : "✨ KI-Vorschlag"}
+                    </button>
+                    <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6 }}>
+                      {aiDescriptionAttemptsLeft} von {AI_TEXT_ATTEMPT_QUOTA} KI-Vorschlägen übrig
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{AI_TEXT_QUOTA_EXHAUSTED_MESSAGE}</div>
+                )}
+                {aiDescriptionError && (
+                  <div style={{ fontSize: 11, color: "#B2543A", marginTop: 6 }}>{aiDescriptionError}</div>
+                )}
               </div>
             </section>
           ) : selectedKey ? (
