@@ -1720,7 +1720,21 @@ a.card:hover {
   color: var(--ink-faint);
   margin-top: 6px;
 }
-.customizer-field label {
+/* :not(...) bewusst noetig statt eines direkten Kindselektors (".customizer-field
+   > label"): "Textfarbe"/"Akzentfarbe"/"Hintergrund" (customizer-color) sind
+   ueber eine zusaetzliche Wrapper-<div> verschachtelt, muessten also weiter
+   per Nachfahren-Selektor erreicht werden. Ohne dieses :not() traf dieselbe
+   Regel faelschlich auch .customizer-toggle (Floral-Muster/Eck-Ornamente/
+   Foto-Hintergrund) und .customizer-upload-btn ("Foto hochladen") — beides
+   selbst <label>-Elemente, verschachtelt im selben .customizer-field
+   ("Verzierungen"/"Eigenes Foto"). display:block ueberschrieb dort
+   .customizer-togglees eigenes display:flex (gleiche Selektor-Spezifitaet,
+   aber Typ-Selektor "label" gewinnt gegen reine Klasse) — Schalter und Text
+   fielen aus der Flex-Zeile, text-transform:uppercase vererbte sich auf
+   .customizer-toggle-text ("FLORAL-MUSTER" statt "Floral-Muster"), und der
+   Upload-Button verlor sein Button-Aussehen und wirkte wie ein inerter
+   Abschnitts-Titel (Bugfix, Nutzer-Report "Foto & Verzierungen kaputt").  */
+.customizer-field label:not(.customizer-toggle):not(.customizer-upload-btn) {
   display: block;
   font-size: 11px;
   font-weight: 600;
@@ -1841,6 +1855,17 @@ a.card:hover {
   gap: 6px;
 }
 .customizer-toggle {
+  /* Fehlte bisher: die versteckte Checkbox darin (.customizer-toggle input)
+     ist "position: absolute" ohne eigene top/left-Werte — ohne einen
+     positionierten Vorfahren wich sie bis zum naechsten positionierten
+     Element im Baum aus (hier: .studio-panel-sticky, position:sticky),
+     einmal live nachgemessen ca. 600px unterhalb des sichtbaren Labels.
+     Klick auf das Label fokussiert die zugehoerige Checkbox, der Browser
+     scrollt den fokussierten (aber weit entfernten) Punkt automatisch ins
+     Bild — genau der gemeldete Scroll-Sprung beim Klick auf die
+     Verzierungs-Buttons. position:relative haelt die Checkbox jetzt im
+     eigenen, kleinen Label-Rahmen (Bugfix). */
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 10px;
