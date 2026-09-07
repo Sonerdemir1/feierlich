@@ -111,6 +111,19 @@ export function DesignEditor({
   const [selectedAgendaItemId, setSelectedAgendaItemId] = useState<string | undefined>(undefined);
   const [selectedWishlistItemId, setSelectedWishlistItemId] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState("design");
+  // Auf schmalen Bildschirmen (siehe .editor-panel-sticky-Mobile-Regel in
+  // globals.css) wird das Panel bei einer Auswahl zu einem fixierten
+  // Bottom-Sheet — vorher stand es einfach im normalen Textfluss unter der
+  // Karte/dem Vorschau-iframe und war dadurch praktisch unerreichbar ohne
+  // langes Scrollen, obwohl es technisch da war (Bugfix). hasSelection
+  // fasst alle drei sich gegenseitig ausschliessenden Auswahl-States
+  // zusammen, deselectAll() ist der "X schliessen"-Handler des Sheets.
+  const hasSelection = Boolean(selectedKey || selectedAgendaItemId || selectedWishlistItemId);
+  function deselectAll() {
+    setSelectedKey(undefined);
+    setSelectedAgendaItemId(undefined);
+    setSelectedWishlistItemId(undefined);
+  }
 
   useEffect(() => {
     return () => {
@@ -394,7 +407,15 @@ export function DesignEditor({
           <iframe ref={iframeRef} title="Vorschau der Einladungsseite" src={`/e/${eventSlug}?dashboardPreview=1`} style={{ width: "100%", height: "100%", border: "none" }} />
         </div>
       </div>
-      <div className="editor-panel-sticky" style={{ flex: "0 0 280px", minWidth: 260, order: 2 }}>
+      <div
+        className={`editor-panel-sticky${hasSelection && activeTab === "design" ? " mobile-edit-sheet-open" : ""}`}
+        style={{ flex: "0 0 280px", minWidth: 260, order: 2 }}
+      >
+        {hasSelection && activeTab === "design" && (
+          <button type="button" className="mobile-sheet-close" onClick={deselectAll} aria-label="Bearbeitung schließen">
+            ✕
+          </button>
+        )}
         <ContextPanel tabs={PANEL_TABS} activeTabId={activeTab} onTabChange={setActiveTab}>
           {activeTab === "envelope" ? (
             <EnvelopeTab

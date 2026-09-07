@@ -423,6 +423,19 @@ export function DesignStudio({
     setSelectedKey(undefined);
     setSelectedAgendaId(undefined);
   }
+  // Auf schmalen Bildschirmen (siehe .studio-panel-sticky-Mobile-Regel in
+  // globals.css) wird das Panel bei einer Auswahl zu einem fixierten
+  // Bottom-Sheet — vorher stand es einfach im normalen Textfluss unter der
+  // ganzen (oft sehr langen) Karte und war dadurch praktisch unerreichbar
+  // ohne langes Scrollen, obwohl es technisch da war (Bugfix). hasSelection
+  // fasst alle drei sich gegenseitig ausschliessenden Auswahl-States
+  // zusammen, deselectAll() ist der "X schliessen"-Handler des Sheets.
+  const hasSelection = Boolean(selectedKey || selectedAgendaId || selectedWishlistId);
+  function deselectAll() {
+    setSelectedKey(undefined);
+    setSelectedAgendaId(undefined);
+    setSelectedWishlistId(undefined);
+  }
 
   // Merge statt reinem Fallback: ein in localStorage gespeicherter Entwurf
   // aus einer aelteren Version (vor neuen Draft-Feldern) soll die neuen
@@ -1686,7 +1699,12 @@ export function DesignStudio({
           </div>
         </div>
 
-        <div className="studio-panel-sticky">
+        <div className={`studio-panel-sticky${hasSelection && activeTab !== "funktionen" ? " mobile-edit-sheet-open" : ""}`}>
+          {hasSelection && activeTab !== "funktionen" && (
+            <button type="button" className="mobile-sheet-close" onClick={deselectAll} aria-label="Bearbeitung schließen">
+              ✕
+            </button>
+          )}
           <div className="studio-panel-scroll">
           <ContextPanel tabs={PANEL_TABS} activeTabId={activeTab} onTabChange={setActiveTab}>
           {activeTab !== "funktionen" && (

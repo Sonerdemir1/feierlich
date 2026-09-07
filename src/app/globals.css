@@ -1246,6 +1246,38 @@ a.card:hover {
     border-top: 1px solid var(--line);
     backdrop-filter: blur(6px);
   }
+  /* Bugfix: mit dem Panel im normalen Textfluss (siehe .studio-panel-sticky
+     oben) landete es bei einer Auswahl weit unterhalb der oft sehr langen
+     Karte — technisch vorhanden (kein display:none), aber ohne langes
+     Scrollen praktisch unerreichbar; per Klick erschien nur der
+     Auswahlrahmen auf der Karte, kein sichtbares Bearbeitungspanel. Bei
+     aktiver Auswahl (siehe hasSelection in DesignStudio.tsx) wird das Panel
+     jetzt stattdessen zu einem fixierten Bottom-Sheet, das ueber den Rest
+     der Seite (auch ueber den CTA-Button) gelegt wird. */
+  .studio-panel-sticky.mobile-edit-sheet-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 40;
+    max-height: 75vh;
+    background: var(--ivory);
+    border-top: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgba(33, 28, 25, 0.18);
+    padding: 18px 18px calc(16px + env(safe-area-inset-bottom));
+  }
+  .studio-panel-sticky.mobile-edit-sheet-open .studio-panel-scroll {
+    overflow-y: auto;
+  }
+  /* CTA-Button waere sonst als zusaetzliches Flex-Kind mit im Sheet —
+     waehrend eine Bearbeitung offen ist, geht es nur um dieses eine
+     Element, der Signup-CTA blendet dafuer kurz aus (kehrt beim
+     Schliessen des Sheets automatisch zurueck). */
+  .studio-panel-sticky.mobile-edit-sheet-open .studio-panel-cta {
+    display: none;
+  }
 }
 
 /* Groesser innerhalb der neuen breiten Canvas-Spalte (siehe .studio-canvas
@@ -1891,6 +1923,58 @@ a.card:hover {
     position: static;
     max-height: none;
     overflow-y: visible;
+  }
+  /* Bugfix: dadurch landete das Panel bei einer Auswahl weit unterhalb der
+     langen Vorschau-Karte/des iframes — technisch vorhanden, aber ohne
+     langes Scrollen praktisch unerreichbar; per Klick erschien nur der
+     Auswahlrahmen auf der Karte, kein sichtbares Bearbeitungspanel. Bei
+     aktiver Auswahl (siehe hasSelection in DesignEditor.tsx) wird das
+     Panel jetzt stattdessen zu einem fixierten Bottom-Sheet, das ueber den
+     Rest der Seite gelegt wird — gleiches Muster wie .studio-panel-sticky
+     im Marketing-Customizer. */
+  .editor-panel-sticky.mobile-edit-sheet-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 40;
+    max-height: 75vh;
+    overflow-y: auto;
+    background: var(--ivory);
+    border-top: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgba(33, 28, 25, 0.18);
+    padding: 18px 18px calc(16px + env(safe-area-inset-bottom));
+  }
+}
+/* Schliessen-Button des mobilen Bearbeitungs-Bottom-Sheets (siehe
+   .studio-panel-sticky/.editor-panel-sticky.mobile-edit-sheet-open oben) —
+   wird zwar immer mitgerendert, sobald eine Auswahl aktiv ist, bleibt aber
+   ausserhalb des Mobile-Breakpoints unsichtbar (Desktop nutzt weiterhin nur
+   die bestehenden "Abwählen"-Links in den TextControls). */
+.mobile-sheet-close {
+  display: none;
+}
+@media (max-width: 900px) {
+  .studio-panel-sticky.mobile-edit-sheet-open .mobile-sheet-close,
+  .editor-panel-sticky.mobile-edit-sheet-open .mobile-sheet-close {
+    display: flex;
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--ivory-2);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 1;
   }
 }
 /* Native Checkbox bleibt fuer Tastatur/Screenreader vorhanden, aber
