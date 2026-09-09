@@ -208,6 +208,18 @@ const TIER_PRICE: Record<string, number> = {
   VIP: 29900,
 };
 const TIER_ORDER = ["Basic", "Premium", "Premium Plus", "VIP"];
+const DEFAULT_MAX_TIER = "Premium Plus";
+const DEFAULT_MAX_TIER_RANK = TIER_ORDER.indexOf(DEFAULT_MAX_TIER);
+
+// Ob ein Feature im Standard-Entwurf aktiv sein darf — alles bis
+// einschliesslich Premium Plus (unser primaer verkauftes Paket), VIP-
+// exklusive Funktionen starten deaktiviert/gesperrt (siehe toggleItems
+// unten). Ueber TIER_ORDER-Rang statt hartkodierter Liste, damit das bei
+// Aenderungen an FEATURE_TIER automatisch konsistent bleibt.
+function isIncludedInDefaultTier(featureKey: string): boolean {
+  const tier = FEATURE_TIER[featureKey];
+  return tier === undefined || TIER_ORDER.indexOf(tier) <= DEFAULT_MAX_TIER_RANK;
+}
 
 // Fuer den "Details ->"-Link im Funktionen-Tab, der auf die bestehende
 // Preisseite verlinkt (src/app/preise/[key]/page.tsx) statt Preisabsaetze
@@ -302,7 +314,7 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showSeating: true,
     showGallery: true,
     showPhotoBackground: true,
-    extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, true])),
+    extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, isIncludedInDefaultTier(f.key)])),
     sectionOrder: DEFAULT_SECTION_ORDER,
     agendaItems: defaultAgendaItems(),
     guestbookHeading: "Gästebuch",
@@ -397,6 +409,12 @@ export function DesignStudio({
     setDrafts(loadDrafts());
   }, []);
   const [savedHint, setSavedHint] = useState(false);
+  // Welche gesperrte (VIP-exklusive) Funktion zuletzt angeklickt wurde —
+  // zeigt einen Hinweis, ab welchem Paket sie verfuegbar ist, statt sie
+  // einfach unsichtbar/tot zu machen. Bewusst KEIN natives disabled auf dem
+  // Checkbox-Input (siehe Funktionen-Tab-Rendering) — sonst wuerde kein
+  // onChange mehr feuern und der Hinweis liesse sich nie zeigen.
+  const [lockedFeatureNotice, setLockedFeatureNotice] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("design");
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
   // Eigener Auswahl-State fuer den Ablaufplan statt selectedKey: eine
@@ -1451,16 +1469,17 @@ export function DesignStudio({
   // Liste, damit sie zusammen nach Paket gruppiert werden koennen — der
   // Kunde soll den Preis einmal pro Paket sehen, nicht raten muessen, was
   // "ab VIP" kostet.
-  const toggleItems: { key: string; label: string; description: string; checked: boolean; onChange: (v: boolean) => void }[] = [
-    { key: "countdown", label: "Countdown", description: CORE_FEATURE_DESCRIPTIONS.countdown, checked: draft.showCountdown, onChange: (v) => updateDraft({ showCountdown: v }) },
-    { key: "rsvp", label: "Zusagen-Bereich", description: CORE_FEATURE_DESCRIPTIONS.rsvp, checked: draft.showRsvp, onChange: (v) => updateDraft({ showRsvp: v }) },
-    { key: "seating", label: "Sitzplan-Suche", description: CORE_FEATURE_DESCRIPTIONS.seating, checked: draft.showSeating, onChange: (v) => updateDraft({ showSeating: v }) },
-    { key: "gallery", label: "Foto- & Videogalerie", description: CORE_FEATURE_DESCRIPTIONS.gallery, checked: draft.showGallery, onChange: (v) => updateDraft({ showGallery: v }) },
+  const toggleItems: { key: string; label: string; description: string; checked: boolean; locked: boolean; onChange: (v: boolean) => void }[] = [
+    { key: "countdown", label: "Countdown", description: CORE_FEATURE_DESCRIPTIONS.countdown, checked: draft.showCountdown, locked: false, onChange: (v) => updateDraft({ showCountdown: v }) },
+    { key: "rsvp", label: "Zusagen-Bereich", description: CORE_FEATURE_DESCRIPTIONS.rsvp, checked: draft.showRsvp, locked: false, onChange: (v) => updateDraft({ showRsvp: v }) },
+    { key: "seating", label: "Sitzplan-Suche", description: CORE_FEATURE_DESCRIPTIONS.seating, checked: draft.showSeating, locked: false, onChange: (v) => updateDraft({ showSeating: v }) },
+    { key: "gallery", label: "Foto- & Videogalerie", description: CORE_FEATURE_DESCRIPTIONS.gallery, checked: draft.showGallery, locked: false, onChange: (v) => updateDraft({ showGallery: v }) },
     ...EXTRA_FEATURES.map((f) => ({
       key: f.key,
       label: f.label,
       description: f.description,
-      checked: draft.extraFeatures[f.key] ?? true,
+      checked: draft.extraFeatures[f.key] ?? isIncludedInDefaultTier(f.key),
+      locked: !isIncludedInDefaultTier(f.key),
       onChange: (v: boolean) => updateDraft({ extraFeatures: { ...draft.extraFeatures, [f.key]: v } }),
     })),
   ];
@@ -1988,18 +2007,35 @@ export function DesignStudio({
                   </div>
                   <div className="customizer-toggles">
                     {group.items.map((t) => (
-                      <label className="customizer-toggle customizer-toggle-compact" key={t.key}>
-                        <input type="checkbox" checked={t.checked} onChange={(e) => t.onChange(e.target.checked)} />
-                        <span className="customizer-switch" aria-hidden="true" />
-                        <span className="customizer-toggle-text">{t.label}</span>
-                        <span className="customizer-tier-badge">ab {group.tier}</span>
-                      </label>
+                      <div key={t.key}>
+                        <label className={`customizer-toggle customizer-toggle-compact${t.locked ? " customizer-toggle-locked" : ""}`}>
+                          <input
+                            type="checkbox"
+                            checked={t.checked}
+                            onChange={(e) => {
+                              if (t.locked) {
+                                setLockedFeatureNotice(t.key);
+                                return;
+                              }
+                              t.onChange(e.target.checked);
+                            }}
+                          />
+                          <span className="customizer-switch" aria-hidden="true" />
+                          <span className="customizer-toggle-text">{t.label}</span>
+                          <span className="customizer-tier-badge">ab {group.tier}</span>
+                        </label>
+                        {t.locked && lockedFeatureNotice === t.key && (
+                          <p className="customizer-locked-hint">
+                            Ab {group.tier} verfügbar — im aktuell gezeigten Premium-Plus-Vorschau-Umfang noch nicht enthalten.
+                          </p>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
-            <span className="customizer-hint">Alle Funktionen sind hier zur Ansicht aktiv, damit ihr seht, wie die Seite damit aussieht.</span>
+            <span className="customizer-hint">Voreingestellt sind die Funktionen aus Premium Plus. VIP-exklusive Funktionen sind sichtbar, aber gesperrt.</span>
           </section>
         </>
           )}

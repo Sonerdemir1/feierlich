@@ -1904,6 +1904,24 @@ a.card:hover {
 .customizer-tier-price:hover {
   text-decoration: underline;
 }
+/* VIP-exklusive Funktionen im Standard-Entwurf (Premium Plus): sichtbar,
+   aber gedaempft statt versteckt — echtes disabled auf dem Checkbox-Input
+   waere hier bewusst falsch, siehe onChange-Kommentar in DesignStudio.tsx
+   (ein Klick soll den Hinweis unten ausloesen koennen). */
+.customizer-toggle-locked {
+  opacity: 0.55;
+}
+.customizer-toggle-locked:hover {
+  opacity: 0.75;
+}
+.customizer-locked-hint {
+  margin: -2px 10px 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--terracotta-dark);
+  background: var(--ivory-2);
+  border-radius: var(--radius);
+}
 /* WYSIWYG-Editor (DesignEditor.tsx): umgekehrte Rollenverteilung ggue.
    .studio-card-sticky oben — dort ist die VORSCHAU klein und sticky, hier
    ist die KARTE die grosse Arbeitsflaeche und das STEUER-PANEL bleibt beim

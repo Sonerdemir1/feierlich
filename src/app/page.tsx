@@ -350,6 +350,9 @@ export default async function Home() {
         <div className="pricing-head" style={{ marginTop: 12 }}>
           <div className="eyebrow">{t.pricing.eyebrow2}</div>
           <h2 style={{ fontSize: "clamp(20px, 2.4vw, 26px)" }}>{t.pricing.heading2}</h2>
+          <Link href="/preise/vergleich" style={{ fontSize: 13, fontWeight: 600, color: "var(--terracotta-dark)", display: "inline-block", marginTop: 10 }}>
+            Alle Pakete im Vergleich →
+          </Link>
         </div>
         <div className="price-grid">
           {packages.map((pkg) => {
