@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile, unlink } from "fs/promises";
 import path from "path";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 // Zwei Speicher-Backends hinter einer Funktion:
 //  - "local": Dateisystem unter public/uploads/... (Standard, ohne Setup
@@ -57,4 +57,25 @@ export async function readObject(url: string): Promise<Buffer> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Datei konnte nicht gelesen werden (${response.status}): ${url}`);
   return Buffer.from(await response.arrayBuffer());
+}
+
+// Bewusst NEU (an keiner anderen Stelle im Projekt genutzt) — das etablierte
+// Muster ist sonst durchgaengig "beim Ersetzen/Entfernen bleibt die alte
+// Datei als Datenleiche liegen" (z.B. removeEnvelopeVideo()), weil ein
+// bezahltes Event einen echten Verlauf hat. Verwaiste anonyme Entwurfs-
+// Uploads (siehe cleanupExpiredDraftMedia() in gestalten/upload-media/
+// route.ts) haben dagegen NIE einen Wert, wenn sie nie zu einem echten
+// Event wurden — dort deshalb bewusst eine echte Loeschung, um die
+// Speicherkosten anonymer, nie abgeschlossener Entwuerfe begrenzt zu
+// halten (siehe Kosten-Einordnung im entsprechenden Bericht).
+export async function deleteObject(url: string): Promise<void> {
+  if (url.startsWith("/uploads/")) {
+    await unlink(path.join(process.cwd(), "public", url)).catch(() => {
+      // Datei bereits weg (z.B. doppelter Aufruf) — kein Fehler.
+    });
+    return;
+  }
+  if (!R2_PUBLIC_URL || !url.startsWith(R2_PUBLIC_URL)) return;
+  const key = url.slice(R2_PUBLIC_URL.replace(/\/$/, "").length + 1);
+  await getS3Client().send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
 }

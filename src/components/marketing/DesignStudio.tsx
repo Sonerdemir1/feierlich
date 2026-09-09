@@ -18,6 +18,7 @@ import { FontPicker } from "@/components/editor/FontPicker";
 import { PlaceAutocompleteField } from "@/components/editor/PlaceAutocompleteField";
 import { GOOGLE_MAPS_API_KEY, googleMapsSearchUrl } from "@/lib/google-maps";
 import { InlineEditableField } from "@/components/public/InlineEditableField";
+import { FileField } from "@/components/public/FileField";
 import { SectionsList } from "@/components/dashboard/panels/SectionsList";
 import { AgendaList } from "@/components/editor/AgendaList";
 import { AgendaItemQuickEdit } from "@/components/editor/AgendaItemQuickEdit";
@@ -97,6 +98,14 @@ type Draft = {
   showSeating: boolean;
   showGallery: boolean;
   showPhotoBackground: boolean;
+  // Editor-Konsistenz-Auftrag, Teil A — Uploads ueber upload-media/route.ts,
+  // gespeicherte URL (nicht die Datei selbst, siehe uploadDraftMedia() unten
+  // und Kommentar bei anonymousDraftId). null = noch keine Datei.
+  anonymousDraftId: string | null;
+  envelopeVideoUrl: string | null;
+  backgroundMusicUrl: string | null;
+  audioInvitationUrl: string | null;
+  videoMessageUrl: string | null;
   extraFeatures: Record<string, boolean>;
   // Echtes Datenmodell statt statischer Beispielinhalte (siehe
   // Umsetzungsplan "Ablaufplan"-Schritt) — Liste bleibt leer relevant fuer
@@ -219,9 +228,16 @@ const PACKAGE_KEY_BY_TIER: Record<string, string> = {
   VIP: "VIP",
 };
 
+// Editor-Konsistenz-Auftrag, Teil A: dieselben vier Tabs wie im
+// eingeloggten Dashboard-Editor (DesignEditor.tsx PANEL_TABS) — vorher nur
+// dort verfuegbar, siehe upload-media/route.ts fuer den anonymen Upload-Weg.
 const PANEL_TABS = [
   { id: "design", label: "Design" },
   { id: "funktionen", label: "Funktionen" },
+  { id: "envelope", label: "Umschlag" },
+  { id: "music", label: "Musik" },
+  { id: "audio-invitation", label: "Audio-Einladung" },
+  { id: "video-message", label: "Video-Einladung" },
 ];
 
 // Kurzbeschreibung je Kern-Funktion — direkt aus den Modul-Beschreibungen
@@ -302,6 +318,11 @@ function defaultDraft(item: GalleryTemplate): Draft {
     showSeating: true,
     showGallery: true,
     showPhotoBackground: true,
+    anonymousDraftId: null,
+    envelopeVideoUrl: null,
+    backgroundMusicUrl: null,
+    audioInvitationUrl: null,
+    videoMessageUrl: null,
     extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, true])),
     sectionOrder: DEFAULT_SECTION_ORDER,
     agendaItems: defaultAgendaItems(),
@@ -397,6 +418,11 @@ export function DesignStudio({
     setDrafts(loadDrafts());
   }, []);
   const [savedHint, setSavedHint] = useState(false);
+  // Editor-Konsistenz-Auftrag, Teil A — Ladezustand/Fehler fuer Umschlag-
+  // Video/Musik/Audio-/Video-Einladung-Uploads, siehe uploadDraftMedia()
+  // weiter unten.
+  const [uploadingKind, setUploadingKind] = useState<"envelope-video" | "background-music" | "audio-invitation" | "video-message" | null>(null);
+  const [uploadError, setUploadError] = useState<{ kind: string; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState("design");
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
   // Eigener Auswahl-State fuer den Ablaufplan statt selectedKey: eine
@@ -1492,6 +1518,101 @@ export function DesignStudio({
     toggleItems.find((t) => t.key === key)?.onChange(value);
   }
 
+  // Editor-Konsistenz-Auftrag, Teil A — Umschlag-Video/Musik/Audio-/Video-
+  // Einladung ueber die anonyme upload-media/route.ts. anonymousDraftId wird
+  // beim allerersten Upload einmalig erzeugt und im Draft persistiert (siehe
+  // Draft-Typ oben) — bleibt danach fuer weitere Uploads/beim Signup stabil.
+  const draftMediaField = {
+    "envelope-video": "envelopeVideoUrl",
+    "background-music": "backgroundMusicUrl",
+    "audio-invitation": "audioInvitationUrl",
+    "video-message": "videoMessageUrl",
+  } as const;
+  type DraftMediaKind = keyof typeof draftMediaField;
+  async function uploadDraftMedia(kind: DraftMediaKind, file: File) {
+    setUploadingKind(kind);
+    setUploadError(null);
+    try {
+      let draftId = draft.anonymousDraftId;
+      if (!draftId) {
+        draftId = crypto.randomUUID();
+        updateDraft({ anonymousDraftId: draftId });
+      }
+      const formData = new FormData();
+      formData.set("draftId", draftId);
+      formData.set("kind", kind);
+      formData.set("file", file);
+      const response = await fetch("/gestalten/upload-media", { method: "POST", body: formData });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || !json?.ok) throw new Error(json?.error === "too-large" ? "too-large" : "failed");
+      updateDraft({ [draftMediaField[kind]]: json.url } as Partial<Draft>);
+    } catch (err) {
+      const tooLarge = err instanceof Error && err.message === "too-large";
+      setUploadError({
+        kind,
+        message: tooLarge
+          ? `Datei ist zu groß (max. ${kind === "background-music" || kind === "audio-invitation" ? "8" : "25"} MB).`
+          : "Der Upload ist gerade nicht möglich. Bitte später erneut versuchen.",
+      });
+    } finally {
+      setUploadingKind(null);
+    }
+  }
+  function removeDraftMedia(kind: DraftMediaKind) {
+    const draftId = draft.anonymousDraftId;
+    updateDraft({ [draftMediaField[kind]]: null } as Partial<Draft>);
+    if (!draftId) return;
+    fetch("/gestalten/upload-media", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ draftId, kind }),
+    }).catch(() => {});
+  }
+
+  // Gemeinsames Rendering fuer alle vier Upload-Tabs (Umschlag/Musik/Audio-
+  // /Video-Einladung) — gleiche Struktur, nur Titel/Hinweis/erlaubte Typen/
+  // Groessenlimit unterscheiden sich je Tab.
+  function renderMediaUploadTab(kind: DraftMediaKind, title: string, hint: string, accept: string, maxSizeMb: number) {
+    const url = draft[draftMediaField[kind]];
+    const isVideo = kind === "envelope-video" || kind === "video-message";
+    const isUploading = uploadingKind === kind;
+    return (
+      <section className="studio-section">
+        <h4>{title}</h4>
+        <p className="studio-section-intro">{hint}</p>
+        {url ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {isVideo ? (
+              <video src={url} controls style={{ width: "100%", maxHeight: 220, background: "#000" }} />
+            ) : (
+              <audio src={url} controls style={{ width: "100%" }} />
+            )}
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => removeDraftMedia(kind)}
+              style={{ alignSelf: "flex-start", padding: "8px 14px", fontSize: 12.5 }}
+            >
+              Entfernen
+            </button>
+          </div>
+        ) : (
+          <>
+            <FileField
+              name="file"
+              accept={accept}
+              label={isUploading ? "Wird hochgeladen …" : "Datei auswählen"}
+              colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+              onFileSelected={(file) => uploadDraftMedia(kind, file)}
+            />
+            <span className="customizer-hint">Max. {maxSizeMb} MB.</span>
+          </>
+        )}
+        {uploadError?.kind === kind && <p style={{ fontSize: 11.5, color: "#B2543A", marginTop: 6 }}>{uploadError.message}</p>}
+      </section>
+    );
+  }
+
   return (
     <div className="studio-page">
       <div className="studio-top">
@@ -1699,15 +1820,15 @@ export function DesignStudio({
           </div>
         </div>
 
-        <div className={`studio-panel-sticky${hasSelection && activeTab !== "funktionen" ? " mobile-edit-sheet-open" : ""}`}>
-          {hasSelection && activeTab !== "funktionen" && (
+        <div className={`studio-panel-sticky${hasSelection && activeTab === "design" ? " mobile-edit-sheet-open" : ""}`}>
+          {hasSelection && activeTab === "design" && (
             <button type="button" className="mobile-sheet-close" onClick={deselectAll} aria-label="Bearbeitung schließen">
               ✕
             </button>
           )}
           <div className="studio-panel-scroll">
           <ContextPanel tabs={PANEL_TABS} activeTabId={activeTab} onTabChange={setActiveTab}>
-          {activeTab !== "funktionen" && (
+          {activeTab === "design" && (
         <>
           {selectedAgendaId ? (
             (() => {
@@ -2003,6 +2124,38 @@ export function DesignStudio({
           </section>
         </>
           )}
+          {activeTab === "envelope" &&
+            renderMediaUploadTab(
+              "envelope-video",
+              "Umschlag-Video",
+              "Spielt beim Antippen des Umschlags statt der Standard-Öffnen-Animation.",
+              "video/mp4,video/quicktime,video/webm",
+              25
+            )}
+          {activeTab === "music" &&
+            renderMediaUploadTab(
+              "background-music",
+              "Hintergrundmusik",
+              "Läuft in einer Schleife, sobald Gäste sie über einen Schalter auf der Einladungsseite selbst einschalten — kein Autoplay.",
+              "audio/mpeg,audio/mp4,audio/wav,audio/ogg",
+              8
+            )}
+          {activeTab === "audio-invitation" &&
+            renderMediaUploadTab(
+              "audio-invitation",
+              "Audio-Einladung",
+              "Eine kurze Sprachnachricht als persönliche Einladung, die Gäste sich einmalig anhören können.",
+              "audio/mpeg,audio/mp4,audio/wav,audio/ogg",
+              8
+            )}
+          {activeTab === "video-message" &&
+            renderMediaUploadTab(
+              "video-message",
+              "Video-Einladung",
+              "Eine eigenständige Videobotschaft in einem separaten Bereich der Einladungsseite — unabhängig vom Umschlag-Video.",
+              "video/mp4,video/quicktime,video/webm",
+              25
+            )}
           </ContextPanel>
           </div>
 

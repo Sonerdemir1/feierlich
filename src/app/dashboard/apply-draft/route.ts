@@ -414,6 +414,34 @@ export async function POST(request: Request) {
     }
   }
 
+  // Editor-Konsistenz-Auftrag, Teil A: waehrend des anonymen Entwurfs
+  // hochgeladene Umschlag-Video/Musik/Audio-/Video-Einladung (siehe
+  // upload-media/route.ts) auf das gerade erstellte Event umhaengen — bis
+  // hierhin haben diese Media-Zeilen noch anonymousDraftId statt eventId
+  // (kein Event existierte beim Hochladen). Ein Fehlschlag hier darf die
+  // Kontoerstellung ebenfalls nicht scheitern lassen (siehe Foto-Upload
+  // oben) — der Kunde kann die Datei im Dashboard jederzeit neu hochladen.
+  const draftId = typeof draft.anonymousDraftId === "string" ? draft.anonymousDraftId : "";
+  if (draftId) {
+    try {
+      const draftMedia = await prisma.media.findMany({ where: { anonymousDraftId: draftId } });
+      const eventFieldByKind: Record<string, "envelopeVideoId" | "backgroundMusicId" | "audioInvitationId" | "videoMessageId"> = {
+        "envelope-video": "envelopeVideoId",
+        "background-music": "backgroundMusicId",
+        "audio-invitation": "audioInvitationId",
+        "video-message": "videoMessageId",
+      };
+      for (const media of draftMedia) {
+        const field = media.draftKind ? eventFieldByKind[media.draftKind] : undefined;
+        if (!field) continue;
+        await prisma.media.update({ where: { id: media.id }, data: { eventId: event.id, anonymousDraftId: null, draftKind: null } });
+        await prisma.event.update({ where: { id: event.id }, data: { [field]: media.id } });
+      }
+    } catch (err) {
+      console.error(`[apply-draft] Umhaengen der Entwurfs-Uploads fuer Event ${event.id} fehlgeschlagen:`, err);
+    }
+  }
+
   // Gleiche Gating-Regel wie saveModules()/toggleModule() (siehe actions.ts)
   // — per AddOn gesperrte Module (aktuell nur "gallery" ohne bezahltes
   // Foto/Video-Add-on) duerfen auch hier nicht scharfgeschaltet werden.

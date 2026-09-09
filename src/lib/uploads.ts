@@ -84,6 +84,29 @@ export function validateAudioFile(file: FormDataEntryValue | null): UploadValida
   return null;
 }
 
+// Deutlich enger als MAX_VIDEO_BYTES/MAX_AUDIO_BYTES oben — jene gelten fuer
+// Uploads in ein BEREITS bezahltes Event (Gaeste-Galerie, Dashboard-Tabs),
+// hier geht es um Uploads VOR jedem Signup/Kauf (siehe gestalten/upload-
+// media/route.ts) — bewusst kleinere Kappung, da diese Route ohne Konto
+// erreichbar ist und Speicherkosten verursacht, auch wenn nie ein Kauf
+// folgt (siehe Kosten-Einordnung im Bericht zu diesem Schritt).
+export const MAX_DRAFT_VIDEO_BYTES = 25 * 1024 * 1024;
+export const MAX_DRAFT_AUDIO_BYTES = 8 * 1024 * 1024;
+
+export function validateDraftVideoFile(file: FormDataEntryValue | null): UploadValidationError | null {
+  if (!(file instanceof File) || file.size === 0) return "no-file";
+  if (!ALLOWED_VIDEO_TYPES.includes(file.type)) return "bad-type";
+  if (file.size > MAX_DRAFT_VIDEO_BYTES) return "too-large";
+  return null;
+}
+
+export function validateDraftAudioFile(file: FormDataEntryValue | null): UploadValidationError | null {
+  if (!(file instanceof File) || file.size === 0) return "no-file";
+  if (!ALLOWED_AUDIO_TYPES.includes(file.type)) return "bad-type";
+  if (file.size > MAX_DRAFT_AUDIO_BYTES) return "too-large";
+  return null;
+}
+
 async function saveFile(eventId: string, file: File): Promise<{ url: string; mimeType: string; sizeBytes: number }> {
   const bytes = Buffer.from(await file.arrayBuffer());
   const ext = EXTENSION_BY_MIME[file.type] ?? "";
@@ -105,4 +128,17 @@ export async function saveEventMedia(eventId: string, file: File): Promise<{ url
 // Nimmt an, dass validateAudioFile() bereits erfolgreich war.
 export async function saveEventAudio(eventId: string, file: File): Promise<{ url: string; mimeType: string; sizeBytes: number }> {
   return saveFile(eventId, file);
+}
+
+// Fuer anonyme Uploads VOR dem Signup (siehe gestalten/upload-media/route.ts)
+// — es gibt noch kein Event, daher "drafts/<draftId>/..." statt
+// "events/<eventId>/..." als Speicherpfad. draftId ist ein clientseitig per
+// crypto.randomUUID() erzeugter, im Draft persistierter Schluessel (siehe
+// DesignStudio.tsx), keine echte DB-Entitaet.
+export async function saveDraftMedia(draftId: string, file: File): Promise<{ url: string; mimeType: string; sizeBytes: number }> {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const ext = EXTENSION_BY_MIME[file.type] ?? "";
+  const filename = `${randomUUID()}${ext}`;
+  const url = await putObject(`drafts/${draftId}/${filename}`, bytes, file.type);
+  return { url, mimeType: file.type, sizeBytes: file.size };
 }

@@ -16,6 +16,7 @@ export function FileField({
   label,
   colors,
   autoSubmit,
+  onFileSelected,
   style,
 }: {
   name: string;
@@ -29,6 +30,11 @@ export function FileField({
   // hochgeladenen Foto). Nicht bei Gaestebuch-Anhaengen genutzt, dort soll
   // ein Anhang die restliche Nachricht nicht vorzeitig abschicken.
   autoSubmit?: boolean;
+  // Fuer Aufrufer OHNE umgebendes <form> (z.B. DesignStudio.tsx' anonyme
+  // Upload-Route, die per fetch() statt Formular-Submit hochlaedt) — bekommt
+  // die ausgewaehlte Datei direkt statt sich auf autoSubmit/e.target.form zu
+  // verlassen. Unabhaengig von autoSubmit nutzbar (auch beides zusammen).
+  onFileSelected?: (file: File) => void;
   // Optionaler Text-Style-Override (galleryButtonText, Schritt 6) — gleiches
   // Muster wie bei den anderen Buttons in e/[slug]/page.tsx.
   style?: CSSProperties;
@@ -46,8 +52,10 @@ export function FileField({
         required={required}
         style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
         onChange={(e) => {
-          setFileName(e.target.files?.[0]?.name ?? null);
-          if (autoSubmit && e.target.files?.[0]) e.target.form?.requestSubmit();
+          const file = e.target.files?.[0] ?? null;
+          setFileName(file?.name ?? null);
+          if (autoSubmit && file) e.target.form?.requestSubmit();
+          if (file) onFileSelected?.(file);
         }}
       />
       <button
