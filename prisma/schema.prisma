@@ -554,6 +554,29 @@ model Media {
   // jedem Upload, aus Kostengruenden).
   aiVerdict       String?
   aiVerdictReason String?
+  // KI-Einwilligung des Gastes beim Hochladen (siehe lib/ai-consent.ts) —
+  // rechtliche ERLAUBNIS, getrennt von aiVerdict/aiVerdictReason oben (das
+  // sind bereits bestehende ANALYSE-ERGEBNISSE). Jede kuenftige KI-Funktion,
+  // die ein Medium verarbeitet (Moderation, Gesichtserkennung/-gruppierung,
+  // Video-Highlight), MUSS zuerst hasAiConsent() dagegen pruefen. Beide
+  // Felder unabhaengig voneinander, Default false (Koppelungsverbot Art. 7
+  // Abs. 4 DSGVO — Upload funktioniert immer, unabhaengig vom Haekchen).
+  // aiConsentFace deckt Gesichtserkennung/-gruppierung separat ab, da
+  // biometrische Daten (Art. 9 DSGVO) eine eigene, explizite Einwilligung
+  // brauchen statt in der allgemeinen KI-Verarbeitung mitzulaufen.
+  aiConsentGeneral     Boolean   @default(false)
+  aiConsentFace        Boolean   @default(false)
+  // Zeitpunkt der Formular-Einreichung, unabhaengig vom tatsaechlichen
+  // Haekchen-Stand (auch bei "beide nein" gesetzt) — belegt, WANN dem Gast
+  // die Wahl vorgelegt wurde. aiConsentTextVersion haelt fest, WELCHER
+  // Wortlaut (AI_CONSENT_TEXT_VERSION in lib/ai-consent.ts) zu diesem
+  // Zeitpunkt galt, falls sich der Text spaeter aendert.
+  aiConsentGivenAt     DateTime?
+  aiConsentTextVersion Int?
+  // Gesetzt von revokeAiConsent() — Nachweis, dass/wann ein Gast seine
+  // Einwilligung nachtraeglich zurueckgezogen hat (Art. 7 Abs. 3 DSGVO:
+  // Widerruf muss so einfach wie die Erteilung sein).
+  aiConsentRevokedAt   DateTime?
 
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
   table            Table?           @relation(fields: [tableId], references: [id], onDelete: SetNull)
