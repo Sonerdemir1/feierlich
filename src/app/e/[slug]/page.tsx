@@ -24,6 +24,8 @@ import { VideoMessagePlayer } from "@/components/public/VideoMessagePlayer";
 import { EditableWishlist } from "@/components/public/EditableWishlist";
 import { WISHLIST_TYPE_LABEL, WISHLIST_TYPES, type WishlistItemData } from "@/lib/wishlist";
 import { cardTextZone } from "@/lib/card-frames";
+import { PHOTO_BACKGROUND } from "@/lib/gallery-templates";
+import type { PhotoShape } from "@/lib/photo-shape";
 import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
@@ -172,9 +174,20 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const templateColors: TemplateColors = JSON.parse(event.template.colors);
   const templateFonts: TemplateFonts = JSON.parse(event.template.fonts);
   const colors: TemplateColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
-  const style: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
-    ? JSON.parse(event.styleJson)
-    : {};
+  const style: {
+    fontId?: string;
+    ornaments?: boolean;
+    elements?: StyleElements;
+    // Uebernommen aus dem anonymen Gestalten-Entwurf beim Signup (siehe
+    // apply-draft/route.ts, Bugfix "Foto & Verzierungen gehen verloren") —
+    // bei allen Events, die nicht aus einem Entwurf mit gesetzter Foto-Form
+    // entstanden (das gesamte bisherige Bestandsangebot), bleiben diese drei
+    // undefined und das Verhalten ist exakt wie vorher.
+    photoShape?: PhotoShape;
+    showFloral?: boolean;
+    showPhotoBackground?: boolean;
+    sectionOrder?: string[];
+  } = event.styleJson ? JSON.parse(event.styleJson) : {};
   // Beschreibung sitzt ausserhalb der Karte (eigener Abschnitt darunter,
   // siehe unten) — bleibt serverseitig berechnet. Titel/Untertitel/Datum/
   // Anlass-Label/Familiennamen werden dagegen jetzt in HeroCard.tsx live
@@ -226,7 +239,49 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     templateFonts.display === templateFonts.body ? "var(--font-body)" : "var(--font-display)";
   const chosenFont = fontOptionById(style.fontId);
   const headingFont = chosenFont?.cssVar ?? templateFontFallback;
-  const initialDesignState: LiveDesignState = { colors, fontId: style.fontId, ornaments: Boolean(style.ornaments), elements: style.elements };
+  const initialDesignState: LiveDesignState = {
+    colors,
+    fontId: style.fontId,
+    ornaments: Boolean(style.ornaments),
+    elements: style.elements,
+    photoShape: style.photoShape,
+    showFloral: style.showFloral,
+    showPhotoBackground: style.showPhotoBackground,
+  };
+  // Nur wenn das Event aus einem Gestalten-Entwurf mit gesetzter Foto-Form
+  // entstand (siehe oben): das Titelbild wandert dann in die Karte (geformt,
+  // ggf. mit Bluetenmuster/Foto-Hintergrund, wie in der Editor-Vorschau)
+  // statt als separates grosses Banner darunter zu erscheinen — sonst wuerde
+  // dasselbe Foto doppelt auftauchen. Alle bisherigen Events (kein
+  // photoShape im styleJson) sind davon unveraendert.
+  const useCardPhoto = Boolean(style.photoShape && event.coverImage);
+  const photoBackground = PHOTO_BACKGROUND[event.template.layoutKey] ?? null;
+
+  // Abschnitts-Reihenfolge (Bugfix "sectionOrder geht beim Signup verloren")
+  // — <main> wird weiter unten auf display:flex/flex-direction:column
+  // umgestellt, jeder umsortierbare <section>-Block bekommt per
+  // sectionOrderIndex() einen CSS-order-Wert statt seine JSX-Position im
+  // Baum zu aendern. Bewusst NICHT die JSX-Struktur der einzelnen (teils
+  // sehr umfangreichen) Abschnitte selbst angefasst — das haette ein
+  // deutlich riskanteres Refactoring der wichtigsten Seite der App bedeutet.
+  // LEGACY_SECTION_ORDER ist die bisherige, fest kodierte Reihenfolge dieser
+  // Seite (unveraendert fuer alle BESTEHENDEN Events ohne sectionOrder im
+  // styleJson) — bewusst NICHT identisch mit DesignStudio.tsx' eigenem
+  // DEFAULT_SECTION_ORDER (dort z.B. rsvp/seating/gallery vor agenda), um
+  // das Aussehen jedes bereits bestehenden Events unveraendert zu lassen.
+  // Neue, aus einem Entwurf entstandene Events erhalten stattdessen die vom
+  // Kunden im Editor gesehene/gewaehlte Reihenfolge.
+  const LEGACY_SECTION_ORDER = [
+    "agenda", "rsvp", "seating", "menu", "gallery", "guestbook",
+    "music-requests", "wishlist", "dresscode", "social-media",
+    "audio-invitation", "video-invitation", "thank-you-card",
+  ];
+  const activeSectionOrder =
+    Array.isArray(style.sectionOrder) && style.sectionOrder.length > 0 ? style.sectionOrder : LEGACY_SECTION_ORDER;
+  function sectionOrderIndex(key: string): number {
+    const idx = activeSectionOrder.indexOf(key);
+    return 100 + (idx === -1 ? activeSectionOrder.length : idx);
+  }
   const envelopeImages: string[] | null = event.template.envelopeSequenceUrls
     ? JSON.parse(event.template.envelopeSequenceUrls)
     : null;
@@ -355,6 +410,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       countdownMinutesLabel={event.countdownMinutesLabel ?? "MIN"}
       calendarSaveText={event.calendarSaveText ?? "In Kalender speichern"}
       calendarGoogleText={event.calendarGoogleText ?? "Google Kalender"}
+      coverImageUrl={useCardPhoto ? (event.coverImage?.url ?? null) : null}
+      photoBackground={photoBackground}
     />
   );
 
@@ -418,15 +475,21 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         backgroundSize: cardImageUrl ? "cover" : undefined,
         backgroundPosition: cardImageUrl ? "center" : undefined,
         backgroundAttachment: cardImageUrl ? "fixed" : undefined,
+        // display:flex + order pro Abschnitt (statt die JSX-Reihenfolge
+        // selbst zu aendern) traegt die Abschnitts-Reihenfolge aus dem
+        // Gestalten-Entwurf, siehe sectionOrderIndex() oben — deutlich
+        // risikoaermer als ein Umbau der Render-Struktur dieser Seite.
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {isOwner && event.status !== "PUBLISHED" && (
-        <div style={{ background: "#211C19", color: "#FAF6EF", textAlign: "center", padding: "8px 16px", fontSize: 12 }}>
+        <div style={{ order: 0, background: "#211C19", color: "#FAF6EF", textAlign: "center", padding: "8px 16px", fontSize: 12 }}>
           Vorschau — dieses Event ist noch nicht veröffentlicht. Nur du siehst diesen Hinweis.
         </div>
       )}
 
-      <section style={{ padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
+      <section style={{ order: 1, padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
         {isModuleOn("video-invitation") && event.envelopeVideo ? (
           <VideoEnvelope videoUrl={event.envelopeVideo.url} primary={colors.primary}>
             {heroInner}
@@ -444,15 +507,15 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         <BackgroundMusicToggle url={event.backgroundMusic.url} accent={colors.accent} background={colors.background} />
       )}
 
-      {event.coverImage && (
-        <div style={{ maxWidth: 640, margin: "0 auto 48px", padding: "0 28px" }}>
+      {event.coverImage && !useCardPhoto && (
+        <div style={{ order: 3, maxWidth: 640, margin: "0 auto 48px", padding: "0 28px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- user upload, unknown dimensions */}
           <img src={event.coverImage.url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
       )}
 
       {editMode ? (
-        <section style={{ maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
+        <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
           <EditableDescription
             eventId={event.id}
             value={event.description ?? ""}
@@ -461,7 +524,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </section>
       ) : (
         event.description && (
-          <section style={{ maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
+          <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
             <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
               {event.description}
             </p>
@@ -470,7 +533,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("location") && (event.locationName || editMode) && (
-        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
+        <section style={{ order: 5, maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 10 }}>
               Ort
@@ -520,7 +583,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("agenda") && (agendaItems.length > 0 || editMode) && (
-        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
+        <section style={{ order: sectionOrderIndex("agenda"), maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 14 }}>
               Ablaufplan
@@ -563,7 +626,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("check-in") && linkedGuest && (
-        <section style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 48px" }}>
+        <section style={{ order: 90, maxWidth: 420, margin: "0 auto", padding: "0 28px 48px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
             {linkedGuest.checkIn ? (
               <>
@@ -588,7 +651,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("rsvp") && (
-        <section id="rsvp" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="rsvp" style={{ order: sectionOrderIndex("rsvp"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px" }}>
             {editMode ? (
               <div style={{ marginBottom: 20 }}>
@@ -751,7 +814,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("seating") && (
-        <section id="sitzplatz" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="sitzplatz" style={{ order: sectionOrderIndex("seating"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
             {editMode ? (
               <div style={{ marginBottom: 8 }}>
@@ -832,7 +895,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("menu") && (menuItems.length > 0 || editMode) && (
-        <section id="menu" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="menu" style={{ order: sectionOrderIndex("menu"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -889,7 +952,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("gallery") && (
-        <section id="galerie" style={{ maxWidth: 640, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="galerie" style={{ order: sectionOrderIndex("gallery"), maxWidth: 640, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1049,7 +1112,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("guestbook") && (
-        <section id="gaestebuch" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="gaestebuch" style={{ order: sectionOrderIndex("guestbook"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableGuestbookText
@@ -1162,7 +1225,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("music-requests") && (
-        <section id="musikwuensche" style={{ maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="musikwuensche" style={{ order: sectionOrderIndex("music-requests"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1268,7 +1331,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("wishlist") && (wishlistItemsData.length > 0 || editMode) && (
-        <section id="wunschliste" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section id="wunschliste" style={{ order: sectionOrderIndex("wishlist"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <EditableSectionText
               eventId={event.id}
@@ -1337,7 +1400,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("dresscode") && (event.dresscodeText || editMode) && (
-        <section id="dresscode" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <section id="dresscode" style={{ order: sectionOrderIndex("dresscode"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1370,7 +1433,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("social-media") && (event.socialMediaText || editMode) && (
-        <section id="social-media" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <section id="social-media" style={{ order: sectionOrderIndex("social-media"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1403,7 +1466,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("audio-invitation") && event.audioInvitation && (
-        <section id="audio-einladung" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <section id="audio-einladung" style={{ order: sectionOrderIndex("audio-invitation"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1443,7 +1506,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("video-invitation") && event.videoMessage && (
-        <section id="video-einladung" style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <section id="video-einladung" style={{ order: sectionOrderIndex("video-invitation"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1483,7 +1546,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {isModuleOn("thank-you-card") && (isPastEvent || editMode) && (
-        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <section style={{ order: sectionOrderIndex("thank-you-card"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "32px 28px", textAlign: "center" }}>
             <div style={{ fontSize: 22, marginBottom: 10, color: colors.accent }}>♥</div>
             {editMode ? (
@@ -1521,7 +1584,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </section>
       )}
 
-      <footer style={{ textAlign: "center", padding: "24px 28px 40px", fontSize: 11, opacity: 0.5 }}>
+      <footer style={{ order: 999, textAlign: "center", padding: "24px 28px 40px", fontSize: 11, opacity: 0.5 }}>
         Erstellt mit einladi
       </footer>
     </main>

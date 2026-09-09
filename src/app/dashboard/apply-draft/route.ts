@@ -6,6 +6,28 @@ import { defaultTextForCategory, defaultDescriptionForCategory } from "@/lib/gal
 import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS, STYLE_FIELD_KEYS, DEFAULT_DRESSCODE_TEXT, DEFAULT_SOCIAL_MEDIA_TEXT } from "@/lib/text-style";
 import { WISHLIST_TYPES, defaultWishlistItems, type WishlistItemType } from "@/lib/wishlist";
 import { defaultAgendaItems } from "@/lib/agenda";
+import { putObject } from "@/lib/storage";
+import type { PhotoShape } from "@/lib/photo-shape";
+
+const VALID_PHOTO_SHAPES = new Set<string>(["rect", "circle", "star", "polaroid"]);
+
+// Bugfix: draft.image war bislang die einzige der fuenf "Foto &
+// Verzierungen"-Angaben, die beim Signup komplett verloren ging (kein
+// server-seitiges Gegenstueck existierte). draft.image ist eine data:-URL
+// (siehe MAX_IMAGE_BYTES in DesignStudio.tsx, dort bereits klein genug
+// gehalten) — wird hier decodiert und wie ein normaler Foto-Upload
+// gespeichert (gleiches Muster wie saveEventImage in lib/uploads.ts).
+function parseDataUrl(dataUrl: string): { mimeType: string; bytes: Buffer } | null {
+  const match = /^data:([a-zA-Z0-9/+.-]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  const [, mimeType, base64] = match;
+  if (!mimeType.startsWith("image/")) return null;
+  try {
+    return { mimeType, bytes: Buffer.from(base64, "base64") };
+  } catch {
+    return null;
+  }
+}
 
 // Ordnet die tuerkischen Hochzeitssaal-Kategorien und die generischen
 // Design-Stil-Kategorien (siehe gallery-templates.ts) je einem echten
@@ -165,11 +187,17 @@ export async function POST(request: Request) {
   const eventTime = typeof draft.eventTime === "string" && draft.eventTime.trim() ? draft.eventTime.trim() : null;
   const locationText = typeof draft.locationText === "string" && draft.locationText.trim() ? draft.locationText.trim() : null;
   // draft.locationText ist eine per Places-Autocomplete gesuchte Adresse,
-  // kein eigener Saal-Name (den kennt der anonyme Customizer nicht) — wird
-  // trotzdem zusaetzlich in locationName gespiegelt, weil die "Ort"-Sektion
-  // auf der echten Event-Seite nur rendert, wenn locationName gesetzt ist
-  // (siehe e/[slug]/page.tsx).
-  const locationName = locationText;
+  // kein eigener Saal-Name (den kennt der anonyme Customizer nicht) — die
+  // "Ort"-Sektion auf der echten Event-Seite rendert nur, wenn locationName
+  // gesetzt ist (siehe e/[slug]/page.tsx), ein leeres locationName wuerde
+  // die Sektion trotz vorhandener Adresse komplett verstecken. Bugfix: statt
+  // die komplette Adresse 1:1 als "Saalname" zu uebernehmen (sah z.B. wie
+  // "Musterstr. 1, 12345 Stadt" als Name aus), wird nur das erste
+  // Adresssegment vor dem ersten Komma genommen (typischerweise Saalname
+  // oder Strasse) — eine Naeherung, aber deutlich naeher an einem echten
+  // Namen als die volle Adresse. Der Kunde kann ihn im Dashboard jederzeit
+  // korrigieren.
+  const locationName = locationText ? locationText.split(",")[0].trim() : null;
   const locationAddress = locationText;
   const locationLat = typeof draft.locationLat === "number" ? draft.locationLat : null;
   const locationLng = typeof draft.locationLng === "number" ? draft.locationLng : null;
@@ -186,6 +214,30 @@ export async function POST(request: Request) {
   if (draft.showOrnaments === true) styleObj.ornaments = true;
   const elements = sanitizeElements(draft.elements);
   if (Object.keys(elements).length > 0) styleObj.elements = elements;
+
+  // Bugfix: photoShape/showFloral/showPhotoBackground gingen bislang komplett
+  // verloren (kein Gegenstueck auf der echten Event-Seite existierte) — jetzt
+  // in styleJson gespeichert und von HeroCard.tsx/e/[slug]/page.tsx gelesen
+  // (siehe dortige Kommentare). Nur gesetzt, wenn tatsaechlich eine Foto-Form
+  // gewaehlt wurde — ein Entwurf ohne Foto (draft.image leer) braucht keine
+  // dieser drei Angaben.
+  const photoShapeRaw = typeof draft.photoShape === "string" ? draft.photoShape : "";
+  const hasPhoto = typeof draft.image === "string" && draft.image.startsWith("data:");
+  if (hasPhoto && VALID_PHOTO_SHAPES.has(photoShapeRaw)) {
+    styleObj.photoShape = photoShapeRaw as PhotoShape;
+    if (draft.showFloral === true) styleObj.showFloral = true;
+    if (draft.showPhotoBackground === true) styleObj.showPhotoBackground = true;
+  }
+
+  // Bugfix: sectionOrder ging bislang komplett verloren (kein Feld auf Event
+  // existierte) — jetzt ebenfalls in styleJson, gelesen von e/[slug]/page.tsx
+  // (sectionOrderIndex()). Nur bekannte Abschnitts-Schluessel uebernehmen
+  // (gleiche Menge wie MANAGED_MODULE_KEYS oben), unbekannte/fehlerhafte
+  // Eintraege verwerfen statt sie ungeprueft in die DB zu schreiben.
+  if (Array.isArray(draft.sectionOrder)) {
+    const sanitizedOrder = draft.sectionOrder.filter((k): k is string => typeof k === "string" && MANAGED_MODULE_KEYS.has(k));
+    if (sanitizedOrder.length > 0) styleObj.sectionOrder = sanitizedOrder;
+  }
 
   // Bugfix: ein komplett unangetasteter Entwurf enthaelt fuer Ablaufplan/
   // Wunschliste weiterhin die erfundenen Beispieleintraege aus
@@ -346,6 +398,56 @@ export async function POST(request: Request) {
       wishlistItems: wishlistItems.length > 0 ? { create: wishlistItems.map((it, i) => ({ ...it, sortOrder: i })) } : undefined,
     },
   });
+
+  // Bugfix: das im Gestalten-Editor hochgeladene Foto ging bislang beim
+  // Signup komplett verloren (kein Upload-Schritt existierte). Erst NACH
+  // dem Event.create() moeglich, da putObject() den storage key mit der
+  // echten eventId aufbaut (gleiches Muster wie uploadCoverImage). Ein
+  // Fehlschlag hier (z.B. korrupte data:-URL) darf die Kontoerstellung
+  // selbst nicht scheitern lassen — das Event existiert bereits, der Kunde
+  // kann das Foto im Dashboard jederzeit nachtragen.
+  if (hasPhoto) {
+    try {
+      const parsed = parseDataUrl(draft.image as string);
+      if (parsed) {
+        const url = await putObject(`events/${event.id}/${crypto.randomUUID()}.png`, parsed.bytes, parsed.mimeType);
+        const media = await prisma.media.create({
+          data: { eventId: event.id, type: "IMAGE", url, mimeType: parsed.mimeType, sizeBytes: parsed.bytes.length, status: "APPROVED" },
+        });
+        await prisma.event.update({ where: { id: event.id }, data: { coverImageId: media.id } });
+      }
+    } catch (err) {
+      console.error(`[apply-draft] Foto-Upload fuer Event ${event.id} fehlgeschlagen:`, err);
+    }
+  }
+
+  // Editor-Konsistenz-Auftrag, Teil A: waehrend des anonymen Entwurfs
+  // hochgeladene Umschlag-Video/Musik/Audio-/Video-Einladung (siehe
+  // upload-media/route.ts) auf das gerade erstellte Event umhaengen — bis
+  // hierhin haben diese Media-Zeilen noch anonymousDraftId statt eventId
+  // (kein Event existierte beim Hochladen). Ein Fehlschlag hier darf die
+  // Kontoerstellung ebenfalls nicht scheitern lassen (siehe Foto-Upload
+  // oben) — der Kunde kann die Datei im Dashboard jederzeit neu hochladen.
+  const draftId = typeof draft.anonymousDraftId === "string" ? draft.anonymousDraftId : "";
+  if (draftId) {
+    try {
+      const draftMedia = await prisma.media.findMany({ where: { anonymousDraftId: draftId } });
+      const eventFieldByKind: Record<string, "envelopeVideoId" | "backgroundMusicId" | "audioInvitationId" | "videoMessageId"> = {
+        "envelope-video": "envelopeVideoId",
+        "background-music": "backgroundMusicId",
+        "audio-invitation": "audioInvitationId",
+        "video-message": "videoMessageId",
+      };
+      for (const media of draftMedia) {
+        const field = media.draftKind ? eventFieldByKind[media.draftKind] : undefined;
+        if (!field) continue;
+        await prisma.media.update({ where: { id: media.id }, data: { eventId: event.id, anonymousDraftId: null, draftKind: null } });
+        await prisma.event.update({ where: { id: event.id }, data: { [field]: media.id } });
+      }
+    } catch (err) {
+      console.error(`[apply-draft] Umhaengen der Entwurfs-Uploads fuer Event ${event.id} fehlgeschlagen:`, err);
+    }
+  }
 
   // Gleiche Gating-Regel wie saveModules()/toggleModule() (siehe actions.ts)
   // — per AddOn gesperrte Module (aktuell nur "gallery" ohne bezahltes

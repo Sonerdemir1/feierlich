@@ -219,6 +219,140 @@ export default async function EventDetailPage({
   const shareDescription =
     event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`;
 
+  // Editor-Konsistenz-Auftrag, Teil B: als eigene Variable statt inline im
+  // JSX-Baum, damit sie als detailsFormSlot-Prop in DesignEditor.tsx (Client
+  // Component) hineingereicht werden kann — dort jetzt als eigener "Details"-
+  // Tab im selben Zwei-Spalten-Sticky-Panel wie Karten-Design/Umschlag/etc.,
+  // NEBEN statt UNTER der (jetzt groesseren) Vorschau. Bleibt bewusst
+  // dasselbe normale Server-Formular/dieselbe Server-Action wie vorher, nur
+  // umpositioniert (Nutzer-Entscheidung: nicht entfernen, nur verschieben).
+  const detailsForm = (
+    <form action={updateEventDetails.bind(null, event.id)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        Titel
+        <input
+          type="text"
+          name="title"
+          required
+          defaultValue={event.title}
+          style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+        />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        Untertitel (optional)
+        <input
+          type="text"
+          name="subtitle"
+          defaultValue={event.subtitle ?? ""}
+          style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+        />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        Anlass-Label (optional)
+        <input
+          type="text"
+          name="eventLabel"
+          placeholder={`Standard: ${event.eventType.name}`}
+          defaultValue={event.eventLabel ?? ""}
+          style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+        />
+        <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>
+          Ersetzt das kleine Label über dem Namen auf der Karte, z. B. &bdquo;DÜĞÜN DAVETİYESİ&ldquo; — leer lassen für
+          den Standardtext.
+        </span>
+      </label>
+      <div style={{ display: "flex", gap: 12 }}>
+        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+          Familie (links, optional)
+          <input
+            type="text"
+            name="familyLeft"
+            placeholder="z. B. Demir"
+            defaultValue={event.familyLeft ?? ""}
+            style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+          />
+        </label>
+        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+          Familie (rechts, optional)
+          <input
+            type="text"
+            name="familyRight"
+            placeholder="z. B. Yılmaz"
+            defaultValue={event.familyRight ?? ""}
+            style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+          />
+        </label>
+      </div>
+      <span style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: -6 }}>
+        Zeigt einen Zwei-Familien-Block auf der Karte, nur wenn mindestens eines der beiden Felder ausgefüllt ist —
+        beide leer lassen, um ihn auszublenden.
+      </span>
+      <div style={{ display: "flex", gap: 12 }}>
+        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+          Datum
+          <input
+            type="date"
+            name="eventDate"
+            required
+            defaultValue={event.eventDate.toISOString().slice(0, 10)}
+            style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+          />
+        </label>
+        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+          Uhrzeit (optional)
+          <input
+            type="time"
+            name="eventTime"
+            defaultValue={event.eventTime ?? ""}
+            style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+          />
+        </label>
+      </div>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        Location (optional)
+        <input
+          type="text"
+          name="locationName"
+          placeholder="z. B. Schloss Ehrenfels"
+          defaultValue={event.locationName ?? ""}
+          style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+        />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        Adresse (optional)
+        {GOOGLE_MAPS_API_KEY ? (
+          <PlaceAutocompleteInput
+            apiKey={GOOGLE_MAPS_API_KEY}
+            name="locationAddress"
+            latName="locationLat"
+            lngName="locationLng"
+            placeholder="Adresse eingeben und Vorschlag auswählen"
+            defaultValue={event.locationAddress ?? ""}
+          />
+        ) : (
+          <input
+            type="text"
+            name="locationAddress"
+            defaultValue={event.locationAddress ?? ""}
+            style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
+          />
+        )}
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        Beschreibung (optional)
+        <textarea
+          name="description"
+          rows={3}
+          defaultValue={event.description ?? ""}
+          style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5, fontFamily: "inherit" }}
+        />
+      </label>
+      <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5, alignSelf: "flex-start" }}>
+        Speichern
+      </button>
+    </form>
+  );
+
   return (
     <div>
       <div style={{ fontSize: 12, color: "var(--terracotta-dark)", marginBottom: 8 }}>
@@ -269,140 +403,8 @@ export default async function EventDetailPage({
           removeVideoMessageAction={removeVideoMessage.bind(null, event.id)}
           aiTextConfigured={aiTextConfigured}
           aiTextAttemptsLeft={aiTextAttemptsLeft}
+          detailsFormSlot={detailsForm}
         />
-
-        <details open style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
-        <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
-          Details bearbeiten
-        </summary>
-        <form
-          action={updateEventDetails.bind(null, event.id)}
-          style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 480, marginTop: 16 }}
-        >
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Titel
-            <input
-              type="text"
-              name="title"
-              required
-              defaultValue={event.title}
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Untertitel (optional)
-            <input
-              type="text"
-              name="subtitle"
-              defaultValue={event.subtitle ?? ""}
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Anlass-Label (optional)
-            <input
-              type="text"
-              name="eventLabel"
-              placeholder={`Standard: ${event.eventType.name}`}
-              defaultValue={event.eventLabel ?? ""}
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-            />
-            <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>
-              Ersetzt das kleine Label über dem Namen auf der Karte, z. B. &bdquo;DÜĞÜN DAVETİYESİ&ldquo; — leer lassen für
-              den Standardtext.
-            </span>
-          </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-              Familie (links, optional)
-              <input
-                type="text"
-                name="familyLeft"
-                placeholder="z. B. Demir"
-                defaultValue={event.familyLeft ?? ""}
-                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-              />
-            </label>
-            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-              Familie (rechts, optional)
-              <input
-                type="text"
-                name="familyRight"
-                placeholder="z. B. Yılmaz"
-                defaultValue={event.familyRight ?? ""}
-                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-              />
-            </label>
-          </div>
-          <span style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: -6 }}>
-            Zeigt einen Zwei-Familien-Block auf der Karte, nur wenn mindestens eines der beiden Felder ausgefüllt ist —
-            beide leer lassen, um ihn auszublenden.
-          </span>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-              Datum
-              <input
-                type="date"
-                name="eventDate"
-                required
-                defaultValue={event.eventDate.toISOString().slice(0, 10)}
-                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-              />
-            </label>
-            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-              Uhrzeit (optional)
-              <input
-                type="time"
-                name="eventTime"
-                defaultValue={event.eventTime ?? ""}
-                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-              />
-            </label>
-          </div>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Location (optional)
-            <input
-              type="text"
-              name="locationName"
-              placeholder="z. B. Schloss Ehrenfels"
-              defaultValue={event.locationName ?? ""}
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Adresse (optional)
-            {GOOGLE_MAPS_API_KEY ? (
-              <PlaceAutocompleteInput
-                apiKey={GOOGLE_MAPS_API_KEY}
-                name="locationAddress"
-                latName="locationLat"
-                lngName="locationLng"
-                placeholder="Adresse eingeben und Vorschlag auswählen"
-                defaultValue={event.locationAddress ?? ""}
-              />
-            ) : (
-              <input
-                type="text"
-                name="locationAddress"
-                defaultValue={event.locationAddress ?? ""}
-                style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
-              />
-            )}
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
-            Beschreibung (optional)
-            <textarea
-              name="description"
-              rows={3}
-              defaultValue={event.description ?? ""}
-              style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5, fontFamily: "inherit" }}
-            />
-          </label>
-          <button type="submit" className="btn btn-primary" style={{ padding: "10px 20px", fontSize: 12.5, alignSelf: "flex-start" }}>
-            Speichern
-          </button>
-        </form>
-        </details>
       </div>
 
       {errorKey && (

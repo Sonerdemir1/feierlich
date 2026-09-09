@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { TEXT_ELEMENT_LABELS, TEXT_ELEMENT_KEYS, type StyleElements, type TextElementKey, type TextElementStyle } from "@/lib/text-style";
@@ -21,8 +21,17 @@ import { VideoMessageTab } from "@/components/dashboard/panels/VideoMessageTab";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
 import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 
+// Editor-Konsistenz-Auftrag, Teil B: "Details bearbeiten" (Titel, Untertitel,
+// Anlass-Label, Familie, Datum, Location, Adresse, Beschreibung) war bisher
+// ein eigenes, separates Formular UNTER der Karte+dem Panel — wandert jetzt
+// als eigener Tab INS Panel (siehe detailsFormSlot-Prop), damit es echt
+// NEBEN statt unter der Karte liegt, im selben Zwei-Spalten-Sticky-Layout
+// wie die anderen Tabs (siehe page.tsx fuer das ausgelagerte Formular selbst
+// — bleibt bewusst ein normales Server-Formular/Server-Action statt hierher
+// dupliziert zu werden, da diese Komponente ein Client Component ist).
 const PANEL_TABS = [
   { id: "design", label: "Karten-Design" },
+  { id: "details", label: "Details" },
   { id: "envelope", label: "Umschlag-Design" },
   { id: "music", label: "Hintergrundmusik" },
   { id: "audio-invitation", label: "Audio-Einladung" },
@@ -69,6 +78,7 @@ export function DesignEditor({
   removeVideoMessageAction,
   aiTextConfigured,
   aiTextAttemptsLeft,
+  detailsFormSlot,
 }: {
   eventId: string;
   eventSlug: string;
@@ -101,6 +111,9 @@ export function DesignEditor({
   // sofort den korrekten Kontingent-Stand zeigt statt bei 0 zu starten.
   aiTextConfigured: boolean;
   aiTextAttemptsLeft: number;
+  // Fertig gerendertes "Details bearbeiten"-Formular (Server Component/
+  // Server Action aus page.tsx) — siehe Kommentar bei PANEL_TABS oben.
+  detailsFormSlot: ReactNode;
 }) {
   const router = useRouter();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -443,7 +456,20 @@ export function DesignEditor({
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
-      <div style={{ flex: "1 1 480px", minWidth: 280, order: 1 }}>
+      {/* Editor-Konsistenz-Auftrag, Teil B: Vorschau vergroessert (vorher
+          1 1 480px/280px fix — knapper als der Gestalten-Bereich, dessen
+          .studio-grid 1fr/minmax(280px,340px) nutzt). Karte waechst per
+          flex-grow im verfuegbaren Raum, Panel etwas breiter (300px statt
+          280px). Basis-Werte bewusst NICHT auf 560/320 gesetzt: das
+          umgebende Dashboard-<main> ist auf maxWidth 960px begrenzt
+          (dashboard/layout.tsx), die Karte selbst hat noch eigenes Padding
+          — der real verfuegbare Platz fuer dieses Flex-Paar liegt bei ca.
+          858px. Da flex-wrap Zeilenumbrueche anhand der SUMME der
+          Basis-Werte entscheidet (vor Anwendung von grow/shrink), haette
+          560+300+24 > 858 die Karte trotz Schrumpf-Faehigkeit immer in eine
+          eigene Zeile gezwungen — das Panel waere darunter gelandet statt
+          daneben, und genau das sollte dieser Umbau ja verhindern. */}
+      <div style={{ flex: "2 1 460px", minWidth: 320, order: 1 }}>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
           Tipp: Titel, Untertitel und Beschreibung direkt in der Vorschau anklicken und bearbeiten.
         </div>
@@ -453,7 +479,7 @@ export function DesignEditor({
       </div>
       <div
         className={`editor-panel-sticky${hasSelection && activeTab === "design" ? " mobile-edit-sheet-open" : ""}`}
-        style={{ flex: "0 0 280px", minWidth: 260, order: 2 }}
+        style={{ flex: "0 0 300px", minWidth: 280, order: 2 }}
       >
         {hasSelection && activeTab === "design" && (
           <button type="button" className="mobile-sheet-close" onClick={deselectAll} aria-label="Bearbeitung schließen">
@@ -461,7 +487,9 @@ export function DesignEditor({
           </button>
         )}
         <ContextPanel tabs={PANEL_TABS} activeTabId={activeTab} onTabChange={setActiveTab}>
-          {activeTab === "envelope" ? (
+          {activeTab === "details" ? (
+            detailsFormSlot
+          ) : activeTab === "envelope" ? (
             <EnvelopeTab
               eventId={eventId}
               envelopeVideoUrl={envelopeVideoUrl}

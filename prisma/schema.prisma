@@ -630,6 +630,17 @@ model Media {
   // ["sexual","violence"] — leer/null bei "clean" oder "pending".
   moderationCategories      String?
   moderationCheckedAt       DateTime?
+  // Anonymer Upload aus dem Gestalten-Editor (Umschlag-Video/Musik/Audio-
+  // /Video-Einladung) — VOR dem Signup gibt es noch kein Event, an das die
+  // Datei haengen koennte, daher hier ein clientseitig generierter Schluessel
+  // (crypto.randomUUID(), im Draft persistiert) statt eventId. draftKind
+  // unterscheidet die vier Upload-Arten fuer denselben Entwurf ("envelope-
+  // video"|"background-music"|"audio-invitation"|"video-message"). Beim
+  // Signup (apply-draft/route.ts) wird eventId nachtraeglich gesetzt und
+  // anonymousDraftId/draftKind wieder geleert. @@unique erlaubt ein
+  // upsert-basiertes "ersetzen beim erneuten Hochladen" pro (Entwurf, Art).
+  anonymousDraftId String?
+  draftKind        String?
 
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
   table            Table?           @relation(fields: [tableId], references: [id], onDelete: SetNull)
@@ -642,6 +653,8 @@ model Media {
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
   photoTags        PhotoTag[]
+
+  @@unique([anonymousDraftId, draftKind])
 }
 
 model GuestbookEntry {
