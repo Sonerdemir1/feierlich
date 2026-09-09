@@ -654,26 +654,63 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "zuckerwatte":
       return (
-        <div className="tpl-prev" style={{ background: "#FBEFF6" }}>
-          <svg width="60" height="70" viewBox="0 0 60 70" style={{ position: "absolute", top: 4, left: 10, opacity: 0.7 }} fill="none" stroke="#F2A6C9" strokeWidth="1.3">
-            <circle cx="14" cy="16" r="10" />
-            <circle cx="34" cy="10" r="8" />
-            <path d="M14 26 L14 50 M34 18 L34 44" />
+        <div className="tpl-prev" style={{ background: "linear-gradient(160deg, #FFD1E8 0%, #C9A6FF 100%)" }}>
+          <svg width="90" height="76" viewBox="0 0 90 76" style={{ marginBottom: 8 }}>
+            <circle cx="26" cy="26" r="17" fill="#FFB6D9" opacity="0.9" />
+            <circle cx="46" cy="16" r="15" fill="#FFFFFF" opacity="0.85" />
+            <circle cx="60" cy="28" r="16" fill="#FFB6D9" opacity="0.9" />
+            <circle cx="40" cy="32" r="14" fill="#FFFFFF" opacity="0.8" />
+            <path d="M45 40 L45 68" stroke="#B98BE0" strokeWidth="3" strokeLinecap="round" />
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#4A3350" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "#6B2E82",
+              transform: "rotate(2deg)",
+            }}
+          >
             Mia wird 5
           </div>
         </div>
       );
     case "pastellwiese":
       return (
-        <div className="tpl-prev" style={{ background: "#EAF6EE" }}>
-          <svg width="120" height="30" viewBox="0 0 120 30" style={{ position: "absolute", bottom: 10 }} fill="#6FB98F">
-            {[10, 30, 50, 70, 90, 110].map((x) => (
-              <circle key={x} cx={x} cy={15} r={4} />
+        <div className="tpl-prev" style={{ background: "linear-gradient(180deg, #BEE7F7 0%, #EAF6EE 62%)" }}>
+          <svg width="26" height="26" viewBox="0 0 26 26" style={{ position: "absolute", top: 12, right: 14 }}>
+            <circle cx="13" cy="13" r="7" fill="#FFD23F" />
+            {[0, 45, 90, 135].map((r) => (
+              <rect key={r} x="12" y="0" width="2" height="7" fill="#FFD23F" transform={`rotate(${r} 13 13)`} />
             ))}
           </svg>
-          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#33424A" }}>
+          <svg width="160" height="40" viewBox="0 0 160 40" style={{ position: "absolute", bottom: 0, left: 0 }}>
+            <rect x="0" y="28" width="160" height="12" fill="#7FC490" />
+            {[
+              [16, "#FF7A9C"],
+              [42, "#FFD23F"],
+              [70, "#FF9F5B"],
+              [98, "#FFFFFF"],
+              [126, "#FF7A9C"],
+              [148, "#FFD23F"],
+            ].map(([cx, color], i) => (
+              <g key={i} transform={`translate(${cx}, 22)`}>
+                {[0, 72, 144, 216, 288].map((r) => (
+                  <ellipse key={r} cx="0" cy="-5" rx="3" ry="5" fill={color as string} transform={`rotate(${r})`} />
+                ))}
+                <circle cx="0" cy="0" r="2.5" fill="#6B4A2E" />
+              </g>
+            ))}
+          </svg>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "#2E5B3F",
+              marginTop: -6,
+            }}
+          >
             Mia wird 5
           </div>
         </div>
