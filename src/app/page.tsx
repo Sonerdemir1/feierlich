@@ -76,7 +76,14 @@ function Logo({ dark = false }: { dark?: boolean }) {
   );
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const sp = await searchParams;
+  // Startseiten-Paket-CTA (Schritt 4) — ?paket=<packageSlug>, siehe
+  // DesignStudio.tsx initialPackageSlug/TIER_BY_PACKAGE_KEY. Nur zum
+  // Durchreichen an TemplateGallery, keine eigene Validierung hier noetig
+  // (ein ungueltiger Wert faellt dort/im Gestalten-Bereich auf den
+  // Premium-Plus-Standard zurueck).
+  const paket = typeof sp.paket === "string" ? sp.paket : undefined;
   const [locale, galleryCategories, packages, modules, photoVideoAddOn] = await Promise.all([
     getLocale(),
     getGalleryCategories(),
@@ -238,7 +245,7 @@ export default async function Home() {
           <p>{t.vorlagen.desc}</p>
         </div>
 
-        <TemplateGallery categories={galleryCategories} locale={locale} />
+        <TemplateGallery categories={galleryCategories} locale={locale} paket={paket} />
       </section>
 
       <section className="feature reveal" id="editor">
@@ -372,6 +379,13 @@ export default async function Home() {
                     </li>
                   ))}
                 </ul>
+                <Link
+                  href={`/?paket=${packageSlug(pkg.key)}#vorlagen`}
+                  className="btn btn-primary"
+                  style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+                >
+                  Dieses Paket wählen
+                </Link>
                 <Link href={`/preise/${packageSlug(pkg.key)}`} className="price-card-details">
                   Alle Funktionen ansehen →
                 </Link>
