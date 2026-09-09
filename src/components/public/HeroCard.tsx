@@ -9,6 +9,7 @@ import { SelectableElement } from "@/components/editor/SelectableElement";
 import { fontOptionById } from "@/lib/fonts";
 import { elementOverrideStyle, type StyleElements, type TextElementKey } from "@/lib/text-style";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
+import { photoStyle, type PhotoShape } from "@/lib/photo-shape";
 import type { AgendaItem } from "@/lib/agenda";
 import type { WishlistItemData } from "@/lib/wishlist";
 
@@ -40,6 +41,14 @@ export type LiveDesignState = {
   // agendaItems von HeroCard.tsx selbst nicht gerendert, aber ueber
   // denselben Broadcast weitergereicht (Schritt 4).
   wishlistItems?: WishlistItemData[];
+  // Uebernommen aus dem anonymen Gestalten-Entwurf (apply-draft/route.ts,
+  // Bugfix "Foto & Verzierungen gehen beim Signup verloren") — nur gesetzt,
+  // wenn das Event aus einem Entwurf mit aktiv gewaehlter Foto-Form
+  // entstand, sonst undefined (bestehende Events unveraendert, siehe
+  // useCardPhoto in e/[slug]/page.tsx).
+  photoShape?: PhotoShape;
+  showFloral?: boolean;
+  showPhotoBackground?: boolean;
 };
 
 // Eigenstaendige Client-Komponente statt eines reinen Server-Blocks: haelt
@@ -77,6 +86,8 @@ export function HeroCard({
   countdownMinutesLabel,
   calendarSaveText,
   calendarGoogleText,
+  coverImageUrl,
+  photoBackground,
 }: {
   eventId: string;
   eventSlug: string;
@@ -103,6 +114,13 @@ export function HeroCard({
   countdownMinutesLabel: string;
   calendarSaveText: string;
   calendarGoogleText: string;
+  // Nur gesetzt (und nur wirksam), wenn initial.photoShape aus dem
+  // Gestalten-Entwurf uebernommen wurde (siehe useCardPhoto in
+  // e/[slug]/page.tsx) — sonst identisch zu event.coverImage.url, das dort
+  // bereits separat als grosses Banner gerendert wird, um das Foto nicht
+  // doppelt zu zeigen.
+  coverImageUrl: string | null;
+  photoBackground: { src: string; tint: string } | null;
 }) {
   const [live, setLive] = useState<LiveDesignState>(initial);
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
@@ -146,6 +164,19 @@ export function HeroCard({
   const headingUppercase = Boolean(chosenFont?.uppercase);
   const showOrnaments = live.ornaments;
   const applyOrnamentFrame = showOrnaments && !cardImageUrl;
+  // Foto/Bluetenmuster/Foto-Hintergrund — nur relevant, wenn das Event aus
+  // einem Gestalten-Entwurf mit gesetzter Foto-Form stammt (siehe
+  // useCardPhoto in e/[slug]/page.tsx), sonst bleiben alle drei false/null
+  // und das bestehende Verhalten ist unveraendert. Anders als im Editor-
+  // Vorschau-"Card" (begrenzte Box) gibt es auf der echten Seite keine
+  // aequivalente feste Kartenflaeche — Bluetenmuster/Foto-Hintergrund
+  // werden deshalb bewusst auf denselben begrenzten Rahmen-Bereich
+  // beschraenkt, den applyOrnamentFrame bereits nutzt, statt auf die
+  // gesamte Seite.
+  const showPhotoBg = Boolean(live.showPhotoBackground && photoBackground);
+  const showFloralPattern = Boolean(live.showFloral && !showPhotoBg && !cardImageUrl);
+  const showCardPhoto = Boolean(coverImageUrl && live.photoShape && !cardImageUrl);
+  const applyFrame = applyOrnamentFrame || showPhotoBg || showFloralPattern || showCardPhoto;
 
   const titleOverride = elementOverrideStyle(live.elements, "title");
   const subtitleOverride = elementOverrideStyle(live.elements, "subtitle");
@@ -258,7 +289,46 @@ export function HeroCard({
   }
 
   return (
-    <div style={applyOrnamentFrame ? { position: "relative", padding: "22px 18px" } : undefined}>
+    <div
+      style={
+        applyFrame
+          ? {
+              position: "relative",
+              padding: "22px 18px",
+              ...(showPhotoBg && photoBackground
+                ? {
+                    backgroundImage: `linear-gradient(180deg, rgba(${photoBackground.tint},0.55) 0%, rgba(${photoBackground.tint},0.78) 55%, rgba(${photoBackground.tint},0.94) 100%), url(${photoBackground.src})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }
+                : {}),
+            }
+          : undefined
+      }
+    >
+      {showFloralPattern && (
+        <svg
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+          viewBox="0 0 300 400"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden="true"
+        >
+          <defs>
+            <pattern id={`floral-${eventId}`} width="70" height="70" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">
+              <path d="M8 62 Q18 42 34 46 Q30 24 8 18 M34 46 Q46 38 44 20" fill="none" stroke={colors.accent} strokeWidth="1.1" />
+              <circle cx="34" cy="46" r="1.8" fill={colors.accent} stroke="none" />
+              <circle cx="8" cy="18" r="1.4" fill={colors.accent} stroke="none" />
+            </pattern>
+          </defs>
+          <rect width="300" height="400" fill={`url(#floral-${eventId})`} />
+        </svg>
+      )}
+      {showCardPhoto && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Nutzer-Upload, next/image-Optimierung hier nicht noetig */}
+          <img src={coverImageUrl ?? undefined} alt="" style={photoStyle(live.photoShape as PhotoShape)} />
+        </div>
+      )}
       {applyOrnamentFrame && (
         <>
           <div style={{ position: "absolute", inset: 0, border: `1px solid ${colors.accent}` }} />
