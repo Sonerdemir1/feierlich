@@ -16,6 +16,12 @@ export type GalleryTemplate = {
   colors: Colors;
   defaultText: string;
   defaultEventLabel: string;
+  // Einladender Standard-Beschreibungstext (2-3 Zeilen) zwischen Namen und
+  // Datum/Ort auf der Karte — fuellt sonst leeren Raum bei Vorlagen mit
+  // fester Kartengrafik (siehe DesignStudio.tsx renderDescription) und gibt
+  // jeder Kategorie einen zur Sprache/Kultur passenden Vorschlag statt
+  // eines leeren Feldes.
+  defaultDescription: string;
   photoBackground: { src: string; tint: string } | null;
   // Echtes Kartendesign (Template.previewUrl) — wenn gesetzt, zeigt der
   // Customizer das Kartenbild statt des generischen CSS-Rahmens, analog
@@ -36,6 +42,20 @@ export function defaultTextForCategory(category: string): string {
   if (category === "Verspielt") return "Mia wird 5";
   if (category === "Business Modern") return "Jahresempfang 2026";
   return "Anna & Lukas";
+}
+
+// Analog zu defaultTextForCategory/defaultEventLabelForCategory oben —
+// Tuerkische Kategorien bekommen tuerkischen Text (Zielgruppe: tuerkisch-/
+// kurdischstaemmige Hochzeitssaal-Kunden), die uebrigen (deutschsprachigen)
+// Stil-Kategorien einen passenden deutschen Text.
+export function defaultDescriptionForCategory(category: string): string {
+  if (category === "Düğün") return "Sevginin ve mutluluğun en güzel yolculuğuna sizleri de ortak etmek istiyoruz.";
+  if (category === "Kına Gecesi") return "Kınamızın neşesini, dualarımızı ve sevincimizi sizlerle paylaşmak istiyoruz.";
+  if (category === "Nişan") return "Birbirimize söz verdiğimiz bu özel günde, sevdiklerimizin yanımızda olmasını istiyoruz.";
+  if (category === "Sünnet") return "Bu özel günün mutluluğunu ve duamızı sizlerle paylaşmak istiyoruz.";
+  if (category === "Verspielt") return "Wir feiern einen ganz besonderen Tag und würden uns riesig freuen, ihn gemeinsam mit euch zu erleben.";
+  if (category === "Business Modern") return "Wir laden Sie herzlich ein, gemeinsam mit uns auf ein erfolgreiches Jahr zurückzublicken und anzustoßen.";
+  return "Wir möchten diesen besonderen Tag mit den Menschen feiern, die uns am wichtigsten sind — wir freuen uns auf euch.";
 }
 
 export function defaultEventLabelForCategory(category: string): string {

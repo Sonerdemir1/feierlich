@@ -28,7 +28,8 @@ import { elementOverrideStyle, type StyleElements } from "@/lib/text-style";
 import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
 import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
-import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
+import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, revokeGalleryMediaConsent, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
+import { AI_CONSENT_GENERAL_TEXT, AI_CONSENT_FACE_TEXT } from "@/lib/ai-consent";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -932,21 +933,37 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 24px", textAlign: "center" }}>
             {galleryStatus === "success" ? (
               galleryMediaId ? (
-                <form action={setUploaderName.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
-                  <input type="hidden" name="mediaId" value={galleryMediaId} />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <GuestNameField
-                      name="uploaderName"
-                      placeholder="Wie heißt ihr? (optional)"
-                      defaultValue={guestDisplayName}
-                      style={{ flex: 1, padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
-                    />
-                    <button type="submit" style={{ padding: "0 16px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                      Speichern
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <form action={setUploaderName.bind(null, event.id, event.slug)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
+                    <input type="hidden" name="mediaId" value={galleryMediaId} />
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <GuestNameField
+                        name="uploaderName"
+                        placeholder="Wie heißt ihr? (optional)"
+                        defaultValue={guestDisplayName}
+                        style={{ flex: 1, padding: "11px 13px", border: `1px solid ${colors.accent}55`, background: "transparent", color: colors.primary, fontSize: 13 }}
+                      />
+                      <button type="submit" style={{ padding: "0 16px", background: colors.accent, color: colors.background, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                        Speichern
+                      </button>
+                    </div>
+                  </form>
+                  {/* Widerruf nur in diesem Moment moeglich (mediaId kommt
+                      ausschliesslich aus dem Redirect direkt nach dem eigenen
+                      Upload) — Gaeste haben kein Login, es gibt keine andere
+                      Stelle, an der "mein eigenes Foto" wiedererkennbar waere.
+                      Siehe Kommentar zu revokeGalleryMediaConsent(). */}
+                  <form action={revokeGalleryMediaConsent.bind(null, event.id, event.slug)}>
+                    <input type="hidden" name="mediaId" value={galleryMediaId} />
+                    <button
+                      type="submit"
+                      style={{ background: "none", border: "none", padding: 0, fontSize: 11.5, color: colors.primary, opacity: 0.65, textDecoration: "underline", cursor: "pointer" }}
+                    >
+                      KI-Einwilligung für dieses Foto widerrufen
                     </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               ) : (
                 <p style={{ fontSize: 13.5 }}>Danke! Euer Foto/Video wird nach kurzer Prüfung sichtbar.</p>
               )
@@ -965,6 +982,34 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   </p>
                 )}
                 <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
+                {/* Zwei getrennte, unabhaengig ankreuzbare Haekchen, beide
+                    standardmaessig NICHT angehakt (Koppelungsverbot Art. 7
+                    Abs. 4 DSGVO — der Upload selbst funktioniert immer, auch
+                    ohne beide/eines der Haekchen). Checkbox 2 (Gesichter-
+                    kennung) bewusst getrennt von Checkbox 1, da sie
+                    biometrische Daten betrifft (Art. 9 DSGVO) und deshalb
+                    eine eigene, explizite Einwilligung braucht. Liegen im
+                    selben <form> wie das FileField darunter — beim
+                    Auto-Submit per Dateiauswahl (siehe FileField.tsx) wird
+                    der aktuelle Haekchen-Stand automatisch mit uebernommen,
+                    kein zusaetzlicher Tap auf einen Absenden-Button noetig. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", fontSize: 11.5, color: colors.primary }}>
+                  <label style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer" }}>
+                    <input type="checkbox" name="aiConsentGeneral" style={{ marginTop: 2, flexShrink: 0 }} />
+                    <span style={{ opacity: 0.85 }}>{AI_CONSENT_GENERAL_TEXT}</span>
+                  </label>
+                  <label style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer" }}>
+                    <input type="checkbox" name="aiConsentFace" style={{ marginTop: 2, flexShrink: 0 }} />
+                    <span style={{ opacity: 0.85 }}>{AI_CONSENT_FACE_TEXT}</span>
+                  </label>
+                  <p style={{ margin: 0, fontSize: 11, opacity: 0.65 }}>
+                    Der Upload funktioniert auch ohne Häkchen. Mehr zur Datenverarbeitung in unserer{" "}
+                    <a href="/datenschutz" target="_blank" rel="noopener noreferrer" style={{ color: colors.primary }}>
+                      Datenschutzerklärung
+                    </a>
+                    .
+                  </p>
+                </div>
                 {editMode ? (
                   // <div> statt FileField im Editor-Vorschaumodus — ein Klick
                   // wuerde sonst den Datei-Auswahldialog oeffnen (siehe

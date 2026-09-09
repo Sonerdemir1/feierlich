@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EventTypePicker } from "./EventTypePicker";
 import { TemplatePicker } from "./TemplatePicker";
 import { createEvent, suggestEventDescription } from "@/app/dashboard/events/actions";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 import { PlaceAutocompleteInput } from "./PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 
@@ -38,6 +39,10 @@ export function NewEventWizard({
     try {
       const eventTypeName = eventTypes.find((t) => t.id === eventTypeId)?.name ?? "";
       const result = await suggestEventDescription({ names: title, eventType: eventTypeName, keyDetails: "" });
+      if (!result.ok) {
+        setAiError(result.error === "budget" ? AI_BUDGET_EXCEEDED_MESSAGE : "Der Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+        return;
+      }
       setDescription(result.description);
     } catch {
       setAiError("Der Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");

@@ -18,6 +18,8 @@ import { EnvelopeTab } from "@/components/dashboard/panels/EnvelopeTab";
 import { MusicTab } from "@/components/dashboard/panels/MusicTab";
 import { AudioInvitationTab } from "@/components/dashboard/panels/AudioInvitationTab";
 import { VideoMessageTab } from "@/components/dashboard/panels/VideoMessageTab";
+import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 
 const PANEL_TABS = [
   { id: "design", label: "Karten-Design" },
@@ -65,6 +67,8 @@ export function DesignEditor({
   videoMessageUrl,
   uploadVideoMessageAction,
   removeVideoMessageAction,
+  aiTextConfigured,
+  aiTextAttemptsLeft,
 }: {
   eventId: string;
   eventSlug: string;
@@ -92,9 +96,17 @@ export function DesignEditor({
   videoMessageUrl: string | null;
   uploadVideoMessageAction: (formData: FormData) => void;
   removeVideoMessageAction: (formData: FormData) => void;
+  // KI-Vorschlag-Button im Beschreibungstext-Panel (Teil C) — beides
+  // serverseitig ermittelt (page.tsx), damit der Button nach einem Reload
+  // sofort den korrekten Kontingent-Stand zeigt statt bei 0 zu starten.
+  aiTextConfigured: boolean;
+  aiTextAttemptsLeft: number;
 }) {
   const router = useRouter();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false);
+  const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null);
+  const [attemptsLeft, setAttemptsLeft] = useState(aiTextAttemptsLeft);
   const [state, setState] = useState<LiveDesignState>({
     colors: initialColors,
     fontId: initialFontId,
@@ -394,6 +406,38 @@ export function DesignEditor({
     pushWishlist((state.wishlistItems ?? []).map((it) => (it.id === id ? { ...it, ...patch } : it)));
   }
 
+  // KI-Vorschlag fuer den Beschreibungstext (Teil C) — ruft dieselbe
+  // generateAndRecordAttempt()-Logik wie die Text-Assistent-Seite auf (siehe
+  // suggest-description/route.ts), aber die Route schreibt das Ergebnis
+  // direkt in Event.description (kein Formular/Zwischenschritt hier). Die
+  // eigentliche Textanzeige lebt in EditableDescription.tsx INNERHALB des
+  // Vorschau-iframes (nicht in diesem Panel) — deshalb genuegt kein
+  // postMessage, sondern der iframe wird neu geladen, sobald die Route den
+  // neuen Text bestaetigt hat.
+  async function suggestDescription() {
+    if (attemptsLeft <= 0 || aiDescriptionLoading) return;
+    setAiDescriptionLoading(true);
+    setAiDescriptionError(null);
+    try {
+      const response = await fetch(`/dashboard/events/${eventId}/text/suggest-description`, { method: "POST" });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || !json?.ok) {
+        if (json?.error === "quota") setAttemptsLeft(0);
+        throw new Error(json?.error === "budget" ? "budget" : "failed");
+      }
+      setAttemptsLeft(json.attemptsLeft);
+      iframeRef.current?.contentWindow?.location.reload();
+    } catch (err) {
+      setAiDescriptionError(
+        err instanceof Error && err.message === "budget"
+          ? AI_BUDGET_EXCEEDED_MESSAGE
+          : "Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen."
+      );
+    } finally {
+      setAiDescriptionLoading(false);
+    }
+  }
+
   const currentEventDate = state.eventDateIso ? state.eventDateIso.slice(0, 10) : initialEventDate;
   const currentEventTime = state.eventTime !== undefined ? (state.eventTime ?? "") : initialEventTime;
 
@@ -485,6 +529,42 @@ export function DesignEditor({
                       onDeselect={() => setSelectedKey(undefined)}
                     />
                   </div>
+                </div>
+              ) : selectedKey === "description" ? (
+                <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                  <TextControls
+                    elementKey="description"
+                    label={TEXT_ELEMENT_LABELS.description}
+                    style={state.elements?.description ?? {}}
+                    defaultColor={state.colors.primary}
+                    onChange={(patch) => setElementStyle("description", patch)}
+                    onDeselect={() => setSelectedKey(undefined)}
+                  />
+                  {aiTextConfigured && (
+                    <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                      {attemptsLeft > 0 ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={suggestDescription}
+                            disabled={aiDescriptionLoading}
+                            className="btn btn-ghost"
+                            style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
+                          >
+                            {aiDescriptionLoading ? "Generiert …" : "✨ KI-Vorschlag"}
+                          </button>
+                          <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6 }}>
+                            {attemptsLeft} von {AI_TEXT_ATTEMPT_QUOTA} KI-Vorschlägen übrig
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{AI_TEXT_QUOTA_EXHAUSTED_MESSAGE}</div>
+                      )}
+                      {aiDescriptionError && (
+                        <div style={{ fontSize: 11, color: "#B2543A", marginTop: 6 }}>{aiDescriptionError}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : selectedKey === "agenda" && selectedAgendaItemId ? (
                 (() => {

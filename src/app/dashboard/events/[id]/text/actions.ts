@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { generateInvitationCopy, AI_TEXT_ATTEMPT_QUOTA } from "@/lib/ai-text";
+import { generateAndRecordAttempt, AiTextQuotaError } from "@/lib/ai-text";
+import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -25,21 +26,13 @@ export async function generateInvitationText(eventId: string, formData: FormData
   const keyDetails = String(formData.get("keyDetails") ?? "").trim().slice(0, 800);
   if (!names || !eventTypeInput) redirect(`/dashboard/events/${eventId}/text?error=ai-text-no-input`);
 
-  const attemptCount = await prisma.aiTextAttempt.count({ where: { eventId } });
-  if (attemptCount >= AI_TEXT_ATTEMPT_QUOTA) redirect(`/dashboard/events/${eventId}/text?error=ai-text-quota`);
-
-  const prompt = `${names} · ${eventTypeInput} · ${tone}${keyDetails ? ` · ${keyDetails}` : ""}`;
-
-  let result;
   try {
-    result = await generateInvitationCopy({ names, eventType: eventTypeInput, tone, keyDetails });
-  } catch {
+    await generateAndRecordAttempt(eventId, { names, eventType: eventTypeInput, tone, keyDetails });
+  } catch (err) {
+    if (err instanceof AiTextQuotaError) redirect(`/dashboard/events/${eventId}/text?error=ai-text-quota`);
+    if (err instanceof AiBudgetExceededError) redirect(`/dashboard/events/${eventId}/text?error=ai-budget`);
     redirect(`/dashboard/events/${eventId}/text?error=ai-text-failed`);
   }
-
-  await prisma.aiTextAttempt.create({
-    data: { eventId, prompt, welcomeText: result.welcomeText, description: result.description },
-  });
 
   revalidatePath(`/dashboard/events/${eventId}/text`);
   redirect(`/dashboard/events/${eventId}/text`);
@@ -56,5 +49,9 @@ export async function applyGeneratedText(eventId: string, formData: FormData) {
 
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath(`/dashboard/events/${eventId}/text`);
-  redirect(`/dashboard/events/${eventId}?textApplied=1`);
+  // Bleibt bewusst auf der Text-Assistent-Seite (vorher: Redirect zur
+  // Event-Uebersicht) — die neue Karten-Vorschau hier (Teil A) soll die
+  // uebernommene Aenderung sofort zeigen, ohne dass der Kunde manuell
+  // zurueckklicken muss.
+  redirect(`/dashboard/events/${eventId}/text?textApplied=1`);
 }

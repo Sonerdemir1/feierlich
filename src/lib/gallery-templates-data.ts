@@ -4,6 +4,7 @@ import {
   type GalleryCategory,
   defaultTextForCategory,
   defaultEventLabelForCategory,
+  defaultDescriptionForCategory,
   PHOTO_BACKGROUND,
   CATEGORY_SUBTITLE,
 } from "@/lib/gallery-templates";
@@ -32,6 +33,7 @@ export async function getGalleryCategories(): Promise<GalleryCategory[]> {
       colors: JSON.parse(t.colors) as Colors,
       defaultText: defaultTextForCategory(category),
       defaultEventLabel: defaultEventLabelForCategory(category),
+      defaultDescription: defaultDescriptionForCategory(category),
       photoBackground: PHOTO_BACKGROUND[t.layoutKey] ?? null,
       cardImageUrl: t.previewUrl,
     })),

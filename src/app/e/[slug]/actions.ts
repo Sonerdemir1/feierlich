@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { validateMediaFile, saveEventMedia, mediaKindFromMime } from "@/lib/uploads";
 import { aiTranslateConfigured, detectAndTranslate } from "@/lib/ai-translate";
+import { AI_CONSENT_TEXT_VERSION, revokeAiConsent } from "@/lib/ai-consent";
+import { moderateMediaContent } from "@/lib/ai-moderation";
 
 export async function submitRsvp(eventId: string, slug: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -72,15 +74,52 @@ export async function uploadGalleryPhoto(eventId: string, slug: string, formData
   const tableIdRaw = String(formData.get("tableId") ?? "").trim();
   const table = tableIdRaw ? await prisma.table.findFirst({ where: { id: tableIdRaw, eventId } }) : null;
 
+  // DSGVO-Einwilligung zur KI-Verarbeitung (siehe lib/ai-consent.ts) — beide
+  // Haekchen unabhaengig, standardmaessig NICHT angehakt (Checkbox fehlt im
+  // FormData = "aus", HTML-Standardverhalten). Wird bei JEDEM Upload
+  // gesetzt, auch wenn beide Haekchen leer bleiben (Koppelungsverbot: der
+  // Upload selbst haengt nie von diesen beiden Feldern ab) — aiConsentGivenAt
+  // dokumentiert dann, dass die Wahl vorgelegt und bewusst nicht erteilt wurde.
+  const aiConsentGeneral = formData.get("aiConsentGeneral") === "on";
+  const aiConsentFace = formData.get("aiConsentFace") === "on";
+  const mediaType = mediaKindFromMime(mimeType);
+
+  // Inhalts-Moderation (Schritt B) laeuft nur bei erteilter Einwilligung UND
+  // nur fuer Fotos (siehe moderateMediaContent()-Kommentar zu Videos) — der
+  // Status steht schon HIER auf "pending", nicht erst nach dem eigentlichen
+  // API-Aufruf, damit ein sofortiger Fehler (Anforderung 9) den Datensatz
+  // korrekt auf "pending" stehen laesst statt auf null.
+  const willModerate = aiConsentGeneral && mediaType === "IMAGE";
+
   // Kein Name im Upload-Formular selbst (Ziel: maximal drei Beruehrungen
   // vom QR-Scan bis zum hochgeladenen Foto, ohne Pflichtfeld) — die
   // mediaId geht mit in den Redirect, damit setUploaderName() den Namen
   // danach optional nachtragen kann, siehe Erfolgs-Zustand weiter unten
   // auf der Seite.
   const media = await prisma.media.create({
-    data: { eventId, tableId: table?.id, type: mediaKindFromMime(mimeType), url, mimeType, sizeBytes, status: "PENDING" },
+    data: {
+      eventId,
+      tableId: table?.id,
+      type: mediaType,
+      url,
+      mimeType,
+      sizeBytes,
+      status: "PENDING",
+      aiConsentGeneral,
+      aiConsentFace,
+      aiConsentGivenAt: new Date(),
+      aiConsentTextVersion: AI_CONSENT_TEXT_VERSION,
+      moderationCheckStatus: willModerate ? "pending" : null,
+    },
   });
   await prisma.galleryItem.create({ data: { eventId, mediaId: media.id, status: "PENDING" } });
+
+  // Bewusst NICHT awaited — der Gast soll sein Foto sofort sehen, ohne auf
+  // die KI-Pruefung zu warten (Anforderung 1). Laeuft im Hintergrund weiter,
+  // auch nachdem redirect() unten die Antwort ausgeloest hat (dieser Prozess
+  // ist ein dauerhaft laufender Node-Server, kein Kurzzeit-Serverless-
+  // Handler, der sofort nach der Antwort beendet wuerde).
+  if (willModerate) moderateMediaContent(media.id).catch((err) => console.error("[ai-moderation] Hintergrund-Aufruf fehlgeschlagen:", err));
 
   revalidatePath(`/e/${slug}`);
   redirect(`/e/${slug}?gallery=success&mediaId=${media.id}#galerie`);
@@ -97,6 +136,25 @@ export async function setUploaderName(eventId: string, slug: string, formData: F
   if (mediaId && uploaderName) {
     const media = await prisma.media.findFirst({ where: { id: mediaId, eventId } });
     if (media) await prisma.media.update({ where: { id: mediaId }, data: { uploaderName } });
+  }
+
+  revalidatePath(`/e/${slug}`);
+  redirect(`/e/${slug}?gallery=success#galerie`);
+}
+
+// Widerruf der KI-Einwilligung (siehe lib/ai-consent.ts) — nur im selben
+// Erfolgs-Zustand direkt nach dem eigenen Upload erreichbar (mediaId kommt
+// aus dem Redirect von uploadGalleryPhoto), da Gaeste kein Login haben und
+// es keine andere Moeglichkeit gibt, "mein eigenes Foto" wiederzuerkennen —
+// gleiche Einschraenkung wie beim nachtraeglichen Namens-Eintrag oben. Das
+// Foto selbst bleibt sichtbar, nur die beiden KI-Haekchen werden
+// zurueckgesetzt (Koppelungsverbot gilt auch beim Widerruf: kein Foto wird
+// geloescht).
+export async function revokeGalleryMediaConsent(eventId: string, slug: string, formData: FormData) {
+  const mediaId = String(formData.get("mediaId") ?? "").trim();
+  if (mediaId) {
+    const media = await prisma.media.findFirst({ where: { id: mediaId, eventId } });
+    if (media) await revokeAiConsent(mediaId);
   }
 
   revalidatePath(`/e/${slug}`);
