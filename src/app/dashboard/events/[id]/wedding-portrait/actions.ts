@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { validateImageFile, saveEventImage } from "@/lib/uploads";
 import { putObject, readObject } from "@/lib/storage";
 import { generateWeddingPortraitImage, weddingPortraitStyleByKey, WEDDING_PORTRAIT_ATTEMPT_QUOTA } from "@/lib/ai-wedding-portrait";
+import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { composeWeddingPortraitPreview } from "@/lib/wedding-portrait-preview";
 
 async function requireOwnedEvent(eventId: string) {
@@ -71,7 +72,8 @@ export async function generateWeddingPortrait(eventId: string, formData: FormDat
     const source = await readObject(event.weddingPortraitSource.url);
     rawResult = await generateWeddingPortraitImage(source, event.weddingPortraitSource.mimeType, style);
     previewResult = await composeWeddingPortraitPreview(rawResult, style, event.title, dateLabel);
-  } catch {
+  } catch (err) {
+    if (err instanceof AiBudgetExceededError) redirect(`/dashboard/events/${eventId}/wedding-portrait?error=ai-budget`);
     redirect(`/dashboard/events/${eventId}/wedding-portrait?error=wedding-portrait-failed`);
   }
 

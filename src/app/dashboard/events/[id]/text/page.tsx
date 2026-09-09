@@ -4,11 +4,13 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateInvitationText, applyGeneratedText } from "./actions";
 import { aiTextConfigured, AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 
 const errorLabel: Record<string, string> = {
   "ai-text-no-input": "Bitte Namen und Anlass ausfüllen.",
   "ai-text-quota": AI_TEXT_QUOTA_EXHAUSTED_MESSAGE,
   "ai-text-failed": "Der Text-Assistent ist gerade nicht verfügbar. Bitte später erneut versuchen.",
+  "ai-budget": AI_BUDGET_EXCEEDED_MESSAGE,
 };
 
 const fieldStyle = { padding: "11px 13px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 };

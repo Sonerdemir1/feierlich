@@ -1,3 +1,5 @@
+import { checkAndRecordAiBudget, WEDDING_PORTRAIT_COST_ESTIMATE_USD } from "@/lib/ai-budget";
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 export const weddingPortraitConfigured = Boolean(OPENAI_API_KEY);
@@ -97,6 +99,12 @@ export async function generateWeddingPortraitImage(source: Buffer, mimeType: str
   if (!OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY ist nicht gesetzt — das KI-Hochzeitsporträt ist nicht konfiguriert.");
   }
+
+  // Globaler Kosten-Deckel fuer alle kostenlosen KI-Aufrufe (Missbrauchsschutz,
+  // Teil 3) — siehe ai-budget.ts und gleiche Stelle in ai-text.ts::
+  // generateInvitationCopy(). Wirft AiBudgetExceededError bei Ueberschreitung,
+  // abgefangen in wedding-portrait/actions.ts.
+  await checkAndRecordAiBudget(WEDDING_PORTRAIT_COST_ESTIMATE_USD);
 
   const form = new FormData();
   form.set("model", "gpt-image-2");

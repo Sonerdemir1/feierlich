@@ -26,6 +26,7 @@ import { WishlistList } from "@/components/editor/WishlistList";
 import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
 import { defaultWishlistItems, newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 import {
   elementOverrideStyle,
   TEXT_ELEMENT_LABELS,
@@ -628,10 +629,17 @@ export function DesignStudio({
         body: JSON.stringify({ names: draft.text || item.defaultText, category, eventType: item.defaultEventLabel }),
       });
       const json = await response.json().catch(() => null);
-      if (!response.ok || !json?.ok) throw new Error("failed");
+      if (!response.ok || !json?.ok) {
+        if (json?.error === "budget") throw new Error("budget");
+        throw new Error("failed");
+      }
       updateDraft({ descriptionText: json.description, aiDescriptionAttempts: (draft.aiDescriptionAttempts ?? 0) + 1 });
-    } catch {
-      setAiDescriptionError("Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+    } catch (err) {
+      setAiDescriptionError(
+        err instanceof Error && err.message === "budget"
+          ? AI_BUDGET_EXCEEDED_MESSAGE
+          : "Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen."
+      );
     } finally {
       setAiDescriptionLoading(false);
     }

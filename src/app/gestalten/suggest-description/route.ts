@@ -1,4 +1,5 @@
 import { aiTextConfigured, generateInvitationCopy } from "@/lib/ai-text";
+import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { TURKISH_CATEGORIES } from "@/lib/gallery-templates";
 
 // KI-Vorschlag-Button im Beschreibungstext-Panel des anonymen
@@ -47,7 +48,8 @@ export async function POST(request: Request) {
   try {
     const result = await generateInvitationCopy({ names, eventType, tone: "herzlich-leger", keyDetails: "", language });
     return Response.json({ ok: true, description: result.description });
-  } catch {
+  } catch (err) {
+    if (err instanceof AiBudgetExceededError) return Response.json({ ok: false, error: "budget" }, { status: 429 });
     return Response.json({ ok: false, error: "failed" }, { status: 502 });
   }
 }

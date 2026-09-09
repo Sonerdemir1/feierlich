@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateAndRecordAttempt, AiTextQuotaError } from "@/lib/ai-text";
+import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -29,6 +30,7 @@ export async function generateInvitationText(eventId: string, formData: FormData
     await generateAndRecordAttempt(eventId, { names, eventType: eventTypeInput, tone, keyDetails });
   } catch (err) {
     if (err instanceof AiTextQuotaError) redirect(`/dashboard/events/${eventId}/text?error=ai-text-quota`);
+    if (err instanceof AiBudgetExceededError) redirect(`/dashboard/events/${eventId}/text?error=ai-budget`);
     redirect(`/dashboard/events/${eventId}/text?error=ai-text-failed`);
   }
 

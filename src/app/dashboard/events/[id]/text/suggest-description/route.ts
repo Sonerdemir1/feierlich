@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { aiTextConfigured, generateAndRecordAttempt, AiTextQuotaError, AI_TEXT_ATTEMPT_QUOTA } from "@/lib/ai-text";
+import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { TURKISH_CATEGORIES } from "@/lib/gallery-templates";
 
 // Direkter KI-Vorschlag-Button im Beschreibungstext-Panel des
@@ -37,6 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
   } catch (err) {
     if (err instanceof AiTextQuotaError) return Response.json({ ok: false, error: "quota" }, { status: 429 });
+    if (err instanceof AiBudgetExceededError) return Response.json({ ok: false, error: "budget" }, { status: 429 });
     return Response.json({ ok: false, error: "failed" }, { status: 502 });
   }
 

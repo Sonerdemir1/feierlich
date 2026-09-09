@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { uploadWeddingPortraitSource, generateWeddingPortrait } from "./actions";
 import { weddingPortraitConfigured, WEDDING_PORTRAIT_ATTEMPT_QUOTA, WEDDING_PORTRAIT_STYLES, weddingPortraitStyleByKey } from "@/lib/ai-wedding-portrait";
 import { FileField } from "@/components/public/FileField";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 
 const errorLabel: Record<string, string> = {
   "no-file": "Bitte eine Datei auswählen.",
@@ -14,6 +15,7 @@ const errorLabel: Record<string, string> = {
   "wedding-portrait-quota": `Kontingent von ${WEDDING_PORTRAIT_ATTEMPT_QUOTA} kostenlosen Generierungen aufgebraucht.`,
   "wedding-portrait-no-source": "Bitte zuerst ein Foto hochladen.",
   "wedding-portrait-failed": "Die Generierung ist gerade nicht möglich. Bitte später erneut versuchen.",
+  "ai-budget": AI_BUDGET_EXCEEDED_MESSAGE,
 };
 
 export default async function WeddingPortraitPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/wedding-portrait">) {

@@ -19,6 +19,7 @@ import { MusicTab } from "@/components/dashboard/panels/MusicTab";
 import { AudioInvitationTab } from "@/components/dashboard/panels/AudioInvitationTab";
 import { VideoMessageTab } from "@/components/dashboard/panels/VideoMessageTab";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 
 const PANEL_TABS = [
   { id: "design", label: "Karten-Design" },
@@ -422,12 +423,16 @@ export function DesignEditor({
       const json = await response.json().catch(() => null);
       if (!response.ok || !json?.ok) {
         if (json?.error === "quota") setAttemptsLeft(0);
-        throw new Error("failed");
+        throw new Error(json?.error === "budget" ? "budget" : "failed");
       }
       setAttemptsLeft(json.attemptsLeft);
       iframeRef.current?.contentWindow?.location.reload();
-    } catch {
-      setAiDescriptionError("Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+    } catch (err) {
+      setAiDescriptionError(
+        err instanceof Error && err.message === "budget"
+          ? AI_BUDGET_EXCEEDED_MESSAGE
+          : "Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen."
+      );
     } finally {
       setAiDescriptionLoading(false);
     }

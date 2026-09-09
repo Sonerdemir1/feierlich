@@ -11,6 +11,7 @@ import { putObject, readObject } from "@/lib/storage";
 import { removeImageBackground } from "@/lib/background-removal";
 import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { generateInvitationCopy } from "@/lib/ai-text";
+import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { stripe } from "@/lib/stripe";
 import { markEventAddOnPaid } from "@/lib/checkout-fulfillment";
 import { buildDesignUpdate } from "@/lib/design-style";
@@ -110,13 +111,25 @@ export async function createEvent(formData: FormData) {
 // Wird direkt (nicht per <form action>) aus NewEventWizard.tsx aufgerufen,
 // waehrend das Event noch gar nicht existiert — daher kein eventId/
 // AiTextAttempt-Kontingent wie beim spaeteren Text-Assistenten, nur ein
-// einfacher eingeloggt-Check. Gibt den Vorschlag direkt zurueck statt zu
-// redirecten, da der Aufrufer eine Client-Komponente ist.
-export async function suggestEventDescription(input: { names: string; eventType: string; keyDetails: string }) {
+// einfacher eingeloggt-Check. Gibt ein diskriminiertes Ergebnis zurueck
+// statt den Fehler einfach durchzuwerfen — Next.js reicht Fehlermeldungen
+// aus Server Actions nicht zuverlaessig unveraendert an den Client durch,
+// daher hier dasselbe { ok, error }-Muster wie die JSON-Routen
+// (suggest-description/route.ts), damit der Aufrufer die Budget-
+// Ueberschreitung von einem echten Fehler unterscheiden kann.
+export async function suggestEventDescription(
+  input: { names: string; eventType: string; keyDetails: string }
+): Promise<{ ok: true; description: string } | { ok: false; error: "budget" | "failed" }> {
   const session = await auth();
   if (!session?.user) throw new Error("Nicht angemeldet.");
 
-  return generateInvitationCopy({ names: input.names, eventType: input.eventType, tone: "herzlich-leger", keyDetails: input.keyDetails });
+  try {
+    const result = await generateInvitationCopy({ names: input.names, eventType: input.eventType, tone: "herzlich-leger", keyDetails: input.keyDetails });
+    return { ok: true, description: result.description };
+  } catch (err) {
+    if (err instanceof AiBudgetExceededError) return { ok: false, error: "budget" };
+    return { ok: false, error: "failed" };
+  }
 }
 
 export async function uploadCoverImage(eventId: string, formData: FormData) {

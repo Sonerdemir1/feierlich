@@ -412,6 +412,38 @@ model EventViewDay {
   @@unique([eventId, date])
 }
 
+// Globaler (nicht pro-Event) Tages-Kosten-Zaehler NUR fuer die kostenlosen
+// KI-Aufrufe (Textvorschlag + KI-Hochzeitsportraet, anonym UND eingeloggte
+// Konten ohne Kauf) — siehe ai-budget.ts. Sicherheitsnetz zusaetzlich zu
+// den bestehenden Pro-Event-Kontingenten (AiTextAttempt/WeddingPortrait-
+// Attempt) und dem IP-Zeitfenster-Limit der anonymen Route: die decken
+// jeweils EINE Quelle ab, dieser Zaehler die AGGREGIERTE Kosten ueber alle
+// Quellen hinweg. costUsd ist eine grobe Schaetzung (Konstante pro
+// Aufruf-Typ), kein exaktes Token-Zaehlen der tatsaechlichen Antwort —
+// bewusst so vom Auftrag vorgegeben. Gleiches Upsert-Zaehler-Muster wie
+// EventViewDay/recordEventView(), nur ohne eventId (global statt pro Event).
+model AiFreeUsageDay {
+  id        String   @id @default(cuid())
+  date      DateTime @unique // auf Tagesbeginn (UTC) normalisiert
+  costUsd   Float    @default(0)
+  callCount Int      @default(0)
+}
+
+// Verhindert mehrfachen Versand derselben 80%-Budget-Warnung innerhalb
+// desselben Zeitraums (period="daily"/"monthly", periodKey z.B.
+// "2026-09-09" bzw. "2026-09") — der @@unique-Constraint dient als
+// Sperre: ein zweiter create()-Versuch fuer denselben Zeitraum schlaegt
+// fehl und wird in ai-budget.ts bewusst als "schon benachrichtigt"
+// interpretiert statt als Fehler weitergereicht.
+model AiBudgetNotification {
+  id        String   @id @default(cuid())
+  period    String
+  periodKey String
+  sentAt    DateTime @default(now())
+
+  @@unique([period, periodKey])
+}
+
 // pro Event an/aus geschaltete Module inkl. optionaler Konfiguration
 model EventModule {
   id       String  @id @default(cuid())

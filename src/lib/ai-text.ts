@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
+import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD } from "@/lib/ai-budget";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -48,6 +49,13 @@ export async function generateInvitationCopy(input: InvitationCopyInput): Promis
   if (!OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY ist nicht gesetzt — der Text-Assistent ist nicht konfiguriert.");
   }
+
+  // Globaler Kosten-Deckel fuer alle kostenlosen KI-Aufrufe (Missbrauchsschutz,
+  // Teil 3) — an dieser zentralen Stelle statt in jedem einzelnen Aufrufer
+  // (Dashboard-Assistent, anonyme /gestalten-Route, New-Event-Wizard, ...),
+  // siehe ai-budget.ts. Wirft AiBudgetExceededError, wenn Tages-/Monats-
+  // Budget ueberschritten wuerde — von den Aufrufern abgefangen.
+  await checkAndRecordAiBudget(TEXT_SUGGESTION_COST_ESTIMATE_USD);
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
