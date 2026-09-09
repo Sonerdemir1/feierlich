@@ -34,6 +34,7 @@ import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields"
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured } from "@/lib/ai-text";
+import { weddingPortraitConfigured } from "@/lib/ai-wedding-portrait";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import type { StyleElements } from "@/lib/text-style";
@@ -1037,6 +1038,25 @@ export default async function EventDetailPage({
             }}
           >
             <span>Text-Assistent (KI)</span>
+            <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+          </Link>
+        )}
+        {weddingPortraitConfigured && (
+          <Link
+            href={`/dashboard/events/${event.id}/wedding-portrait`}
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>KI-Hochzeitsporträt</span>
             <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
           </Link>
         )}

@@ -330,6 +330,13 @@ model Event {
   videoMessageHeading String?
   videoMessageHint    String?
   videoMessageId      String?
+  // Eigenes Foto des Brautpaares als Basis fuer das KI-Hochzeitsportraet
+  // (/dashboard/events/[id]/wedding-portrait) — bewusst getrennt vom
+  // Titelbild (coverImageId): unterschiedlicher Zweck, ein neuer Upload
+  // hier soll das Titelbild nicht veraendern. Wird bei jedem neuen Foto-
+  // Upload ueberschrieben (gleiches Verhalten wie coverImageId), das alte
+  // Media bleibt als eigene Zeile in der DB stehen.
+  weddingPortraitSourceId String?
   // Steuert NUR die Saal-Live-Wand (/live/[eventId]), nicht die normale
   // Gaeste-Galerie auf dem Handy: "immediate" zeigt frisch freigegebene
   // Fotos sofort auf der grossen Leinwand, "next-morning" haelt sie dort
@@ -351,6 +358,7 @@ model Event {
   backgroundMusic Media? @relation("EventBackgroundMusic", fields: [backgroundMusicId], references: [id])
   audioInvitation Media? @relation("EventAudioInvitation", fields: [audioInvitationId], references: [id])
   videoMessage    Media? @relation("EventVideoMessage", fields: [videoMessageId], references: [id])
+  weddingPortraitSource Media? @relation("EventWeddingPortraitSource", fields: [weddingPortraitSourceId], references: [id])
   order       Order?
 
   modules           EventModule[]
@@ -368,6 +376,7 @@ model Event {
   addOns            EventAddOn[]
   aiDesignAttempts  AiDesignAttempt[]
   aiTextAttempts    AiTextAttempt[]
+  weddingPortraitAttempts WeddingPortraitAttempt[]
   seatingSuggestion SeatingSuggestion?
   viewDays          EventViewDay[]
   einladiKiMessages EinladiKiMessage[]
@@ -597,6 +606,7 @@ model Media {
   eventMusicFor    Event[]          @relation("EventBackgroundMusic")
   eventAudioInvitationFor Event[]   @relation("EventAudioInvitation")
   eventVideoMessageFor    Event[]   @relation("EventVideoMessage")
+  eventWeddingPortraitSourceFor Event[] @relation("EventWeddingPortraitSource")
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
   photoTags        PhotoTag[]
@@ -906,6 +916,25 @@ model AiTextAttempt {
   prompt      String
   welcomeText String
   description String
+  createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// Ein generiertes KI-Hochzeitsportraet — rawUrl haelt das volle, von OpenAI
+// gelieferte Bild OHNE Namen/Datum-Overlay und OHNE Wasserzeichen (Basis fuer
+// den spaeter bezahlten hochaufgeloesten Download, siehe wedding-portrait/
+// page.tsx "bald verfuegbar"-Platzhalter — so muss beim Bezahl-Feature NICHT
+// erneut generiert werden, das kostet echtes Geld pro Aufruf). previewUrl ist
+// die sofort anzeigbare, niedrig aufgeloeste Version MIT Overlay + Wasser-
+// zeichen. Zaehlt zugleich als Kontingent (WEDDING_PORTRAIT_ATTEMPT_QUOTA),
+// gleiches Muster wie AiDesignAttempt/AiTextAttempt.
+model WeddingPortraitAttempt {
+  id          String   @id @default(cuid())
+  eventId     String
+  stylePreset String
+  rawUrl      String
+  previewUrl  String
   createdAt   DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)

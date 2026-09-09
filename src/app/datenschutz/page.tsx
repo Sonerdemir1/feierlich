@@ -85,9 +85,11 @@ export default function DatenschutzPage() {
 
         <Section title="KI-Funktionen (optional)">
           <p>
-            Wenn ihr aktiv eine KI-Funktion nutzt — Text-Assistent, Gästebuch-Übersetzung, Sitzplan-Vorschlag oder
-            Foto-Kuration — wird der dafür nötige Text bzw. das Bild zur Verarbeitung an OpenAI (USA) übermittelt.
-            Das passiert ausschließlich, wenn ihr diese Funktionen selbst auslöst, nicht automatisch im Hintergrund.
+            Wenn ihr aktiv eine KI-Funktion nutzt — Text-Assistent, Gästebuch-Übersetzung, Sitzplan-Vorschlag,
+            Foto-Kuration oder KI-Hochzeitsporträt — wird der dafür nötige Text bzw. das Bild zur Verarbeitung an
+            OpenAI (USA) übermittelt. Beim KI-Hochzeitsporträt ist das ein von euch selbst hochgeladenes eigenes
+            Foto, kein Gästefoto. Das passiert ausschließlich, wenn ihr diese Funktionen selbst auslöst, nicht
+            automatisch im Hintergrund.
           </p>
         </Section>
 
