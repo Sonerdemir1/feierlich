@@ -33,7 +33,7 @@ import { fallbackHashtag } from "@/lib/live-wall";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
-import { aiTextConfigured } from "@/lib/ai-text";
+import { aiTextConfigured, AI_TEXT_ATTEMPT_QUOTA } from "@/lib/ai-text";
 import { weddingPortraitConfigured } from "@/lib/ai-wedding-portrait";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
@@ -133,7 +133,7 @@ export default async function EventDetailPage({
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
   const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, menuItems, musicRequests] =
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, menuItems, musicRequests, aiTextAttemptCount] =
     await Promise.all([
       prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.eventModule.findMany({ where: { eventId: id } }),
@@ -148,7 +148,13 @@ export default async function EventDetailPage({
       prisma.wishlistItem.findMany({ where: { eventId: id }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] }),
       prisma.menuItem.findMany({ where: { eventId: id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] }),
       prisma.musicRequest.findMany({ where: { eventId: id }, orderBy: { createdAt: "desc" } }),
+      prisma.aiTextAttempt.count({ where: { eventId: id } }),
     ]);
+  // Fuer den KI-Vorschlag-Button im Beschreibungstext-Panel von DesignEditor
+  // (Teil C) — dieselbe Kontingent-Berechnung wie auf der Text-Assistent-
+  // Seite (text/page.tsx), server-seitig ermittelt statt vom Client erraten,
+  // damit der Button nach einem Reload sofort den korrekten Stand zeigt.
+  const aiTextAttemptsLeft = Math.max(0, AI_TEXT_ATTEMPT_QUOTA - aiTextAttemptCount);
   const enabledByModuleId = new Map(eventModules.map((em) => [em.moduleId, em.enabled]));
   const gatedKeys = await gatedModuleKeys(id);
   // Fuer die Anzeige: zu welchem (noch nicht bezahlten) AddOn gehoert ein
@@ -261,6 +267,8 @@ export default async function EventDetailPage({
           videoMessageUrl={event.videoMessage?.url ?? null}
           uploadVideoMessageAction={uploadVideoMessage.bind(null, event.id)}
           removeVideoMessageAction={removeVideoMessage.bind(null, event.id)}
+          aiTextConfigured={aiTextConfigured}
+          aiTextAttemptsLeft={aiTextAttemptsLeft}
         />
 
         <details open style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--line)" }}>

@@ -25,6 +25,7 @@ import { defaultAgendaItems, newAgendaItem, moveAgendaItem, type AgendaItem } fr
 import { WishlistList } from "@/components/editor/WishlistList";
 import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
 import { defaultWishlistItems, newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
+import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
 import {
   elementOverrideStyle,
   TEXT_ELEMENT_LABELS,
@@ -75,6 +76,15 @@ type Draft = {
   // Umwandlung in ein echtes Event.eventDate gebraucht (siehe apply-draft).
   eventDate: string; // "YYYY-MM-DD" oder "" (noch nicht gesetzt)
   eventTime: string; // "HH:MM" oder ""
+  // Kurzer, einladender Fließtext zwischen Namen und Datum/Ort — fuellt bei
+  // Vorlagen mit fester Kartengrafik (siehe renderDescription) sonst leeren
+  // Raum und gibt der Karte einen dritten, klar hierarchischen Textblock.
+  descriptionText: string;
+  // Zaehlt die erfolgreichen KI-Vorschlaege fuer descriptionText in DIESEM
+  // anonymen Entwurf — lebt bewusst im Draft (also localStorage) statt
+  // serverseitig, es gibt vor dem Signup noch kein Event, an das eine
+  // AiTextAttempt-Zeile haengen koennte (siehe suggest-description/route.ts).
+  aiDescriptionAttempts: number;
   locationText: string;
   // Gesetzt, sobald die Adresse per Google-Places-Autocomplete ausgewaehlt
   // wurde (siehe renderLocation/PlaceAutocompleteField) — null solange nur
@@ -283,6 +293,8 @@ function defaultDraft(item: GalleryTemplate): Draft {
     eventLabel: item.defaultEventLabel,
     eventDate: "",
     eventTime: "",
+    descriptionText: item.defaultDescription,
+    aiDescriptionAttempts: 0,
     locationText: "",
     locationLat: null,
     locationLng: null,
@@ -397,6 +409,8 @@ export function DesignStudio({
     setDrafts(loadDrafts());
   }, []);
   const [savedHint, setSavedHint] = useState(false);
+  const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false);
+  const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("design");
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
   // Eigener Auswahl-State fuer den Ablaufplan statt selectedKey: eine
@@ -571,6 +585,56 @@ export function DesignStudio({
         </div>
       </SelectableElement>
     );
+  }
+
+  // Dritter Textblock zwischen Namen und Datum/Ort (Problem: "kein
+  // einladender Beschreibungstext, der den Raum sinnvoll fuellt" +
+  // "Leerraum bei Vorlagen mit fester Kartengrafik") — gleiches
+  // SelectableElement/InlineEditableField-Muster wie renderTitle(), nur mit
+  // multiline (Enter = Zeilenumbruch statt Fokus verlassen, siehe
+  // InlineEditableField-Kommentar) fuer den 2-3-zeiligen Fließtext.
+  function renderDescription(style: CSSProperties) {
+    const override = elementOverrideStyle(draft.elements, "description");
+    return (
+      <SelectableElement kind="text" label={TEXT_ELEMENT_LABELS.description} selected={selectedKey === "description"} onSelect={() => selectKey("description")}>
+        <InlineEditableField
+          value={draft.descriptionText}
+          onChange={(text) => updateDraft({ descriptionText: text })}
+          placeholder={item.defaultDescription}
+          onFocus={() => setSelectedKey("description")}
+          multiline
+          style={{ display: "block", ...style, ...override }}
+        />
+      </SelectableElement>
+    );
+  }
+
+  // KI-Vorschlag fuer den Beschreibungstext (Teil C) — ruft dieselbe
+  // generateInvitationCopy()-Logik wie die bestehende Text-Assistent-Seite
+  // auf (siehe suggest-description/route.ts), nur ohne Formular/eventId: die
+  // Karte ist im Editor schon sichtbar, ein Klick setzt den Vorschlag direkt
+  // ins Feld. Kontingent zaehlt hier bewusst NUR clientseitig im Draft (siehe
+  // aiDescriptionAttempts-Kommentar oben), da es vor dem Signup noch kein
+  // Event gibt, an das ein serverseitiger Zaehler haengen koennte.
+  const aiDescriptionAttemptsLeft = Math.max(0, AI_TEXT_ATTEMPT_QUOTA - (draft.aiDescriptionAttempts ?? 0));
+  async function suggestDescription() {
+    if (aiDescriptionAttemptsLeft <= 0 || aiDescriptionLoading) return;
+    setAiDescriptionLoading(true);
+    setAiDescriptionError(null);
+    try {
+      const response = await fetch("/gestalten/suggest-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names: draft.text || item.defaultText, category, eventType: item.defaultEventLabel }),
+      });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || !json?.ok) throw new Error("failed");
+      updateDraft({ descriptionText: json.description, aiDescriptionAttempts: (draft.aiDescriptionAttempts ?? 0) + 1 });
+    } catch {
+      setAiDescriptionError("Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen.");
+    } finally {
+      setAiDescriptionLoading(false);
+    }
   }
 
   function renderDate(style: CSSProperties) {
@@ -1554,8 +1618,9 @@ export function DesignStudio({
                         fontSize: draft.fontSize,
                         color: draft.primary,
                       })}
-                      <div>
-                        {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 6 })}
+                      {renderDescription({ fontSize: 11, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 230, margin: "0 auto" })}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                        {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 0 })}
                         {renderLocation({ color: draft.primary })}
                       </div>
                     </div>
@@ -1619,6 +1684,8 @@ export function DesignStudio({
                     })}
 
                     {renderFamily({ color: draft.primary })}
+
+                    {renderDescription({ fontSize: 12.5, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 260, margin: "18px auto 0" })}
 
                     <div className="customizer-card-divider" style={{ background: draft.accent }} />
                     {renderDate({ color: draft.primary })}
@@ -1814,6 +1881,40 @@ export function DesignStudio({
                 />
               </div>
             </section>
+          ) : selectedKey === "description" ? (
+            <section className="studio-section">
+              <TextControls
+                elementKey="description"
+                label={TEXT_ELEMENT_LABELS.description}
+                style={draft.elements?.description ?? {}}
+                defaultColor={draft.primary}
+                onChange={(patch) => updateElementStyle("description", patch)}
+                onDeselect={() => setSelectedKey(undefined)}
+              />
+              <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                {aiDescriptionAttemptsLeft > 0 ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={suggestDescription}
+                      disabled={aiDescriptionLoading}
+                      className="btn btn-ghost"
+                      style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
+                    >
+                      {aiDescriptionLoading ? "Generiert …" : "✨ KI-Vorschlag"}
+                    </button>
+                    <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 6 }}>
+                      {aiDescriptionAttemptsLeft} von {AI_TEXT_ATTEMPT_QUOTA} KI-Vorschlägen übrig
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>{AI_TEXT_QUOTA_EXHAUSTED_MESSAGE}</div>
+                )}
+                {aiDescriptionError && (
+                  <div style={{ fontSize: 11, color: "#B2543A", marginTop: 6 }}>{aiDescriptionError}</div>
+                )}
+              </div>
+            </section>
           ) : selectedKey ? (
             <section className="studio-section">
               <TextControls
@@ -1931,32 +2032,46 @@ export function DesignStudio({
                 )}
               </div>
 
-              <div className="customizer-field">
-                <label>Verzierungen</label>
-                <div className="customizer-toggles">
-                  <label className="customizer-toggle">
-                    <input type="checkbox" checked={draft.showFloral} onChange={(e) => updateDraft({ showFloral: e.target.checked })} />
-                    <span className="customizer-switch" aria-hidden="true" />
-                    <span className="customizer-toggle-text">Floral-Muster</span>
-                  </label>
-                  <label className="customizer-toggle">
-                    <input type="checkbox" checked={draft.showOrnaments} onChange={(e) => updateDraft({ showOrnaments: e.target.checked })} />
-                    <span className="customizer-switch" aria-hidden="true" />
-                    <span className="customizer-toggle-text">Eck-Ornamente &amp; Streumuster</span>
-                  </label>
-                  {item.photoBackground && (
-                    <label className="customizer-toggle">
-                      <input
-                        type="checkbox"
-                        checked={draft.showPhotoBackground}
-                        onChange={(e) => updateDraft({ showPhotoBackground: e.target.checked })}
-                      />
-                      <span className="customizer-switch" aria-hidden="true" />
-                      <span className="customizer-toggle-text">Foto-Hintergrund</span>
-                    </label>
-                  )}
+              {/* Floral-Muster/Eck-Ornamente steuern nur das generische SVG-
+                  Overlay (siehe renderTitle-Zweig ohne item.cardImageUrl weiter
+                  unten) — bei den Vorlagen mit echter Kartengrafik (die 12
+                  aktiven Düğün-"Blanko"-Designs, Template.previewUrl gesetzt)
+                  ist die Verzierung fest Teil des Bildes, diese Regler haetten
+                  dort keine Wirkung. Vorher wurden sie trotzdem angezeigt
+                  (wirkungslos, verwirrend) — jetzt nur sichtbar, wenn es
+                  ueberhaupt etwas zum Umschalten gibt. Nutzer-Bugfix-Folge. */}
+              {(!item.cardImageUrl || item.photoBackground) && (
+                <div className="customizer-field">
+                  <label>Verzierungen</label>
+                  <div className="customizer-toggles">
+                    {!item.cardImageUrl && (
+                      <>
+                        <label className="customizer-toggle">
+                          <input type="checkbox" checked={draft.showFloral} onChange={(e) => updateDraft({ showFloral: e.target.checked })} />
+                          <span className="customizer-switch" aria-hidden="true" />
+                          <span className="customizer-toggle-text">Floral-Muster</span>
+                        </label>
+                        <label className="customizer-toggle">
+                          <input type="checkbox" checked={draft.showOrnaments} onChange={(e) => updateDraft({ showOrnaments: e.target.checked })} />
+                          <span className="customizer-switch" aria-hidden="true" />
+                          <span className="customizer-toggle-text">Eck-Ornamente &amp; Streumuster</span>
+                        </label>
+                      </>
+                    )}
+                    {item.photoBackground && (
+                      <label className="customizer-toggle">
+                        <input
+                          type="checkbox"
+                          checked={draft.showPhotoBackground}
+                          onChange={(e) => updateDraft({ showPhotoBackground: e.target.checked })}
+                        />
+                        <span className="customizer-switch" aria-hidden="true" />
+                        <span className="customizer-toggle-text">Foto-Hintergrund</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 

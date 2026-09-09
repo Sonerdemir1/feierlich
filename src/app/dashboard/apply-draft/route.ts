@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { gatedModuleKeys } from "@/app/dashboard/events/actions";
-import { defaultTextForCategory } from "@/lib/gallery-templates";
+import { defaultTextForCategory, defaultDescriptionForCategory } from "@/lib/gallery-templates";
 import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS, STYLE_FIELD_KEYS, DEFAULT_DRESSCODE_TEXT, DEFAULT_SOCIAL_MEDIA_TEXT } from "@/lib/text-style";
 import { WISHLIST_TYPES, defaultWishlistItems, type WishlistItemType } from "@/lib/wishlist";
 import { defaultAgendaItems } from "@/lib/agenda";
@@ -232,6 +232,12 @@ export async function POST(request: Request) {
     const text = textOrNull(value);
     return text === defaultValue ? null : text;
   }
+  // Gleiches Bugfix-Prinzip wie dresscodeText/socialMediaText unten: der
+  // anonyme Customizer fuellt descriptionText mit einem erfundenen,
+  // kategoriepassenden Standardtext (siehe DesignStudio.tsx defaultDraft()),
+  // damit die Karte nie leer wirkt — bleibt er unveraendert, darf er NICHT
+  // als echte Angabe des Kunden auf der oeffentlichen Einladungsseite landen.
+  const description = textOrNullUnlessDefault(draft.descriptionText, defaultDescriptionForCategory(template.category));
   const guestbookHeading = textOrNull(draft.guestbookHeading);
   const guestbookHint = textOrNull(draft.guestbookHint);
   const guestbookButtonText = textOrNull(draft.guestbookButtonText);
@@ -289,6 +295,7 @@ export async function POST(request: Request) {
       eventTypeId: eventType.id,
       templateId: template.id,
       eventLabel,
+      description,
       familyLeft,
       familyRight,
       eventDate,
