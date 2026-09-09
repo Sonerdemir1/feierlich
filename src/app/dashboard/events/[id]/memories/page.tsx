@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos, analyzeGuestbookEntries } from "./actions";
 import { aiPhotoCurationConfigured } from "@/lib/ai-photo-curation";
 import { aiGuestbookCurationConfigured } from "@/lib/ai-guestbook-curation";
+import { CATEGORY_LABEL_DE } from "@/lib/ai-moderation";
 
 const statusLabel: Record<string, string> = { PENDING: "Wartet auf Freigabe", APPROVED: "Freigegeben", HIDDEN: "Ausgeblendet", DELETED: "Gelöscht" };
 const statusColor: Record<string, string> = { PENDING: "#B9975B", APPROVED: "#5B7A4E", HIDDEN: "#8A7F6E", DELETED: "#B2543A" };
@@ -51,9 +52,16 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
     prisma.guestbookEntry.findMany({ where: { eventId: id, status: { not: "DELETED" } }, include: { media: true }, orderBy: { createdAt: "desc" } }),
   ]);
 
-  // PENDING-Fotos mit KI-Empfehlung nach oben, unter sich nach Verdict
-  // sortiert — der Rest (bereits moderiert) bleibt danach chronologisch.
+  // Von der KI als unangemessen markierte Fotos ganz nach oben — unabhaengig
+  // vom sonstigen Status (auch ein bereits vom Gastgeber freigegebenes Foto
+  // kann per Sicherheitsnetz nachtraeglich auf HIDDEN gesetzt worden sein,
+  // siehe moderateMediaContent()), damit es sofort auffaellt statt in der
+  // Menge unterzugehen. Danach wie bisher: PENDING-Fotos mit KI-Empfehlung,
+  // der Rest chronologisch.
   const galleryItems = [...galleryItemsRaw].sort((a, b) => {
+    const aFlagged = a.media.moderationCheckStatus === "flagged" ? 0 : 1;
+    const bFlagged = b.media.moderationCheckStatus === "flagged" ? 0 : 1;
+    if (aFlagged !== bFlagged) return aFlagged - bFlagged;
     const aPending = a.status === "PENDING" ? 0 : 1;
     const bPending = b.status === "PENDING" ? 0 : 1;
     if (aPending !== bPending) return aPending - bPending;
@@ -121,6 +129,15 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
                   <img src={item.media.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
                 )}
                 <div style={{ padding: "8px 10px" }}>
+                  {item.media.moderationCheckStatus === "flagged" && (
+                    <div style={{ fontSize: 10.5, color: "#B2543A", fontWeight: 600, background: "#F5E1DE", border: "1px solid #B2543A55", padding: "5px 7px", marginBottom: 6 }}>
+                      ⚠️ Von KI als möglicherweise unangemessen markiert
+                      {(() => {
+                        const categories: string[] = item.media.moderationCategories ? JSON.parse(item.media.moderationCategories) : [];
+                        return categories.length > 0 ? `: ${categories.map((c) => CATEGORY_LABEL_DE[c] ?? c).join(", ")}` : "";
+                      })()}
+                    </div>
+                  )}
                   <div style={{ fontSize: 11, color: statusColor[item.status], fontWeight: 600, marginBottom: 6 }}>{statusLabel[item.status]}</div>
                   {item.media.aiVerdict && (
                     <div

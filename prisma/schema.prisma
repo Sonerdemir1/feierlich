@@ -577,6 +577,18 @@ model Media {
   // Einwilligung nachtraeglich zurueckgezogen hat (Art. 7 Abs. 3 DSGVO:
   // Widerruf muss so einfach wie die Erteilung sein).
   aiConsentRevokedAt   DateTime?
+  // KI-Inhaltsmoderation (Schritt B, siehe lib/ai-moderation.ts) — laeuft
+  // NUR, wenn aiConsentGeneral true ist. Bewusst eigene Felder statt
+  // aiVerdict/aiVerdictReason oben: das ist die bestehende QUALITAETS-
+  // Kuration ("gutes Foto"/"unscharf"/"Duplikat", manuell vom Gastgeber
+  // angestossen) — inhaltlich etwas komplett anderes als automatisierte
+  // Moderation auf unangemessene Inhalte. null = nicht geprueft (keine
+  // Einwilligung, oder noch nicht gelaufen).
+  moderationCheckStatus     String? // "pending" | "clean" | "flagged"
+  // JSON-Array der erkannten Kategorien bei "flagged", z.B.
+  // ["sexual","violence"] — leer/null bei "clean" oder "pending".
+  moderationCategories      String?
+  moderationCheckedAt       DateTime?
 
   event            Event?           @relation("EventMedia", fields: [eventId], references: [id], onDelete: Cascade)
   table            Table?           @relation(fields: [tableId], references: [id], onDelete: SetNull)
