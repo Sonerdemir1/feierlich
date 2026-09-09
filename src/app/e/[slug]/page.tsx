@@ -989,6 +989,16 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )
           )}
 
+          {/* TODO: von Anwalt/Datenschutzbeauftragten pruefen lassen — Entwurf
+              zur Transparenz ueber die Fotobuch-Funktion (siehe Gaeste-
+              Fotobuch-Schritt), bewusst als reiner Hinweis statt einer
+              weiteren Checkbox, unabhaengig von den KI-Einwilligungs-
+              Haekchen unten sichtbar. */}
+          <div style={{ textAlign: "center", marginBottom: 20, fontSize: 11.5, opacity: 0.65 }}>
+            Hinweis: Freigegebene Fotos können vom Gastgeber zu einem privaten Erinnerungs-Fotobuch zum eigenen
+            Download zusammengestellt werden.
+          </div>
+
           {galleryPhotos.length > 0 && (
             <PhotoWall eventId={event.id} photos={galleryPhotos} taggedGuests={taggedGuests} colors={colors} />
           )}

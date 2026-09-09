@@ -35,6 +35,7 @@ import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured, AI_TEXT_ATTEMPT_QUOTA } from "@/lib/ai-text";
 import { weddingPortraitConfigured } from "@/lib/ai-wedding-portrait";
+import { eventHasFeature } from "@/lib/event-features";
 import { FileField } from "@/components/public/FileField";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import type { StyleElements } from "@/lib/text-style";
@@ -166,6 +167,7 @@ export default async function EventDetailPage({
   }
   const pendingMemories = pendingGallery + pendingGuestbook;
   const canPublish = session!.user.role === "ADMIN" || event.order?.status === "PAID";
+  const hasPhotobook = eventHasFeature(event, "photobook");
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
@@ -1157,6 +1159,43 @@ export default async function EventDetailPage({
           </span>
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
+        {hasPhotobook ? (
+          <Link
+            href={`/dashboard/events/${event.id}/photobook`}
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>Gästefotobuch</span>
+            <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+          </Link>
+        ) : (
+          <div
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink-faint)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              opacity: 0.6,
+            }}
+          >
+            <span>Gästefotobuch</span>
+            <span style={{ fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>Ab Premium Plus</span>
+          </div>
+        )}
       </div>
 
       {einladiKiConfigured && <EinladiKiChat eventId={event.id} />}

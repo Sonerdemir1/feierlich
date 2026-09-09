@@ -234,6 +234,16 @@ model Event {
   // verwaltet wird, siehe EditableAgenda.tsx/DesignEditor.tsx). null/leer =
   // noch keine Eintraege.
   agendaJson      String?
+  // JSON-Array ausgewaehlter Media-IDs in Wunsch-Reihenfolge fuers Gaeste-
+  // Fotobuch (Dashboard-Feature, ab Premium Plus, siehe photobook/page.tsx)
+  // — gleiche Speicherlogik wie agendaJson (ein Event-Feld statt eigener
+  // Tabelle, da jeder Eintrag eine reine Referenz auf eine bereits
+  // existierende Media-Zeile ist, ohne eigene Inhaltsfelder wie bei
+  // WishlistItem). Beim Lesen gegen aktuell freigegebene GalleryItems
+  // abgeglichen — nachtraeglich versteckte/geloeschte Fotos fallen dabei
+  // automatisch raus, keine Aufraeum-Logik hier noetig. null/leer = noch
+  // keine Auswahl getroffen.
+  photobookMediaIds String?
   // Ueberschreibt die drei festen Texte im Gaestebuch-Bereich der Event-
   // Seite (Ueberschrift, Hinweistext, Button-Beschriftung) — gleiche
   // Speicherlogik wie title/subtitle/description (einzelne Spalten statt

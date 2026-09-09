@@ -65,6 +65,7 @@ const modules = [
   { key: 'menu', name: 'Digitale Menükarte', category: 'Gäste', description: 'Menüauswahl, die Gäste direkt bei der Zusage mit angeben.' },
   { key: 'wishlist', name: 'Wunschliste', category: 'Gäste', description: 'Geschenkewunschliste für die Gäste.' },
   { key: 'gallery', name: 'Foto- & Videogalerie', category: 'Gäste', description: 'Gäste laden eigene Fotos/Videos hoch, die in einer gemeinsamen Galerie erscheinen.' },
+  { key: 'photobook', name: 'Gästefotobuch', category: 'Gäste', description: 'Freigegebene Gäste-Fotos zu einem herunterladbaren PDF-Fotobuch zusammenstellen.' },
   { key: 'guestbook', name: 'Gästebuch', category: 'Gäste', description: 'Gäste hinterlassen Text- oder Videonachrichten für euch.' },
   { key: 'music-requests', name: 'Musikwünsche', category: 'Gäste', description: 'Gäste können Musikwünsche für die Feier einreichen.' },
   { key: 'thank-you-card', name: 'Digitale Dankeskarte', category: 'Premium', description: 'Digitale Dankeskarte, die ihr nach dem Event an eure Gäste verschicken könnt.' },
@@ -88,15 +89,15 @@ const packages = [
   },
   {
     key: 'PREMIUM_PLUS', name: 'Premium Plus', priceCents: 14900,
-    description: 'Eventseite, RSVP, Gästeliste, Sitzplan, QR-Codes, Gästebuch, Galerie',
-    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery'],
+    description: 'Eventseite, RSVP, Gästeliste, Sitzplan, QR-Codes, Gästebuch, Galerie, Fotobuch',
+    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery', 'photobook'],
   },
   {
     key: 'VIP', name: 'VIP', priceCents: 29900,
     description: 'Alle Funktionen, individuelles Design, Video- & Audio-Einladung, persönlicher Support',
     features: [
       'countdown', 'location', 'weather', 'agenda', 'dresscode', 'social-media', 'rsvp', 'guest-list',
-      'seating', 'menu', 'wishlist', 'gallery', 'guestbook', 'music-requests',
+      'seating', 'menu', 'wishlist', 'gallery', 'photobook', 'guestbook', 'music-requests',
       'thank-you-card', 'audio-invitation', 'video-invitation',
     ],
   },
