@@ -29,8 +29,6 @@ import {
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { deleteMusicRequest } from "./music-requests-actions";
 import { checkInGuest } from "./checkin-actions";
-import { setEventHashtag } from "./live-wall-actions";
-import { fallbackHashtag } from "@/lib/live-wall";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { saveQrDesignFields } from "./qr/actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
@@ -219,9 +217,6 @@ export default async function EventDetailPage({
   const modulesSaved = sp.modulesSaved === "1";
   const slugSaved = sp.slugSaved === "1";
   const detailsSaved = sp.detailsSaved === "1";
-  const socialModuleId = allModules.find((m) => m.key === "social-media")?.id;
-  const socialModule = socialModuleId ? eventModules.find((em) => em.moduleId === socialModuleId) : undefined;
-  const eventHashtag: string = socialModule?.config ? (JSON.parse(socialModule.config).hashtag ?? "") : "";
   const menuModuleId = allModules.find((m) => m.key === "menu")?.id;
   const menuEnabled = menuModuleId ? (enabledByModuleId.get(menuModuleId) ?? true) : true;
   // Gleiche Vorschaubild-Logik wie generateMetadata in /e/[slug] — eigenes
@@ -422,9 +417,6 @@ export default async function EventDetailPage({
           aiTextConfigured={aiTextConfigured}
           aiTextAttemptsLeft={aiTextAttemptsLeft}
           detailsFormSlot={detailsForm}
-          eventHashtag={eventHashtag}
-          eventHashtagPlaceholder={fallbackHashtag(event.title)}
-          setEventHashtagAction={setEventHashtag.bind(null, event.id)}
         />
       </div>
 
