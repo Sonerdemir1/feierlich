@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
@@ -93,9 +94,10 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
     subtitle: resolved.subtitle,
     targetUrl: resolved.targetUrl,
     primary: safePrimary,
-    accent: activeColors.accent,
+    accent: event.qrAccentColor || activeColors.accent,
     background: safeBackground,
     fontId: activeStyle.fontId,
+    instructions: event.qrInstructionsText || undefined,
   });
 
   const to = session.user!.email!;
@@ -114,6 +116,29 @@ export async function emailQrDesign(eventId: string, formData: FormData) {
 
   const redirectBase = target.kind === "TABLE" ? `/dashboard/events/${eventId}/seating` : `/dashboard/events/${eventId}`;
   redirect(`${redirectBase}?qrEmail=success`);
+}
+
+// Speichert die eigene QR-Karten-Akzentfarbe (Bestandsaufnahme Punkt C2)
+// und den eigenen Anleitungstext (Punkt C4) — beide unabhaengig vom
+// Haupt-Kartendesign, siehe Schema-Kommentare bei Event.qrAccentColor/
+// qrInstructionsText. Leeres Farbfeld/Textfeld setzt wieder auf den
+// jeweiligen Standard zurueck (null in der DB).
+export async function saveQrDesignFields(eventId: string, formData: FormData) {
+  await requireOwnedEvent(eventId);
+
+  const accent = String(formData.get("qrAccentColor") ?? "").trim();
+  const instructions = String(formData.get("qrInstructionsText") ?? "").trim().slice(0, 160);
+
+  await prisma.event.update({
+    where: { id: eventId },
+    data: {
+      qrAccentColor: accent || null,
+      qrInstructionsText: instructions || null,
+    },
+  });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  redirect(`/dashboard/events/${eventId}`);
 }
 
 // Legt einen Druck-&-Versand-Auftrag an (Status PENDING) und schickt den

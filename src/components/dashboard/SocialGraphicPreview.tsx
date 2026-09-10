@@ -2,17 +2,22 @@
 
 import { useState } from "react";
 import { SOCIAL_GRAPHIC_SIZES, type SocialGraphicFormat } from "@/lib/social-graphic";
+import { SOCIAL_GRAPHIC_THEMES, type SocialGraphicTheme } from "@/lib/social-graphic-themes";
 
 export function SocialGraphicPreview({ eventId }: { eventId: string }) {
   const [format, setFormat] = useState<SocialGraphicFormat>("story");
+  // Reines Client-State wie `format` — kein eigenes Event-Feld, dieselbe
+  // "waehlen statt speichern"-Logik wie bei Groesse/Theme im QR-Design-
+  // Formular (Bestandsaufnahme Punkt F(b)).
+  const [theme, setTheme] = useState<SocialGraphicTheme>("classic");
 
-  const previewSrc = `/dashboard/events/${eventId}/social-graphic?format=${format}`;
+  const previewSrc = `/dashboard/events/${eventId}/social-graphic?format=${format}&theme=${theme}`;
   const downloadSrc = `${previewSrc}&download=1`;
 
   return (
     <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
       <div style={{ flex: "0 0 220px" }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
           {(Object.keys(SOCIAL_GRAPHIC_SIZES) as SocialGraphicFormat[]).map((f) => (
             <button
               key={f}
@@ -25,6 +30,24 @@ export function SocialGraphicPreview({ eventId }: { eventId: string }) {
             </button>
           ))}
         </div>
+        <select
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as SocialGraphicTheme)}
+          style={{
+            width: "100%",
+            padding: "9px 10px",
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            fontSize: 12.5,
+            marginBottom: 14,
+          }}
+        >
+          {SOCIAL_GRAPHIC_THEMES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
         <a href={downloadSrc} className="btn btn-primary" style={{ padding: "9px 16px", fontSize: 12.5, display: "inline-block" }}>
           PNG herunterladen
         </a>

@@ -230,6 +230,16 @@ model Event {
   // respektiert die Gaeste), stattdessen ein Schalter auf der Seite.
   backgroundMusicId String?
   colorOverride   String? // JSON-String, ueberschreibt Template.colors wenn gesetzt
+  // Eigene Akzentfarbe NUR fuer die QR-Karte (Bestandsaufnahme Punkt C2) —
+  // unabhaengig von colorOverride/Template.colors, da die QR-Karte auch bei
+  // sonst unveraendertem Kartendesign eine eigene Farbe haben koennen soll
+  // (z.B. Kontrast zum Tisch/Drucker). null = weiterhin die Haupt-
+  // Akzentfarbe verwenden (Rueckwaertskompatibilitaet fuer bestehende Events).
+  qrAccentColor   String?
+  // Eigener Anleitungstext auf der QR-Karte (Bestandsaufnahme Punkt C4) —
+  // ersetzt den festen Standardtext in buildQrDesignSvg() (siehe dort).
+  // null/leer = weiterhin der feste Standardtext.
+  qrInstructionsText String?
   // JSON-String, z.B. {"fontId":"playfair","ornaments":true} — echte
   // Editor-Einstellungen fuer die oeffentliche Event-Seite (Schriftart,
   // Eck-Ornamente), analog zu colorOverride. null = Template-Standard.

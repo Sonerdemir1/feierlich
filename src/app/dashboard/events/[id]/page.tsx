@@ -32,6 +32,7 @@ import { checkInGuest } from "./checkin-actions";
 import { setEventHashtag } from "./live-wall-actions";
 import { fallbackHashtag } from "@/lib/live-wall";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
+import { saveQrDesignFields } from "./qr/actions";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured, AI_TEXT_ATTEMPT_QUOTA } from "@/lib/ai-text";
@@ -801,7 +802,13 @@ export default async function EventDetailPage({
           Gestaltete Tisch-/Aufsteller-Karte mit eurem QR-Code — Design, Format und Schriftart wählen, herunterladen,
           selbst ausdrucken.
         </div>
-        <QrPrintDesignFields eventId={event.id} tables={tables} />
+        <QrPrintDesignFields
+          eventId={event.id}
+          tables={tables}
+          initialAccentColor={event.qrAccentColor ?? ""}
+          initialInstructionsText={event.qrInstructionsText ?? ""}
+          saveQrDesignFieldsAction={saveQrDesignFields.bind(null, event.id)}
+        />
 
         <details style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--line)" }}>
           <summary style={{ cursor: "pointer", fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>

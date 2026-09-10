@@ -26,6 +26,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const tableId = url.searchParams.get("tableId") ?? "";
   const activeStyle: { fontId?: string } = event.styleJson ? JSON.parse(event.styleJson) : {};
   const fontId = url.searchParams.get("fontId") ?? activeStyle.fontId;
+  // Live-Vorschau VOR dem Speichern (gleiches Muster wie Theme/Groesse/
+  // Schrift oben) — Query-Param gewinnt, sonst der gespeicherte Wert, sonst
+  // (bei accent) die Haupt-Akzentfarbe (Bestandsaufnahme Punkt C2/C4).
+  const accentParam = url.searchParams.get("accent");
+  const instructionsParam = url.searchParams.get("instructions");
 
   const baseUrl = `${url.protocol}//${url.host}`;
   let targetUrl: string;
@@ -62,9 +67,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     subtitle,
     targetUrl,
     primary: safePrimary,
-    accent: activeColors.accent,
+    accent: accentParam || event.qrAccentColor || activeColors.accent,
     background: safeBackground,
     fontId,
+    instructions: instructionsParam || event.qrInstructionsText || undefined,
   });
 
   const download = url.searchParams.get("download") === "1";

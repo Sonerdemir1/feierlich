@@ -22,9 +22,17 @@ const selectStyle: React.CSSProperties = {
 export function QrPrintDesignFields({
   eventId,
   tables,
+  initialAccentColor,
+  initialInstructionsText,
+  saveQrDesignFieldsAction,
 }: {
   eventId: string;
   tables: { id: string; name: string }[];
+  // Bestandsaufnahme Punkt C2/C4 — gespeicherte Werte, Startzustand der
+  // beiden neuen Felder unten.
+  initialAccentColor: string;
+  initialInstructionsText: string;
+  saveQrDesignFieldsAction: (formData: FormData) => void;
 }) {
   const [tableId, setTableId] = useState("");
   const [size, setSize] = useState<PrintSize>("A6");
@@ -41,8 +49,14 @@ export function QrPrintDesignFields({
   // dieselbe previewSrc wird nur in einem groesseren Overlay erneut
   // gerendert, kein zusaetzlicher Server-Aufruf noetig.
   const [enlarged, setEnlarged] = useState(false);
+  // Eigene QR-Akzentfarbe (C2) + eigener Anleitungstext (C4) — Aenderung
+  // wirkt SOFORT auf die Vorschau (gleiches "Query-Param vor dem
+  // Speichern"-Muster wie Theme/Groesse/Schrift oben), muss aber ueber den
+  // eigenen "Speichern"-Button unten dauerhaft gemacht werden.
+  const [accentColor, setAccentColor] = useState(initialAccentColor);
+  const [instructionsText, setInstructionsText] = useState(initialInstructionsText);
 
-  const previewSrc = `/dashboard/events/${eventId}/qr/design-preview?theme=${theme}&size=${size}${tableId ? `&tableId=${tableId}` : ""}${fontId ? `&fontId=${fontId}` : ""}`;
+  const previewSrc = `/dashboard/events/${eventId}/qr/design-preview?theme=${theme}&size=${size}${tableId ? `&tableId=${tableId}` : ""}${fontId ? `&fontId=${fontId}` : ""}${accentColor ? `&accent=${encodeURIComponent(accentColor)}` : ""}${instructionsText ? `&instructions=${encodeURIComponent(instructionsText)}` : ""}`;
   const downloadSrc = `${previewSrc}&download=1`;
 
   return (
@@ -86,6 +100,41 @@ export function QrPrintDesignFields({
         >
           Herunterladen (SVG)
         </a>
+
+        <form
+          action={saveQrDesignFieldsAction}
+          style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", width: "100%", marginTop: 4 }}
+        >
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-soft)" }}>
+            Eigene Akzentfarbe
+            <input
+              type="color"
+              name="qrAccentColor"
+              value={accentColor || "#B9975B"}
+              onChange={(e) => setAccentColor(e.target.value)}
+              style={{ width: 34, height: 30, border: "1px solid var(--line)", cursor: "pointer", padding: 0 }}
+            />
+          </label>
+          {accentColor && (
+            <button
+              type="button"
+              onClick={() => setAccentColor("")}
+              style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            >
+              Zurücksetzen auf Hauptfarbe
+            </button>
+          )}
+          <input
+            name="qrInstructionsText"
+            value={instructionsText}
+            onChange={(e) => setInstructionsText(e.target.value.slice(0, 160))}
+            placeholder="Scannt den Code, um Fotos & Videos zu teilen"
+            style={{ flex: "1 1 220px", padding: "9px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5 }}
+          />
+          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12 }}>
+            Speichern
+          </button>
+        </form>
       </div>
       <div style={{ flex: "0 0 140px" }}>
         {/* eslint-disable-next-line @next/next/no-img-element -- serverseitig generiertes SVG, kein next/image-Asset */}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { qrPng, safeQrColorsFromEvent } from "@/lib/qr";
 import { publicHost } from "@/lib/site";
 import { loadGoogleFont, SOCIAL_GRAPHIC_SIZES, type SocialGraphicFormat } from "@/lib/social-graphic";
+import { renderSocialGraphicTheme, type SocialGraphicTheme } from "@/lib/social-graphic-themes";
 import { fontOptionById } from "@/lib/fonts";
 
 // Erzeugt ein teilbares Social-Media-Bild (Story/Beitrag) mit den echten
@@ -20,6 +21,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const url = new URL(request.url);
   const format: SocialGraphicFormat = url.searchParams.get("format") === "post" ? "post" : "story";
+  const themeParam = url.searchParams.get("theme");
+  const theme: SocialGraphicTheme = themeParam === "modern-block" || themeParam === "gold-frame" ? themeParam : "classic";
   const download = url.searchParams.get("download") === "1";
   const { width, height } = SOCIAL_GRAPHIC_SIZES[format];
   // Vorher fix 170px auf 1080px Canvas-Breite (~16 %) — wirkte "visitenkarten-
@@ -61,62 +64,27 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const bodyFont = fonts.length ? "Inter" : undefined;
 
   const image = new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: colors.background,
-          padding: 90,
-          textAlign: "center",
-        }}
-      >
-        <div style={{ display: "flex", fontSize: 26, letterSpacing: 6, textTransform: "uppercase", color: colors.accent, fontFamily: bodyFont }}>
-          {event.eventType.name}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            fontSize: format === "post" ? 58 : 72,
-            fontWeight: 700,
-            color: colors.primary,
-            marginTop: 26,
-            fontFamily: displayFont,
-          }}
-        >
-          {event.title}
-        </div>
-        {event.subtitle && (
-          <div style={{ display: "flex", fontSize: 28, color: colors.primary, opacity: 0.8, marginTop: 18, fontFamily: bodyFont }}>
-            {event.subtitle}
-          </div>
-        )}
-        <div style={{ display: "flex", width: 64, height: 2, background: colors.accent, marginTop: 44, marginBottom: 44 }} />
-        <div style={{ display: "flex", fontSize: 30, color: colors.primary, fontFamily: bodyFont }}>{dateLabel}</div>
-        {event.locationName && (
-          <div style={{ display: "flex", fontSize: 24, color: colors.primary, opacity: 0.75, marginTop: 10, fontFamily: bodyFont }}>
-            {event.locationName}
-          </div>
-        )}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 64 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element -- Satori (next/og) rendert kein next/image, nur <img> */}
-          <img src={qrDataUri} alt="" width={qrSize} height={qrSize} style={{ borderRadius: 10 }} />
-          <div style={{ display: "flex", fontSize: 18, color: colors.primary, opacity: 0.7, marginTop: 14, fontFamily: bodyFont }}>
-            Scannt für die Einladung
-          </div>
-        </div>
-      </div>
-    ),
+    renderSocialGraphicTheme(theme, {
+      format,
+      width,
+      height,
+      colors,
+      eventTypeName: event.eventType.name,
+      title: event.title,
+      subtitle: event.subtitle,
+      dateLabel,
+      locationName: event.locationName,
+      qrDataUri,
+      qrSize,
+      displayFont,
+      bodyFont,
+    }),
     { width, height, fonts }
   );
 
   if (!download) return image;
 
   const headers = new Headers(image.headers);
-  headers.set("Content-Disposition", `attachment; filename="einladung-${format}-${event.slug}.png"`);
+  headers.set("Content-Disposition", `attachment; filename="einladung-${format}-${theme}-${event.slug}.png"`);
   return new Response(image.body, { headers, status: image.status });
 }
