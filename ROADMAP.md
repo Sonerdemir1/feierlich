@@ -62,25 +62,27 @@ eventHasFeature()).
 Modell-Entscheidung (vor Umsetzung gemeldet, bestätigt): OpenAI TTS
 (`gpt-4o-mini-tts`, Stimme „marin", MP3) — derselbe `OPENAI_API_KEY` wie
 alle anderen KI-Features, kein neuer Anbieter, ~0,005–0,01 $ pro
-Begrüßung. **Gating-Klärung nötig geworden**: „audio-invitation" war
-bisher nur in VIP enthalten, nicht Premium Plus — nach Rückfrage
-entschieden, `audio-invitation` zu `PREMIUM_PLUS.features` hinzuzufügen
-(`prisma/seed.ts` + Live-DB aktualisiert; Premium-Plus-Kunden bekommen
-dadurch jetzt sowohl den bestehenden eigenen Audio-Upload als auch den
-neuen KI-Button). `FEATURE_TIER` im anonymen Gestalten-Customizer
-(`DesignStudio.tsx`) entsprechend von „VIP" auf „Premium Plus"
-nachgezogen, für Konsistenz zwischen Marketing-Vorschau und echtem
-Paket-Inhalt (CLAUDE.md Punkt 6). Neue Datei `ai-audio-tts.ts`, neue
+Begrüßung. **Gating-Klärung, dann korrigiert**: „audio-invitation" war
+bisher nur in VIP enthalten, nicht Premium Plus — zunächst (nach
+Rückfrage) zu `PREMIUM_PLUS.features` hinzugefügt, dann vom Nutzer als
+Fehlentscheidung markiert und wieder zurückgesetzt (`prisma/seed.ts` +
+Live-DB: `audio-invitation` wieder NUR in `VIP.features`, `FEATURE_TIER`
+in `DesignStudio.tsx` wieder auf „VIP"). Damit gilt weiterhin: die
+Audio-Einladung (eigener Upload UND der neue KI-Button) ist
+VIP-exklusiv, Premium Plus hat keinen Zugriff — unverändert gegenüber
+dem Stand vor diesem Roadmap-Punkt. Neue Datei `ai-audio-tts.ts`, neue
 Aktion `generateAudioInvitationSpeech()` (liest `Event.description` vor,
 schreibt ins bestehende `audioInvitationId`-Feld — Player/Modul-Schalter
-unverändert). Verifiziert: echter OpenAI-Aufruf liefert gültige MP3
-(128 kbps, ~9 Sek. für einen Beispielsatz), Gating-Logik korrekt
-(Premium Plus = Zugriff, Basic = kein Zugriff, geprüft per
-`eventHasFeature()` direkt gegen echte Testevents), voller
-Schreibpfad (Datei speichern + Media-Zeile + `audioInvitationId` setzen)
-für den berechtigten Fall erfolgreich durchlaufen. Gleiche Lücke wie bei
-den vorherigen Punkten: der reale Klick auf den Button im Editor-Panel
-(Login nötig) nicht per Browser nachgestellt.
+unverändert) — der TTS-Code selbst war von der Gating-Korrektur nicht
+betroffen, er nutzt automatisch dasselbe `eventHasFeature("audio-invitation")`
+wie die bestehende Audio-Einladung. Verifiziert: echter OpenAI-Aufruf
+liefert gültige MP3 (128 kbps, ~9 Sek. für einen Beispielsatz),
+Gating-Logik nach der Korrektur erneut per `eventHasFeature()` gegen
+echte Test-Events geprüft (Premium Plus = kein Zugriff, VIP = Zugriff),
+voller Schreibpfad (Datei speichern + Media-Zeile + `audioInvitationId`
+setzen) für den berechtigten Fall erfolgreich durchlaufen. Gleiche
+Lücke wie bei den vorherigen Punkten: der reale Klick auf den Button im
+Editor-Panel (Login nötig) nicht per Browser nachgestellt.
 
 ## 5. "Wie wir uns kennengelernt haben"-Textgenerator
 Paar beantwortet 3-4 kurze Fragen (Formular, ähnlich dem bestehenden

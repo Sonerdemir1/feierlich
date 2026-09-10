@@ -214,7 +214,7 @@ const FEATURE_TIER: Record<string, string> = {
   wishlist: "VIP",
   "music-requests": "VIP",
   "thank-you-card": "VIP",
-  "audio-invitation": "Premium Plus",
+  "audio-invitation": "VIP",
   "video-invitation": "VIP",
 };
 
