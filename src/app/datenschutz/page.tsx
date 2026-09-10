@@ -91,6 +91,33 @@ export default function DatenschutzPage() {
             Foto, kein Gästefoto. Das passiert ausschließlich, wenn ihr diese Funktionen selbst auslöst, nicht
             automatisch im Hintergrund.
           </p>
+          {/* TODO: von Anwalt/Datenschutzbeauftragten pruefen lassen — Entwurf,
+              siehe RECHTSPRUEFUNG.md. Deckt die automatische Hintergrund-
+              Moderation von Gaestefotos ab (ai-moderation.ts), die vom Absatz
+              oben ("nicht automatisch im Hintergrund") nicht erfasst ist.
+              KI-Anbieter/Serverstandort bewusst als Platzhalter belassen, bis
+              das final benannt ist — NICHT ohne Ausfuellen deployen. Der
+              Gesichtserkennungs-Absatz ist hier bewusst weggelassen (siehe
+              Punkt 2 des zugehoerigen Auftrags) — die zweite Einwilligungs-
+              Checkbox ist entsprechend vorerst aus dem Upload-Formular
+              entfernt (biometrische Verarbeitung findet aktuell nicht statt). */}
+          <p style={{ marginTop: 16 }}>
+            <strong>KI-Verarbeitung von Gästefotos und -videos</strong>
+            <br />
+            Wenn Gäste Fotos oder Videos zur Foto-/Videogalerie eines Events hochladen, können sie beim Hochladen
+            freiwillig zustimmen, dass ihr Foto/Video zusätzlich durch automatisierte KI-Systeme verarbeitet wird.
+            Diese Einwilligung ist optional und hat keinen Einfluss darauf, ob das Foto/Video hochgeladen werden
+            kann.
+            <br />
+            <br />
+            Mit der „Allgemeinen KI-Verarbeitung“ dürfen hochgeladene Fotos/Videos automatisiert auf unangemessene
+            Inhalte geprüft werden (Inhalts-Moderation). Rechtsgrundlage: Einwilligung, Art. 6 Abs. 1 lit. a DSGVO.
+            Die Verarbeitung erfolgt durch [KI-Anbieter einfügen], mit Servern in [Standort einfügen].
+            <br />
+            <br />
+            Die Einwilligung kann jederzeit über den Widerruf-Link, der direkt nach dem Hochladen angezeigt wird,
+            zurückgezogen werden.
+          </p>
         </Section>
 
         <Section title="Google Maps">

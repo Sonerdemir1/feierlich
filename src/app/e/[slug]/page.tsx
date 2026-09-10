@@ -32,7 +32,7 @@ import { googleCalendarUrl } from "@/lib/ics";
 import { isPast } from "@/lib/time";
 import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
 import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, revokeGalleryMediaConsent, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
-import { AI_CONSENT_GENERAL_TEXT, AI_CONSENT_FACE_TEXT } from "@/lib/ai-consent";
+import { AI_CONSENT_GENERAL_TEXT } from "@/lib/ai-consent";
 import { eventHasFeature } from "@/lib/event-features";
 
 type TemplateColors = { primary: string; accent: string; background: string };
@@ -1099,25 +1099,27 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   </p>
                 )}
                 <input type="hidden" name="tableId" value={uploadTable?.id ?? ""} />
-                {/* Zwei getrennte, unabhaengig ankreuzbare Haekchen, beide
-                    standardmaessig NICHT angehakt (Koppelungsverbot Art. 7
-                    Abs. 4 DSGVO — der Upload selbst funktioniert immer, auch
-                    ohne beide/eines der Haekchen). Checkbox 2 (Gesichter-
-                    kennung) bewusst getrennt von Checkbox 1, da sie
-                    biometrische Daten betrifft (Art. 9 DSGVO) und deshalb
-                    eine eigene, explizite Einwilligung braucht. Liegen im
-                    selben <form> wie das FileField darunter — beim
-                    Auto-Submit per Dateiauswahl (siehe FileField.tsx) wird
-                    der aktuelle Haekchen-Stand automatisch mit uebernommen,
-                    kein zusaetzlicher Tap auf einen Absenden-Button noetig. */}
+                {/* Nur noch EIN Haekchen (allgemeine KI-Verarbeitung), standard-
+                    maessig NICHT angehakt (Koppelungsverbot Art. 7 Abs. 4 DSGVO
+                    — der Upload selbst funktioniert immer, auch ohne Haekchen).
+                    Die zweite Checkbox (Gesichtserkennung/biometrisch) ist
+                    vorerst entfernt — siehe RECHTSPRUEFUNG.md: sie sammelte
+                    Einwilligung fuer eine Funktion, die es noch nicht gibt
+                    (aiConsentFace wird nirgends von einer echten Gesichts-
+                    erkennung gelesen). Das zugrundeliegende Feld/die Server-
+                    Action-Logik bleiben unangetastet im Code (siehe
+                    lib/ai-consent.ts, e/[slug]/actions.ts) — bei
+                    tatsaechlichem Feature-Launch Checkbox + zugehoerigen
+                    Datenschutz-Absatz gemeinsam wieder einfuehren, nicht
+                    vorher. Liegt im selben <form> wie das FileField darunter
+                    — beim Auto-Submit per Dateiauswahl (siehe FileField.tsx)
+                    wird der aktuelle Haekchen-Stand automatisch mit
+                    uebernommen, kein zusaetzlicher Tap auf einen Absenden-
+                    Button noetig. */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", fontSize: 11.5, color: colors.primary }}>
                   <label style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer" }}>
                     <input type="checkbox" name="aiConsentGeneral" style={{ marginTop: 2, flexShrink: 0 }} />
                     <span style={{ opacity: 0.85 }}>{AI_CONSENT_GENERAL_TEXT}</span>
-                  </label>
-                  <label style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer" }}>
-                    <input type="checkbox" name="aiConsentFace" style={{ marginTop: 2, flexShrink: 0 }} />
-                    <span style={{ opacity: 0.85 }}>{AI_CONSENT_FACE_TEXT}</span>
                   </label>
                   <p style={{ margin: 0, fontSize: 11, opacity: 0.65 }}>
                     Der Upload funktioniert auch ohne Häkchen. Mehr zur Datenverarbeitung in unserer{" "}
