@@ -83,6 +83,9 @@ export function DesignEditor({
   aiTextConfigured,
   aiTextAttemptsLeft,
   detailsFormSlot,
+  eventHashtag,
+  eventHashtagPlaceholder,
+  setEventHashtagAction,
 }: {
   eventId: string;
   eventSlug: string;
@@ -125,6 +128,12 @@ export function DesignEditor({
   // Fertig gerendertes "Details bearbeiten"-Formular (Server Component/
   // Server Action aus page.tsx) — siehe Kommentar bei PANEL_TABS oben.
   detailsFormSlot: ReactNode;
+  // Live-Wand-Hashtag (Bestandsaufnahme "Live-Wand vereinfachen", Teil 2) —
+  // eigenes Feld, siehe Kommentar bei setEventHashtag() in
+  // live-wall-actions.ts fuer die Abgrenzung zu socialMediaText unten.
+  eventHashtag: string;
+  eventHashtagPlaceholder: string;
+  setEventHashtagAction: (formData: FormData) => void;
 }) {
   const router = useRouter();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -736,20 +745,41 @@ export function DesignEditor({
                       ✨ Zum Kennenlern-Formular →
                     </a>
                   )}
-                  {selectedKey === "socialMediaText" && aiTextConfigured && (
+                  {selectedKey === "socialMediaText" && (
                     <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
-                      <button
-                        type="button"
-                        onClick={suggestHashtags}
-                        disabled={aiHashtagLoading}
-                        className="btn btn-ghost"
-                        style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
-                      >
-                        {aiHashtagLoading ? "Generiert …" : "✨ KI-Vorschlag"}
-                      </button>
-                      {aiHashtagError && (
-                        <div style={{ fontSize: 11, color: "#B2543A", marginTop: 6 }}>{aiHashtagError}</div>
+                      {aiTextConfigured && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={suggestHashtags}
+                            disabled={aiHashtagLoading}
+                            className="btn btn-ghost"
+                            style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
+                          >
+                            {aiHashtagLoading ? "Generiert …" : "✨ KI-Vorschlag"}
+                          </button>
+                          {aiHashtagError && (
+                            <div style={{ fontSize: 11, color: "#B2543A", marginTop: 6 }}>{aiHashtagError}</div>
+                          )}
+                        </>
                       )}
+                      <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                        <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 8 }}>
+                          Eigener, kurzer Hashtag für die Live-Wand im Saal (Wasserzeichen unten rechts in der
+                          Foto-Diashow) — unabhängig vom Hashtag-Text oben, der auf der Einladungsseite steht.
+                        </div>
+                        <form action={setEventHashtagAction} style={{ display: "flex", gap: 8 }}>
+                          <input
+                            name="hashtag"
+                            defaultValue={eventHashtag}
+                            placeholder={eventHashtagPlaceholder || "#EuerHashtag"}
+                            style={{ flex: 1, padding: "9px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5 }}
+                          />
+                          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12 }}>
+                            Speichern
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   )}
                 </div>

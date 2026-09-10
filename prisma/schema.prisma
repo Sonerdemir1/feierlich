@@ -359,10 +359,10 @@ model Event {
   // Upload ueberschrieben (gleiches Verhalten wie coverImageId), das alte
   // Media bleibt als eigene Zeile in der DB stehen.
   weddingPortraitSourceId String?
-  // Steuert NUR die Saal-Live-Wand (/live/[eventId]), nicht die normale
-  // Gaeste-Galerie auf dem Handy: "immediate" zeigt frisch freigegebene
-  // Fotos sofort auf der grossen Leinwand, "next-morning" haelt sie dort
-  // zurueck bis zum Morgen nach dem Event (siehe src/lib/live-wall.ts).
+  // Ungenutzt seit der Live-Wand-Vereinfachung (immediate/next-morning-
+  // Umschalter entfernt, siehe src/lib/live-wall.ts) — Spalte bewusst NICHT
+  // per Migration entfernt (User-Entscheidung: kein Risiko auf der
+  // geteilten Dev-Datenbank), kein Code liest/schreibt sie mehr.
   liveWallMode    String      @default("immediate")
   viewCount       Int         @default(0)
   status          EventStatus @default(DRAFT)

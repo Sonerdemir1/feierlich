@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getLiveWallPhotos, liveWallPhotosVisible, fallbackHashtag } from "@/lib/live-wall";
+import { getLiveWallPhotos, fallbackHashtag } from "@/lib/live-wall";
 import { LiveWallSlideshow } from "@/components/live/LiveWallSlideshow";
 
 export const dynamic = "force-dynamic";
@@ -21,13 +21,8 @@ export default async function LiveWallPage({ params }: PageProps<"/live/[eventId
   const storedHashtag = socialConfig ? (JSON.parse(socialConfig).hashtag as string | undefined) : undefined;
   const hashtag = storedHashtag || fallbackHashtag(event.title);
 
-  const photos = await getLiveWallPhotos(eventId, event.liveWallMode, event.eventDate);
-  const visible = liveWallPhotosVisible(event.liveWallMode, event.eventDate);
-  const emptyMessage = !visible
-    ? "Die Fotos gibt's morgen früh hier zu sehen."
-    : photos.length === 0
-      ? "Die ersten Fotos erscheinen hier gleich."
-      : null;
+  const photos = await getLiveWallPhotos(eventId);
+  const emptyMessage = photos.length === 0 ? "Die ersten Fotos erscheinen hier gleich." : null;
 
   return <LiveWallSlideshow eventId={event.id} initialPhotos={photos} hashtag={hashtag} emptyMessage={emptyMessage} />;
 }

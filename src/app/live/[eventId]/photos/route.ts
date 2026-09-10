@@ -8,9 +8,9 @@ import { getLiveWallPhotos } from "@/lib/live-wall";
 // haengt an einem Beamer/Fernseher im Saal.
 export async function GET(_request: Request, { params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
   if (!event) return new Response("Nicht gefunden.", { status: 404 });
 
-  const photos = await getLiveWallPhotos(eventId, event.liveWallMode, event.eventDate);
+  const photos = await getLiveWallPhotos(eventId);
   return Response.json({ photos });
 }

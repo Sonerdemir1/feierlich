@@ -1,27 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
-// Saal-Live-Wand (/live/[eventId]) — Zeitpunkt, ab dem im "next-morning"-
-// Modus zurueckgehaltene Fotos erscheinen: 7 Uhr am Kalendertag NACH dem
-// Event-Datum. Bewusst ein fester Zeitpunkt statt eines Einstellfelds —
-// "erst am Morgen danach" ist die vom Kunden vorgegebene Regel, kein
-// Konfigurationsbedarf.
-export function nextMorningCutoff(eventDate: Date): Date {
-  const cutoff = new Date(eventDate);
-  cutoff.setDate(cutoff.getDate() + 1);
-  cutoff.setHours(7, 0, 0, 0);
-  return cutoff;
-}
-
-export function liveWallPhotosVisible(liveWallMode: string, eventDate: Date): boolean {
-  return liveWallMode !== "next-morning" || new Date() >= nextMorningCutoff(eventDate);
-}
-
 // Gemeinsam genutzt von live/[eventId]/page.tsx (Erstladung) und
 // live/[eventId]/photos/route.ts (Polling danach) — dieselbe Abfrage,
-// damit beide garantiert nie auseinanderlaufen.
-export async function getLiveWallPhotos(eventId: string, liveWallMode: string, eventDate: Date) {
-  if (!liveWallPhotosVisible(liveWallMode, eventDate)) return [];
-
+// damit beide garantiert nie auseinanderlaufen. Zeigt jedes ueber die
+// Galerie-Moderation freigegebene (APPROVED) Foto sofort — der fruehere
+// "next-morning"-Zeitsperren-Modus wurde entfernt, da die APPROVED-Pflicht
+// bereits verhindert, dass unmoderierte Fotos auf der Wand landen (siehe
+// Fund in der Bestandsaufnahme zur Live-Wand-Vereinfachung).
+export async function getLiveWallPhotos(eventId: string) {
   const items = await prisma.galleryItem.findMany({
     where: { eventId, status: "APPROVED", media: { type: "IMAGE" } },
     include: { media: true },

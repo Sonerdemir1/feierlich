@@ -15,21 +15,15 @@ async function requireOwnedEvent(eventId: string) {
   return event;
 }
 
-export async function setLiveWallMode(eventId: string, formData: FormData) {
-  await requireOwnedEvent(eventId);
-  const mode = String(formData.get("liveWallMode") ?? "immediate");
-  await prisma.event.update({
-    where: { id: eventId },
-    data: { liveWallMode: mode === "next-morning" ? "next-morning" : "immediate" },
-  });
-  revalidatePath(`/dashboard/events/${eventId}`);
-  redirect(`/dashboard/events/${eventId}`);
-}
-
-// Hashtag fuers Social-Media-Modul (siehe seed.ts "social-media") — bisher
-// nirgends speicherbar, obwohl das Modul das laut eigener Beschreibung
-// verspricht. Landet im generischen EventModule.config-JSON, gleiches
-// Muster wie das Dankeskarten-Modul (config: { message }).
+// Hashtag fuer die Live-Wand-Diashow im Saal (Wasserzeichen unten rechts,
+// siehe LiveWallSlideshow.tsx) — bewusst getrennt von Event.socialMediaText
+// (Hashtag-Text auf der Einladungsseite selbst, editierbar im "Karten-
+// Design"-Panel). Beide halten denselben Hashtag fest, aber fuer zwei
+// unterschiedliche Anzeigeorte mit eigenem Speicherzyklus (siehe Fund in
+// der Bestandsaufnahme zur Live-Wand-Vereinfachung) — deshalb bewusst NICHT
+// zusammengefuehrt, nur an die Social-Media-Sektion des Panels verschoben.
+// Landet im generischen EventModule.config-JSON, gleiches Muster wie das
+// Dankeskarten-Modul (config: { message }).
 export async function setEventHashtag(eventId: string, formData: FormData) {
   await requireOwnedEvent(eventId);
   const hashtag = String(formData.get("hashtag") ?? "").trim().slice(0, 40);

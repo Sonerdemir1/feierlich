@@ -29,7 +29,7 @@ import {
 import { createMenuItem, deleteMenuItem } from "./menu-actions";
 import { deleteMusicRequest } from "./music-requests-actions";
 import { checkInGuest } from "./checkin-actions";
-import { setLiveWallMode, setEventHashtag } from "./live-wall-actions";
+import { setEventHashtag } from "./live-wall-actions";
 import { fallbackHashtag } from "@/lib/live-wall";
 import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields";
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
@@ -228,6 +228,7 @@ export default async function EventDetailPage({
   // hier sieht, was beim Teilen in WhatsApp/Facebook/Instagram ankommt.
   const shareImage = event.coverImage?.url ?? event.template.previewUrl ?? null;
   const shareUrl = `https://${publicHost()}/e/${event.slug}`;
+  const liveWallUrl = `https://${publicHost()}/live/${event.id}`;
   const shareDescription =
     event.description ?? `${event.eventType.name} am ${new Intl.DateTimeFormat("de-DE").format(event.eventDate)}`;
 
@@ -420,6 +421,9 @@ export default async function EventDetailPage({
           aiTextConfigured={aiTextConfigured}
           aiTextAttemptsLeft={aiTextAttemptsLeft}
           detailsFormSlot={detailsForm}
+          eventHashtag={eventHashtag}
+          eventHashtagPlaceholder={fallbackHashtag(event.title)}
+          setEventHashtagAction={setEventHashtag.bind(null, event.id)}
         />
       </div>
 
@@ -973,42 +977,31 @@ export default async function EventDetailPage({
       <div className="card" style={{ padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>Live-Wand für den Saal</div>
         <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
-          Freigegebene Fotos laufen als ruhige Diashow auf einem Beamer oder Fernseher im Saal —{" "}
+          Öffnet diesen Link auf einem Bildschirm im Saal (Smart-TV, Laptop am Beamer, Tablet) — die Wand zeigt
+          automatisch alle freigegebenen Fotos als ruhige Diashow, jedes neu freigegebene Foto erscheint von selbst.
+        </div>
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "center",
+            padding: "10px 12px",
+            border: "1px solid var(--line)",
+            background: "var(--ivory-2)",
+            marginBottom: 12,
+          }}
+        >
           <a
-            href={`https://${publicHost()}/live/${event.id}`}
+            href={liveWallUrl}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: "var(--terracotta-dark)" }}
+            style={{ fontSize: 12.5, color: "var(--terracotta-dark)", wordBreak: "break-all", flex: "1 1 200px" }}
           >
-            Live-Wand öffnen ↗
+            {liveWallUrl}
           </a>
+          <CopyLinkButton url={liveWallUrl} className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }} />
         </div>
-        <form action={setLiveWallMode.bind(null, event.id)} style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer" }}>
-              <input type="radio" name="liveWallMode" value="immediate" defaultChecked={event.liveWallMode !== "next-morning"} />
-              Fotos sofort zeigen
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink-soft)", cursor: "pointer" }}>
-              <input type="radio" name="liveWallMode" value="next-morning" defaultChecked={event.liveWallMode === "next-morning"} />
-              Erst am Morgen danach freigeben
-            </label>
-          </div>
-          <button type="submit" className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }}>
-            Speichern
-          </button>
-        </form>
-        <form action={setEventHashtag.bind(null, event.id)} style={{ display: "flex", gap: 8, maxWidth: 320 }}>
-          <input
-            name="hashtag"
-            placeholder={fallbackHashtag(event.title) || "#EuerHashtag"}
-            defaultValue={eventHashtag}
-            style={{ flex: 1, padding: "9px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5 }}
-          />
-          <button type="submit" className="btn btn-ghost" style={{ padding: "9px 14px", fontSize: 12 }}>
-            Speichern
-          </button>
-        </form>
       </div>
 
       {/* Social-Grafik */}
