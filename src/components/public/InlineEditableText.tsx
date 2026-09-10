@@ -7,6 +7,7 @@ type Field =
   | "title"
   | "subtitle"
   | "description"
+  | "loveStoryText"
   | "eventLabel"
   | "familyLeft"
   | "familyRight"
@@ -102,7 +103,7 @@ export function InlineEditableText({
       placeholder={placeholder}
       style={style}
       onFocus={onFocus}
-      multiline={field === "description" || field === "dresscodeText" || field === "socialMediaText" || field === "thankYouMessage"}
+      multiline={field === "description" || field === "loveStoryText" || field === "dresscodeText" || field === "socialMediaText" || field === "thankYouMessage"}
       status={status}
     />
   );

@@ -6,7 +6,7 @@ Aktive Backlog-Liste, von oben nach unten abgearbeitet, nach den Grundsätzen au
 - [ ] 2. Hochzeitsporträt — Pay-per-Download für hochauflösende Version
 - [ ] 3. KI-Hashtag-Generator
 - [ ] 4. KI-Audiobegrüßung (Text-to-Speech)
-- [ ] 5. "Wie wir uns kennengelernt haben"-Textgenerator
+- [x] 5. "Wie wir uns kennengelernt haben"-Textgenerator
 - [ ] 6. KI-kuratierte Dankeskarte
 
 ## 1. Video-Moderation nachrüsten
@@ -63,6 +63,29 @@ Paar beantwortet 3-4 kurze Fragen (Formular, ähnlich dem bestehenden
 Text-Assistenten), KI schreibt daraus eine kleine Liebesgeschichte für
 die Karte — als weiteres editierbares Textelement, gleiches Muster wie
 der Beschreibungstext.
+
+**Status (2026-09-10): fertig.** Branch `feature/ki-kennenlerngeschichte`.
+Neue eigene Seite `love-story/page.tsx` + `actions.ts` (4 Fragen-Formular,
+1:1 nach dem Vorbild von `text/page.tsx`/`text/actions.ts` — eigenes
+Kontingent `LOVE_STORY_ATTEMPT_QUOTA` unabhängig vom Text-Assistenten,
+eigenes Aufzeichnungsmodell `LoveStoryAttempt`). Neues Feld
+`Event.loveStoryText` — editierbar exakt wie `description` (neue
+`EditableLoveStory.tsx`, Klick-Auswahl im Dashboard-Editor-Panel inkl.
+Link zum Formular, `inline-text/route.ts`-Freischaltung), eigener
+Abschnitt „Wie wir uns kennengelernt haben" auf der Gast-Seite direkt
+nach der Beschreibung. Kein Gating (wie `description` selbst auch nicht
+gegated ist). Verifiziert: echter OpenAI-Aufruf liefert eine stimmige,
+zusammenhängende Geschichte aus den vier Test-Antworten, Kontingent-
+Anzeige korrekt (4 von 5 nach einem Versuch), „Übernehmen" schreibt
+korrekt in `Event.loveStoryText`, neuer Abschnitt erscheint auf der
+echten (kurz veröffentlichten Test-)Gast-Seite mit Überschrift und Text.
+**Zwischenfall während der Verifikation**: der laufende Dev-Server hatte
+noch den alten Prisma-Client geladen (`prisma.loveStoryAttempt` war
+`undefined`, 500-Fehler) — durch Neustart (`.next` gelöscht, Server neu
+gestartet) behoben, kein Code-Fehler. Gleiche Lücke wie bei den
+vorherigen Punkten: der reale Formular-Absenden-Klick im Dashboard
+(Login nötig) nicht per Browser nachgestellt, nur per direktem
+Funktionsaufruf + Seiten-Fetch verifiziert.
 
 ## 6. KI-kuratierte Dankeskarte
 Nach der Hochzeit: automatisch die besten Fotos aus der freigegebenen
