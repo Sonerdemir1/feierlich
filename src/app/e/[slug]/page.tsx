@@ -340,6 +340,18 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       : Promise.resolve([]),
   ]);
 
+  // Roadmap-Punkt 6: von suggestThankYouCard() ausgewaehlte Fotos fuer die
+  // Dankeskarte — nur geladen, wenn die Sektion ueberhaupt sichtbar sein
+  // koennte (isPastEvent/editMode, wie beim Text selbst).
+  const thankYouPhotoIdList: string[] = event.thankYouPhotoIds ? JSON.parse(event.thankYouPhotoIds) : [];
+  const thankYouPhotosRaw =
+    thankYouPhotoIdList.length > 0 && isModuleOn("thank-you-card") && (isPastEvent || editMode)
+      ? await prisma.media.findMany({ where: { id: { in: thankYouPhotoIdList } } })
+      : [];
+  const thankYouPhotos = thankYouPhotoIdList
+    .map((mid) => thankYouPhotosRaw.find((m) => m.id === mid))
+    .filter((m): m is NonNullable<typeof m> => Boolean(m));
+
   const wishlistItemsData: WishlistItemData[] = wishlistItems.map((w) => ({
     id: w.id,
     type: w.type,
@@ -1599,6 +1611,14 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, ...thankYouMessageOverride }}>
                 {thankYouMessage || `Danke, dass ihr diesen Tag mit uns gefeiert habt! — ${event.title}`}
               </p>
+            )}
+            {thankYouPhotos.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: 8, marginTop: 18 }}>
+                {thankYouPhotos.map((m) => (
+                  // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
+                  <img key={m.id} src={m.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                ))}
+              </div>
             )}
           </div>
         </section>

@@ -19,6 +19,9 @@ export const AI_BUDGET_NOTIFY_RATIO = 0.8;
 // siehe ai-wedding-portrait.ts).
 export const TEXT_SUGGESTION_COST_ESTIMATE_USD = 0.002;
 export const WEDDING_PORTRAIT_COST_ESTIMATE_USD = 0.04;
+// Dankeskarten-Text: gleiches Modell (gpt-5.4-mini), kurze Antwort
+// (2-3 Saetze) — aehnliche Groessenordnung wie der Textvorschlag.
+export const THANK_YOU_MESSAGE_COST_ESTIMATE_USD = 0.002;
 
 export const AI_BUDGET_EXCEEDED_MESSAGE = "Momentan überlastet, bitte später erneut versuchen.";
 

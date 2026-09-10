@@ -7,7 +7,7 @@ Aktive Backlog-Liste, von oben nach unten abgearbeitet, nach den Grundsätzen au
 - [ ] 3. KI-Hashtag-Generator
 - [ ] 4. KI-Audiobegrüßung (Text-to-Speech)
 - [ ] 5. "Wie wir uns kennengelernt haben"-Textgenerator
-- [ ] 6. KI-kuratierte Dankeskarte
+- [x] 6. KI-kuratierte Dankeskarte
 
 ## 1. Video-Moderation nachrüsten
 Aktuell laufen Videos ungeprüft durch (nur Foto-Moderation existiert).
@@ -68,6 +68,31 @@ der Beschreibungstext.
 Nach der Hochzeit: automatisch die besten Fotos aus der freigegebenen
 Gästegalerie auswählen (baut auf Moderations-Status auf) und daraus
 einen Vorschlag für die Dankeskarten-Vorlage generieren.
+
+**Status (2026-09-10): fertig.** Branch `feature/ki-dankeskarte-kuratierung`.
+Bestandsaufnahme: Die bestehende Dankeskarte (Modul `thank-you-card`) war
+bislang reiner Text (Überschrift + Nachricht, letztere im
+`EventModule.config`-JSON). Neuer Button „🎉 Dankeskarte vorschlagen (KI)"
+in der Gästebuch-&-Galerie-Seite (`memories/page.tsx`, dort lebt bereits
+die Foto-Kuration) — neue Aktion `suggestThankYouCard()` wählt bis zu
+6 freigegebene Fotos mit `aiVerdict === "empfehlung"` (bestehende
+Foto-Kuration aus `ai-photo-curation.ts`/`analyzeGalleryPhotos()`
+wiederverwendet, keine neue Bewertung erfunden), mit Fallback auf
+neueste freigegebene Fotos falls zu wenige „empfehlung"-Treffer, und
+generiert per KI einen kurzen Dankestext. Neues Feld
+`Event.thankYouPhotoIds` (JSON-Array, gleiches Muster wie
+`photobookMediaIds`), Text landet an der bestehenden Stelle
+(`EventModule.config.message`) — keine zweite Quelle der Wahrheit.
+Gating: `eventHasFeature(eventId, "gallery")`, gleiche Voraussetzung wie
+die Galerie selbst. Verifiziert: echter Testlauf mit 3 Gäste-Fotos
+(2× `aiVerdict: "empfehlung"`, 1× ohne) wählte korrekt beide
+Empfehlungen zuerst + eine Fallback-Ergänzung, echter OpenAI-Aufruf
+lieferte einen passenden, namentlich korrekten Dankestext, Dashboard-
+Seite und die echte (kurz veröffentlichte Test-)Gast-Seite zeigen Text
+und alle 3 Fotos korrekt an. Gleiche Lücke wie bei den vorherigen
+Punkten: der reale Button-Klick im Dashboard (Login nötig) nicht per
+Browser nachgestellt, nur per direktem Nachbau der Auswahl-/
+Generierungs-Logik + Seiten-Fetch verifiziert.
 
 ---
 Bei JEDEM Punkt: Bestandsaufnahme, Umsetzung, Live-Verifikation,
