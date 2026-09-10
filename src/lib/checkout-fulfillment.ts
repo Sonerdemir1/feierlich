@@ -49,6 +49,16 @@ export async function markEventAddOnPaid(eventAddOnId: string, paymentIntentId: 
   });
 }
 
+export async function markWeddingPortraitDownloadPaid(downloadId: string, paymentIntentId: string | null) {
+  const row = await prisma.weddingPortraitDownload.findUnique({ where: { id: downloadId } });
+  if (!row || row.status === "PAID") return;
+
+  await prisma.weddingPortraitDownload.update({
+    where: { id: downloadId },
+    data: { status: "PAID", stripePaymentIntentId: paymentIntentId },
+  });
+}
+
 export async function markPrintOrderPaid(printOrderId: string, paymentIntentId: string | null) {
   const row = await prisma.printOrder.findUnique({
     where: { id: printOrderId },

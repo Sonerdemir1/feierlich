@@ -3,7 +3,7 @@
 Aktive Backlog-Liste, von oben nach unten abgearbeitet, nach den Grundsätzen aus CLAUDE.md. Jeder Punkt: eigener Branch, Bestandsaufnahme, Umsetzung, Live-Verifikation, Vorher/Nachher-Nachweis, `npm run build`/`tsc`/`eslint` fehlerfrei, kein Merge/Deploy ohne Rückfrage. Abhaken erst nach Fertigstellung + Verifikation.
 
 - [ ] 1. Video-Moderation nachrüsten
-- [ ] 2. Hochzeitsporträt — Pay-per-Download für hochauflösende Version
+- [x] 2. Hochzeitsporträt — Pay-per-Download für hochauflösende Version
 - [ ] 3. KI-Hashtag-Generator
 - [ ] 4. KI-Audiobegrüßung (Text-to-Speech)
 - [ ] 5. "Wie wir uns kennengelernt haben"-Textgenerator
@@ -43,6 +43,26 @@ vorgehalten. Baue einen einfachen Einzelkauf (Stripe, falls das Projekt
 das schon für andere Zusatzkäufe nutzt — recherchiere das bestehende
 Zahlungsmuster im Projekt, kein neues erfinden). Preis: 4,99€ pro
 hochauflösendem Download (vorläufig, kann später angepasst werden).
+
+**Status (2026-09-10): fertig.** Branch `feature/ki-hochzeitsportraet-download`.
+Bestehendes Muster wiederverwendet (wie `startAddOnCheckout`/`startCheckout`
+in `billing/actions.ts`: Stripe Checkout Session, `metadata.kind` steuert den
+gemeinsamen Webhook-/Success-Seiten-Dispatcher, ADMIN-Testkonten bekommen
+den Bypass ohne echten Stripe-Aufruf). Neues Modell
+`WeddingPortraitDownload` (1:1 zu `WeddingPortraitAttempt`, PENDING/PAID
+über `OrderStatus`, analog zu `EventAddOn` aber pro Portraet-Versuch statt
+pro Event, da mehrere Stile einzeln kaufbar sein sollen). Neue Route
+`wedding-portrait/download/[attemptId]` liefert `rawUrl` (ohne Wasserzeichen)
+nur bei `status === "PAID"` aus. Verifiziert: Seite zeigt „Kaufen — 4,99 €"
+bzw. nach Bezahlung „Herunterladen" korrekt an (Premium-Plus-unabhängiges
+Wegwerf-Testkonto, curl+Session-Cookie), Download-Route sperrt 401 (nicht
+angemeldet)/404 (fremdes Event)/403 (nicht bezahlt) und liefert nach
+Bezahlung 200 mit den echten Bilddaten, Fulfillment-Funktion idempotent
+(zweiter Aufruf überschreibt nichts). Einzige Lücke: der eigentliche
+Stripe-Checkout-Redirect selbst (Server Action, nicht per curl nachstellbar,
+identisches Problem wie bei Punkt Tier-Gating) wurde nicht per echtem
+Klick getestet, nur per Code-Abgleich mit dem bereits produktiven
+`startAddOnCheckout`-Muster.
 
 ## 3. KI-Hashtag-Generator
 Aus Brautpaar-Namen witzige/elegante Hochzeits-Hashtag-Vorschläge

@@ -2,10 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { uploadWeddingPortraitSource, generateWeddingPortrait } from "./actions";
-import { weddingPortraitConfigured, WEDDING_PORTRAIT_ATTEMPT_QUOTA, WEDDING_PORTRAIT_STYLES, weddingPortraitStyleByKey } from "@/lib/ai-wedding-portrait";
+import { uploadWeddingPortraitSource, generateWeddingPortrait, startWeddingPortraitDownloadCheckout } from "./actions";
+import {
+  weddingPortraitConfigured,
+  WEDDING_PORTRAIT_ATTEMPT_QUOTA,
+  WEDDING_PORTRAIT_STYLES,
+  WEDDING_PORTRAIT_DOWNLOAD_PRICE_CENTS,
+  weddingPortraitStyleByKey,
+} from "@/lib/ai-wedding-portrait";
 import { FileField } from "@/components/public/FileField";
 import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
+import type { WeddingPortraitDownload } from "@/generated/prisma/client";
+
+const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
 const errorLabel: Record<string, string> = {
   "no-file": "Bitte eine Datei auswählen.",
@@ -16,7 +25,41 @@ const errorLabel: Record<string, string> = {
   "wedding-portrait-no-source": "Bitte zuerst ein Foto hochladen.",
   "wedding-portrait-failed": "Die Generierung ist gerade nicht möglich. Bitte später erneut versuchen.",
   "ai-budget": AI_BUDGET_EXCEEDED_MESSAGE,
+  "stripe-not-configured": "Zahlungen sind noch nicht eingerichtet. Bitte später erneut versuchen.",
+  "wedding-portrait-download-cancelled": "Zahlung abgebrochen. Du kannst es jederzeit erneut versuchen.",
 };
+
+// Kauf-/Download-Steuerung fuer EIN Portraet — wiederverwendet fuer das
+// "Letztes Ergebnis" wie fuer die "Weitere Versuche"-Kacheln, damit beide
+// garantiert denselben Stand zeigen (PAID/nicht) statt zweier getrennter,
+// potenziell auseinanderlaufender Implementierungen.
+function DownloadOrBuyButton({
+  eventId,
+  attemptId,
+  download,
+  compact,
+}: {
+  eventId: string;
+  attemptId: string;
+  download: WeddingPortraitDownload | null;
+  compact?: boolean;
+}) {
+  const btnStyle = { padding: compact ? "7px 12px" : "9px 16px", fontSize: compact ? 11.5 : 12.5 };
+  if (download?.status === "PAID") {
+    return (
+      <a href={`/dashboard/events/${eventId}/wedding-portrait/download/${attemptId}`} className="btn btn-primary" style={btnStyle}>
+        Hochauflösend herunterladen
+      </a>
+    );
+  }
+  return (
+    <form action={startWeddingPortraitDownloadCheckout.bind(null, eventId, attemptId)}>
+      <button type="submit" className="btn btn-ghost" style={btnStyle}>
+        Hochauflösend kaufen — {eur.format(WEDDING_PORTRAIT_DOWNLOAD_PRICE_CENTS / 100)}
+      </button>
+    </form>
+  );
+}
 
 export default async function WeddingPortraitPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/wedding-portrait">) {
   const { id } = await params;
@@ -29,7 +72,7 @@ export default async function WeddingPortraitPage({ params, searchParams }: Page
   if (!weddingPortraitConfigured) notFound();
 
   const [attempts, attemptCount] = await Promise.all([
-    prisma.weddingPortraitAttempt.findMany({ where: { eventId: id }, orderBy: { createdAt: "desc" } }),
+    prisma.weddingPortraitAttempt.findMany({ where: { eventId: id }, orderBy: { createdAt: "desc" }, include: { download: true } }),
     prisma.weddingPortraitAttempt.count({ where: { eventId: id } }),
   ]);
   const attemptsLeft = Math.max(0, WEDDING_PORTRAIT_ATTEMPT_QUOTA - attemptCount);
@@ -150,9 +193,7 @@ export default async function WeddingPortraitPage({ params, searchParams }: Page
               style={{ width: "100%", height: "auto", display: "block", border: "1px solid var(--line)" }}
             />
           </div>
-          <button type="button" className="btn btn-ghost" disabled style={{ padding: "9px 16px", fontSize: 12.5, opacity: 0.55, cursor: "not-allowed" }}>
-            Hochauflösend herunterladen — bald verfügbar
-          </button>
+          <DownloadOrBuyButton eventId={id} attemptId={latestAttempt.id} download={latestAttempt.download} />
         </div>
       )}
 
@@ -171,7 +212,8 @@ export default async function WeddingPortraitPage({ params, searchParams }: Page
                     alt={`KI-Hochzeitsporträt, Stil ${style?.label ?? attempt.stylePreset}`}
                     style={{ width: "100%", height: "auto", display: "block", border: "1px solid var(--line)" }}
                   />
-                  <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 4 }}>{style?.label ?? attempt.stylePreset}</div>
+                  <div style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 4, marginBottom: 8 }}>{style?.label ?? attempt.stylePreset}</div>
+                  <DownloadOrBuyButton eventId={id} attemptId={attempt.id} download={attempt.download} compact />
                 </div>
               );
             })}

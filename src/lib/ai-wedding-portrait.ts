@@ -11,6 +11,14 @@ export const weddingPortraitConfigured = Boolean(OPENAI_API_KEY);
 // gleiches Muster wie AI_TEXT_ATTEMPT_QUOTA/AI_DESIGN_ATTEMPT_QUOTA.
 export const WEDDING_PORTRAIT_ATTEMPT_QUOTA = 5;
 
+// Einzelkauf-Preis fuer den hochaufgeloesten Download EINES Portraets ohne
+// Wasserzeichen (rawUrl auf WeddingPortraitAttempt) — siehe
+// WeddingPortraitDownload in schema.prisma. Vorlaeufiger Preis laut Auftrag,
+// spaeter ueber das Admin-Dashboard anpassbar wie bei Package/AddOn (aktuell
+// noch als Konstante, da es bislang kein Preis-Verwaltungs-UI fuer
+// Einzelkaeufe ausserhalb von Package/AddOn gibt).
+export const WEDDING_PORTRAIT_DOWNLOAD_PRICE_CENTS = 499;
+
 export type WeddingPortraitStyleKey = "aquarell" | "lineart" | "comic" | "filmposter";
 
 export type WeddingPortraitStyle = {

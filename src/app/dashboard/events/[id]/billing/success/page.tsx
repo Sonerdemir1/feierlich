@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
-import { markOrderPaid, markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
+import { markOrderPaid, markEventAddOnPaid, markPrintOrderPaid, markWeddingPortraitDownloadPaid } from "@/lib/checkout-fulfillment";
 
 export default async function BillingSuccessPage({
   params,
@@ -22,8 +22,17 @@ export default async function BillingSuccessPage({
 
   const kind = typeof sp.kind === "string" ? sp.kind : "order";
   const backHref =
-    sp.return === "seating" ? `/dashboard/events/${id}/seating` : `/dashboard/events/${id}`;
-  const backLabel = sp.return === "seating" ? "Zurück zum Sitzplan" : "Zurück zum Event";
+    sp.return === "seating"
+      ? `/dashboard/events/${id}/seating`
+      : sp.return === "wedding-portrait"
+        ? `/dashboard/events/${id}/wedding-portrait`
+        : `/dashboard/events/${id}`;
+  const backLabel =
+    sp.return === "seating"
+      ? "Zurück zum Sitzplan"
+      : sp.return === "wedding-portrait"
+        ? "Zurück zum Hochzeitsporträt"
+        : "Zurück zum Event";
 
   const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
   const paid = checkoutSession.payment_status === "paid";
@@ -57,6 +66,16 @@ export default async function BillingSuccessPage({
         await markOrderPaid(order.id, paymentIntentId);
       }
     }
+  } else if (paid && kind === "weddingPortraitDownload") {
+    const downloadId = checkoutSession.metadata?.downloadId;
+    if (downloadId) {
+      const download = await prisma.weddingPortraitDownload.findUnique({ where: { id: downloadId } });
+      if (download && download.eventId === id) {
+        const paymentIntentId =
+          typeof checkoutSession.payment_intent === "string" ? checkoutSession.payment_intent : (checkoutSession.payment_intent?.id ?? null);
+        await markWeddingPortraitDownloadPaid(download.id, paymentIntentId);
+      }
+    }
   }
 
   let heading = "Zahlung wird verarbeitet";
@@ -74,6 +93,9 @@ export default async function BillingSuccessPage({
       heading = "Zahlung erfolgreich";
       message = `Danke! Das Paket „${order.package.name}“ ist jetzt für dein Event freigeschaltet.`;
     }
+  } else if (paid && kind === "weddingPortraitDownload") {
+    heading = "Zahlung erfolgreich";
+    message = "Danke! Die hochauflösende Version eures Hochzeitsporträts steht jetzt zum Download bereit.";
   }
 
   return (

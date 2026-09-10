@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
-import { markOrderPaid, markEventAddOnPaid, markPrintOrderPaid } from "@/lib/checkout-fulfillment";
+import { markOrderPaid, markEventAddOnPaid, markPrintOrderPaid, markWeddingPortraitDownloadPaid } from "@/lib/checkout-fulfillment";
 
 // Zweiter, robusterer Bestaetigungspfad neben der Success-Seite: greift auch
 // dann, wenn der Kunde den Tab schliesst, bevor Stripe zurueck-redirected.
@@ -49,6 +49,9 @@ export async function POST(req: Request) {
       } else if (kind === "printOrder") {
         const printOrderId = checkoutSession.metadata?.printOrderId;
         if (printOrderId) await markPrintOrderPaid(printOrderId, paymentIntentId ?? null);
+      } else if (kind === "weddingPortraitDownload") {
+        const downloadId = checkoutSession.metadata?.downloadId;
+        if (downloadId) await markWeddingPortraitDownloadPaid(downloadId, paymentIntentId ?? null);
       }
     }
   }

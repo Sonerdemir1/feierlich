@@ -387,6 +387,7 @@ model Event {
   aiDesignAttempts  AiDesignAttempt[]
   aiTextAttempts    AiTextAttempt[]
   weddingPortraitAttempts WeddingPortraitAttempt[]
+  weddingPortraitDownloads WeddingPortraitDownload[]
   seatingSuggestion SeatingSuggestion?
   viewDays          EventViewDay[]
   einladiKiMessages EinladiKiMessage[]
@@ -992,7 +993,29 @@ model WeddingPortraitAttempt {
   previewUrl  String
   createdAt   DateTime @default(now())
 
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event    Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  download WeddingPortraitDownload?
+}
+
+// Einzelkauf des hochaufgeloesten Downloads (ohne Wasserzeichen/Overlay,
+// rawUrl auf WeddingPortraitAttempt) fuer EIN bestimmtes Portraet — analog
+// zu EventAddOn (gleiches PENDING/PAID-Muster ueber OrderStatus, gleicher
+// Stripe-Checkout-Ablauf), aber pro Attempt statt pro Event, da ein Paar
+// mehrere Stile generieren und gezielt einzelne davon kaufen koennen soll.
+// Nur bei Bedarf angelegt (kein Datensatz = nicht gekauft), wie bei
+// EventAddOn -- kein impliziter PENDING-Zustand fuer jedes Attempt.
+model WeddingPortraitDownload {
+  id                    String      @id @default(cuid())
+  attemptId             String      @unique
+  eventId               String
+  amountCents           Int
+  currency              String      @default("EUR")
+  status                OrderStatus @default(PENDING)
+  stripePaymentIntentId String?
+  createdAt             DateTime    @default(now())
+
+  attempt WeddingPortraitAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  event   Event                  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 enum OrderStatus {

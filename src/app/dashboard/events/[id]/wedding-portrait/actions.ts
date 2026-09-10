@@ -7,9 +7,16 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateImageFile, saveEventImage } from "@/lib/uploads";
 import { putObject, readObject } from "@/lib/storage";
-import { generateWeddingPortraitImage, weddingPortraitStyleByKey, WEDDING_PORTRAIT_ATTEMPT_QUOTA } from "@/lib/ai-wedding-portrait";
+import {
+  generateWeddingPortraitImage,
+  weddingPortraitStyleByKey,
+  WEDDING_PORTRAIT_ATTEMPT_QUOTA,
+  WEDDING_PORTRAIT_DOWNLOAD_PRICE_CENTS,
+} from "@/lib/ai-wedding-portrait";
 import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { composeWeddingPortraitPreview } from "@/lib/wedding-portrait-preview";
+import { stripe } from "@/lib/stripe";
+import { markWeddingPortraitDownloadPaid } from "@/lib/checkout-fulfillment";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
@@ -18,7 +25,7 @@ async function requireOwnedEvent(eventId: string) {
   if (!event || event.ownerId !== session.user.id) {
     throw new Error("Event nicht gefunden oder kein Zugriff.");
   }
-  return event;
+  return { session, event };
 }
 
 // Eigenes Foto des Brautpaares — bewusst getrennt vom Titelbild-Upload
@@ -86,4 +93,64 @@ export async function generateWeddingPortrait(eventId: string, formData: FormDat
 
   revalidatePath(`/dashboard/events/${eventId}/wedding-portrait`);
   redirect(`/dashboard/events/${eventId}/wedding-portrait`);
+}
+
+// Stripe-Checkout fuer den Einzelkauf EINES hochaufgeloesten Downloads —
+// gleiches Muster wie startAddOnCheckout() (events/actions.ts) und
+// startCheckout() (billing/actions.ts): WeddingPortraitDownload wird als
+// PENDING angelegt/wiederverwendet, ADMIN-Testkonten bekommen den Bypass
+// ohne echten Stripe-Aufruf (siehe dortiger Kommentar), sonst echte
+// Checkout-Session mit `kind: "weddingPortraitDownload"` fuer den
+// gemeinsamen Webhook-/Success-Seiten-Dispatcher.
+export async function startWeddingPortraitDownloadCheckout(eventId: string, attemptId: string) {
+  const { session, event } = await requireOwnedEvent(eventId);
+
+  const attempt = await prisma.weddingPortraitAttempt.findUnique({ where: { id: attemptId } });
+  if (!attempt || attempt.eventId !== eventId) {
+    throw new Error("Hochzeitsporträt nicht gefunden.");
+  }
+
+  const download = await prisma.weddingPortraitDownload.upsert({
+    where: { attemptId },
+    update: {},
+    create: { attemptId, eventId, amountCents: WEDDING_PORTRAIT_DOWNLOAD_PRICE_CENTS },
+  });
+
+  if (download.status === "PAID") {
+    redirect(`/dashboard/events/${eventId}/wedding-portrait`);
+  }
+
+  if (session.user!.role === "ADMIN") {
+    await markWeddingPortraitDownloadPaid(download.id, "test-admin-bypass");
+    revalidatePath(`/dashboard/events/${eventId}/wedding-portrait`);
+    redirect(`/dashboard/events/${eventId}/wedding-portrait`);
+  }
+
+  if (!stripe) redirect(`/dashboard/events/${eventId}/wedding-portrait?error=stripe-not-configured`);
+
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  const checkoutSession = await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency: download.currency.toLowerCase(),
+          product_data: { name: "einladi – Hochzeitsporträt (hochauflösend)", description: `Event: ${event.title}` },
+          unit_amount: download.amountCents,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: { kind: "weddingPortraitDownload", downloadId: download.id, eventId },
+    success_url: `${origin}/dashboard/events/${eventId}/billing/success?session_id={CHECKOUT_SESSION_ID}&kind=weddingPortraitDownload&return=wedding-portrait`,
+    cancel_url: `${origin}/dashboard/events/${eventId}/wedding-portrait?error=wedding-portrait-download-cancelled`,
+  });
+
+  if (!checkoutSession.url) {
+    throw new Error("Stripe hat keine Checkout-URL zurückgegeben.");
+  }
+
+  redirect(checkoutSession.url);
 }
