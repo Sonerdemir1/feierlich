@@ -15,8 +15,13 @@ export async function generateMetadata({ params }: PageProps<"/gestalten/[templa
   return { title: item ? `${item.name} gestalten – einladi` : "Design gestalten – einladi", robots: { index: false, follow: false } };
 }
 
-export default async function DesignStudioPage({ params }: PageProps<"/gestalten/[templateId]">) {
+export default async function DesignStudioPage({ params, searchParams }: PageProps<"/gestalten/[templateId]">) {
   const { templateId } = await params;
+  const sp = await searchParams;
+  // Startseiten-Paket-CTA (Schritt 4) — ?paket=<packageSlug>, siehe
+  // DesignStudio.tsx initialPackageSlug. Ungueltiger/fehlender Wert wird
+  // dort auf Premium Plus zurueckgesetzt, hier nur durchgereicht.
+  const initialPackageSlug = typeof sp.paket === "string" ? sp.paket : undefined;
   const [categories, locale] = await Promise.all([getGalleryCategories(), getLocale()]);
   const flatItems = categories.flatMap((c) => c.items.map((item) => ({ item, category: c.category })));
   const idx = flatItems.findIndex((f) => f.item.id === templateId);
@@ -39,6 +44,7 @@ export default async function DesignStudioPage({ params }: PageProps<"/gestalten
       prevId={prevId}
       nextId={nextId}
       otherInCategory={otherInCategory}
+      initialPackageSlug={initialPackageSlug}
     />
   );
 }

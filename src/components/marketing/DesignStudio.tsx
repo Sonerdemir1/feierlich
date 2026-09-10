@@ -9,7 +9,7 @@ import { FONT_OPTIONS } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
 import { categoryLabel, type GalleryTemplate } from "@/lib/gallery-templates";
 import type { Locale } from "@/lib/i18n";
-import { packageSlug } from "@/lib/packages";
+import { packageSlug, packageKeyFromSlug } from "@/lib/packages";
 import { ContextPanel } from "@/components/editor/ContextPanel";
 import { SelectableElement } from "@/components/editor/SelectableElement";
 import { TextControls } from "@/components/editor/TextControls";
@@ -228,17 +228,20 @@ const TIER_PRICE: Record<string, number> = {
   VIP: 29900,
 };
 const TIER_ORDER = ["Basic", "Premium", "Premium Plus", "VIP"];
+// Fallback, wenn kein (gueltiges) ?paket= uebergeben wurde (Anforderung 3:
+// direkter Einstieg ohne Paket-Klick bleibt bei Premium Plus).
 const DEFAULT_MAX_TIER = "Premium Plus";
-const DEFAULT_MAX_TIER_RANK = TIER_ORDER.indexOf(DEFAULT_MAX_TIER);
 
 // Ob ein Feature im Standard-Entwurf aktiv sein darf — alles bis
-// einschliesslich Premium Plus (unser primaer verkauftes Paket), VIP-
-// exklusive Funktionen starten deaktiviert/gesperrt (siehe toggleItems
-// unten). Ueber TIER_ORDER-Rang statt hartkodierter Liste, damit das bei
+// einschliesslich maxTierRank (Startseiten-Paket-CTA, Schritt 4 des
+// Editor-Konsistenz-Nachtrags — vorher hartkodiert Premium Plus, siehe
+// DEFAULT_MAX_TIER oben als Fallback, wenn kein Paket gewaehlt wurde),
+// hoehere Tiers starten deaktiviert/gesperrt (siehe toggleItems unten).
+// Ueber TIER_ORDER-Rang statt hartkodierter Liste, damit das bei
 // Aenderungen an FEATURE_TIER automatisch konsistent bleibt.
-function isIncludedInDefaultTier(featureKey: string): boolean {
+function isIncludedInDefaultTier(featureKey: string, maxTierRank: number): boolean {
   const tier = FEATURE_TIER[featureKey];
-  return tier === undefined || TIER_ORDER.indexOf(tier) <= DEFAULT_MAX_TIER_RANK;
+  return tier === undefined || TIER_ORDER.indexOf(tier) <= maxTierRank;
 }
 
 // Fuer den "Details ->"-Link im Funktionen-Tab, der auf die bestehende
@@ -250,6 +253,12 @@ const PACKAGE_KEY_BY_TIER: Record<string, string> = {
   "Premium Plus": "PREMIUM_PLUS",
   VIP: "VIP",
 };
+// Umgekehrte Zuordnung fuer den ?paket=-Query-Parameter (Startseiten-CTA)
+// — aus PACKAGE_KEY_BY_TIER abgeleitet statt einer eigenen, unabhaengig
+// gepflegten Kopie, damit beide nie auseinanderlaufen koennen.
+const TIER_BY_PACKAGE_KEY: Record<string, string> = Object.fromEntries(
+  Object.entries(PACKAGE_KEY_BY_TIER).map(([tier, key]) => [key, tier])
+);
 
 // Editor-Konsistenz-Auftrag, Teil A: dieselben vier Tabs wie im
 // eingeloggten Dashboard-Editor (DesignEditor.tsx PANEL_TABS) — vorher nur
@@ -316,7 +325,7 @@ function loadDrafts(): Record<string, Draft> {
   }
 }
 
-function defaultDraft(item: GalleryTemplate): Draft {
+function defaultDraft(item: GalleryTemplate, maxTierRank: number): Draft {
   return {
     text: item.defaultText,
     eventLabel: item.defaultEventLabel,
@@ -338,17 +347,17 @@ function defaultDraft(item: GalleryTemplate): Draft {
     photoShape: "polaroid",
     showFloral: true,
     showOrnaments: true,
-    showCountdown: true,
-    showRsvp: true,
-    showSeating: true,
-    showGallery: true,
+    showCountdown: isIncludedInDefaultTier("countdown", maxTierRank),
+    showRsvp: isIncludedInDefaultTier("rsvp", maxTierRank),
+    showSeating: isIncludedInDefaultTier("seating", maxTierRank),
+    showGallery: isIncludedInDefaultTier("gallery", maxTierRank),
     showPhotoBackground: true,
     anonymousDraftId: null,
     envelopeVideoUrl: null,
     backgroundMusicUrl: null,
     audioInvitationUrl: null,
     videoMessageUrl: null,
-    extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, isIncludedInDefaultTier(f.key)])),
+    extraFeatures: Object.fromEntries(EXTRA_FEATURES.map((f) => [f.key, isIncludedInDefaultTier(f.key, maxTierRank)])),
     sectionOrder: DEFAULT_SECTION_ORDER,
     agendaItems: defaultAgendaItems(),
     guestbookHeading: "Gästebuch",
@@ -410,6 +419,7 @@ export function DesignStudio({
   prevId,
   nextId,
   otherInCategory,
+  initialPackageSlug,
 }: {
   item: GalleryTemplate;
   category: string;
@@ -417,8 +427,19 @@ export function DesignStudio({
   prevId: string | null;
   nextId: string | null;
   otherInCategory: AltDesign[];
+  // Startseiten-Paket-CTA (Schritt 4) — ?paket=<packageSlug>, z.B. "vip"
+  // oder "premium-plus" (siehe src/lib/packages.ts packageSlug(), gleiches
+  // Muster wie /preise/[key]). Ungueltiger/fehlender Wert faellt auf
+  // DEFAULT_MAX_TIER zurueck (Premium Plus, wie bisher).
+  initialPackageSlug?: string;
 }) {
   const router = useRouter();
+  // Direkter Einstieg ohne Paket-Klick (z.B. ueber eine Vorlage aus der
+  // Galerie ohne vorherigen Paket-CTA) behaelt bewusst den bisherigen
+  // Premium-Plus-Standard bei (Anforderung 3) — nur ein erkanntes,
+  // gueltiges ?paket= verschiebt den Umfang.
+  const resolvedTier = (initialPackageSlug && TIER_BY_PACKAGE_KEY[packageKeyFromSlug(initialPackageSlug)]) || DEFAULT_MAX_TIER;
+  const maxTierRank = TIER_ORDER.indexOf(resolvedTier);
   // `category` bleibt intern der tuerkische Rohwert (Anker-Logik, Sünnet-
   // Nazar-Check unten) — nur die Anzeige uebersetzt sich mit der Sprache.
   const categoryDisplay = categoryLabel(category, locale);
@@ -500,7 +521,7 @@ export function DesignStudio({
   // aus einer aelteren Version (vor neuen Draft-Feldern) soll die neuen
   // Felder aus dem Default ziehen, nicht stillschweigend als "aus" gelten.
   function mergedDraft(saved?: Draft): Draft {
-    const base = defaultDraft(item);
+    const base = defaultDraft(item, maxTierRank);
     if (!saved) return base;
     // sectionOrder haengt in ihrer Reihenfolge vom gespeicherten Draft ab,
     // aber falls seither neue Abschnitts-Keys hinzukamen (z.B. nach einem
@@ -1568,16 +1589,44 @@ export function DesignStudio({
   // Kunde soll den Preis einmal pro Paket sehen, nicht raten muessen, was
   // "ab VIP" kostet.
   const toggleItems: { key: string; label: string; description: string; checked: boolean; locked: boolean; onChange: (v: boolean) => void }[] = [
-    { key: "countdown", label: "Countdown", description: CORE_FEATURE_DESCRIPTIONS.countdown, checked: draft.showCountdown, locked: false, onChange: (v) => updateDraft({ showCountdown: v }) },
-    { key: "rsvp", label: "Zusagen-Bereich", description: CORE_FEATURE_DESCRIPTIONS.rsvp, checked: draft.showRsvp, locked: false, onChange: (v) => updateDraft({ showRsvp: v }) },
-    { key: "seating", label: "Sitzplan-Suche", description: CORE_FEATURE_DESCRIPTIONS.seating, checked: draft.showSeating, locked: false, onChange: (v) => updateDraft({ showSeating: v }) },
-    { key: "gallery", label: "Foto- & Videogalerie", description: CORE_FEATURE_DESCRIPTIONS.gallery, checked: draft.showGallery, locked: false, onChange: (v) => updateDraft({ showGallery: v }) },
+    {
+      key: "countdown",
+      label: "Countdown",
+      description: CORE_FEATURE_DESCRIPTIONS.countdown,
+      checked: draft.showCountdown,
+      locked: !isIncludedInDefaultTier("countdown", maxTierRank),
+      onChange: (v) => updateDraft({ showCountdown: v }),
+    },
+    {
+      key: "rsvp",
+      label: "Zusagen-Bereich",
+      description: CORE_FEATURE_DESCRIPTIONS.rsvp,
+      checked: draft.showRsvp,
+      locked: !isIncludedInDefaultTier("rsvp", maxTierRank),
+      onChange: (v) => updateDraft({ showRsvp: v }),
+    },
+    {
+      key: "seating",
+      label: "Sitzplan-Suche",
+      description: CORE_FEATURE_DESCRIPTIONS.seating,
+      checked: draft.showSeating,
+      locked: !isIncludedInDefaultTier("seating", maxTierRank),
+      onChange: (v) => updateDraft({ showSeating: v }),
+    },
+    {
+      key: "gallery",
+      label: "Foto- & Videogalerie",
+      description: CORE_FEATURE_DESCRIPTIONS.gallery,
+      checked: draft.showGallery,
+      locked: !isIncludedInDefaultTier("gallery", maxTierRank),
+      onChange: (v) => updateDraft({ showGallery: v }),
+    },
     ...EXTRA_FEATURES.map((f) => ({
       key: f.key,
       label: f.label,
       description: f.description,
-      checked: draft.extraFeatures[f.key] ?? isIncludedInDefaultTier(f.key),
-      locked: !isIncludedInDefaultTier(f.key),
+      checked: draft.extraFeatures[f.key] ?? isIncludedInDefaultTier(f.key, maxTierRank),
+      locked: !isIncludedInDefaultTier(f.key, maxTierRank),
       onChange: (v: boolean) => updateDraft({ extraFeatures: { ...draft.extraFeatures, [f.key]: v } }),
     })),
   ];
@@ -2270,7 +2319,7 @@ export function DesignStudio({
                         </label>
                         {t.locked && lockedFeatureNotice === t.key && (
                           <p className="customizer-locked-hint">
-                            Ab {group.tier} verfügbar — im aktuell gezeigten Premium-Plus-Vorschau-Umfang noch nicht enthalten.
+                            Ab {group.tier} verfügbar — im aktuell gezeigten {resolvedTier}-Vorschau-Umfang noch nicht enthalten.
                           </p>
                         )}
                       </div>
@@ -2279,7 +2328,11 @@ export function DesignStudio({
                 </div>
               ))}
             </div>
-            <span className="customizer-hint">Voreingestellt sind die Funktionen aus Premium Plus. VIP-exklusive Funktionen sind sichtbar, aber gesperrt.</span>
+            <span className="customizer-hint">
+              {maxTierRank < TIER_ORDER.length - 1
+                ? `Voreingestellt sind die Funktionen aus ${resolvedTier}. Funktionen aus höheren Paketen sind sichtbar, aber gesperrt.`
+                : "Alle Funktionen sind vorausgewählt."}
+            </span>
           </section>
         </>
           )}

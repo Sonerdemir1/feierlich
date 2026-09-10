@@ -12,7 +12,19 @@ const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" 
 // Overlay auf der Startseite zu oeffnen. Der kleine, feste Overlay-Ausschnitt
 // war auf schmaleren Fensterbreiten zu eng fuer Kartenvorschau + Optionen
 // gleichzeitig — eine eigene Seite hat den ganzen Viewport zur Verfuegung.
-export function TemplateGallery({ categories, locale }: { categories: GalleryCategory[]; locale: Locale }) {
+export function TemplateGallery({
+  categories,
+  locale,
+  paket,
+}: {
+  categories: GalleryCategory[];
+  locale: Locale;
+  // Startseiten-Paket-CTA (Schritt 4) — reicht das per Klick gewaehlte
+  // Paket (packageSlug, z.B. "vip") an jede Vorlage weiter, damit
+  // /gestalten/[id]?paket=... beim Öffnen direkt den richtigen
+  // Funktionsumfang vorauswaehlt statt pauschal Premium Plus.
+  paket?: string;
+}) {
   return (
     <>
       <div className="tpl-filter-row">
@@ -31,7 +43,7 @@ export function TemplateGallery({ categories, locale }: { categories: GalleryCat
           </div>
           <div className="cat-grid">
             {items.map((item) => (
-              <Link key={item.id} href={`/gestalten/${item.id}`} className="tpl">
+              <Link key={item.id} href={paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`} className="tpl">
                 <span className="tpl-open-hint">Design anpassen</span>
                 <TemplatePreview layoutKey={item.layoutKey} />
                 <span className="tpl-label">
