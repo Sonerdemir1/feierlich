@@ -6,13 +6,25 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { analyzePhotos, PHOTO_CURATION_BATCH_LIMIT } from "@/lib/ai-photo-curation";
 import { analyzeGuestbookMessages, GUESTBOOK_CURATION_BATCH_LIMIT } from "@/lib/ai-guestbook-curation";
+import { eventHasFeature } from "@/lib/event-features";
 
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { order: { include: { package: true } } } });
   if (!event || event.ownerId !== session.user.id) {
     throw new Error("Event nicht gefunden oder kein Zugriff.");
+  }
+  return event;
+}
+
+// Galerie und Gaestebuch sind zwei unabhaengige Paket-Features (siehe
+// event-features.ts) — bewusst getrennt von requireOwnedEvent() oben, da
+// diese Datei beide Bereiche gemeinsam verwaltet.
+async function requireEventFeature(eventId: string, featureKey: string) {
+  const event = await requireOwnedEvent(eventId);
+  if (!eventHasFeature(event, featureKey)) {
+    throw new Error(`${featureKey === "gallery" ? "Galerie" : "Gästebuch"} ist in diesem Paket nicht enthalten.`);
   }
   return event;
 }
@@ -20,7 +32,7 @@ async function requireOwnedEvent(eventId: string) {
 type Status = "APPROVED" | "HIDDEN" | "DELETED";
 
 export async function moderateGalleryItem(eventId: string, itemId: string, status: Status) {
-  await requireOwnedEvent(eventId);
+  await requireEventFeature(eventId, "gallery");
   const item = await prisma.galleryItem.findUnique({ where: { id: itemId } });
   if (!item || item.eventId !== eventId) throw new Error("Nicht gefunden.");
 
@@ -30,7 +42,7 @@ export async function moderateGalleryItem(eventId: string, itemId: string, statu
 }
 
 export async function moderateGuestbookEntry(eventId: string, entryId: string, status: Status) {
-  await requireOwnedEvent(eventId);
+  await requireEventFeature(eventId, "guestbook");
   const entry = await prisma.guestbookEntry.findUnique({ where: { id: entryId } });
   if (!entry || entry.eventId !== eventId) throw new Error("Nicht gefunden.");
 
@@ -40,7 +52,7 @@ export async function moderateGuestbookEntry(eventId: string, entryId: string, s
 }
 
 export async function analyzeGalleryPhotos(eventId: string) {
-  await requireOwnedEvent(eventId);
+  await requireEventFeature(eventId, "gallery");
 
   const pending = await prisma.galleryItem.findMany({
     where: { eventId, status: "PENDING" },
@@ -71,7 +83,7 @@ export async function analyzeGalleryPhotos(eventId: string) {
 }
 
 export async function analyzeGuestbookEntries(eventId: string) {
-  await requireOwnedEvent(eventId);
+  await requireEventFeature(eventId, "guestbook");
 
   const pending = await prisma.guestbookEntry.findMany({
     where: { eventId, status: "PENDING", message: { not: null } },

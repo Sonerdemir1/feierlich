@@ -5,14 +5,39 @@ import { prisma } from "@/lib/prisma";
 import { createTable, deleteTable, assignGuestToTable, suggestSeating, applySeatingSuggestion, discardSeatingSuggestion } from "./actions";
 import { emailQrDesign } from "../qr/actions";
 import { aiSeatingConfigured, type SeatingAssignment } from "@/lib/ai-seating";
+import { eventHasFeature } from "@/lib/event-features";
 
 export default async function SeatingPage({ params, searchParams }: PageProps<"/dashboard/events/[id]/seating">) {
   const { id } = await params;
   const sp = await searchParams;
   const session = await auth();
 
-  const event = await prisma.event.findUnique({ where: { id } });
+  const event = await prisma.event.findUnique({ where: { id }, include: { order: { include: { package: true } } } });
   if (!event || event.ownerId !== session!.user.id) notFound();
+
+  if (!eventHasFeature(event, "seating")) {
+    return (
+      <div>
+        <Link href={`/dashboard/events/${id}`} style={{ fontSize: 12.5, color: "var(--terracotta-dark)" }}>
+          ← Zurück zum Event
+        </Link>
+        <h1 style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 28, color: "var(--ink)", margin: "14px 0 12px" }}>
+          Sitzplan — {event.title}
+        </h1>
+        <div style={{ border: "1px solid var(--line)", background: "var(--ivory-2)", padding: "24px 26px", maxWidth: 480 }}>
+          <p style={{ fontSize: 14, color: "var(--ink)", marginBottom: 14 }}>
+            Tische anlegen und Gäste zuordnen — inklusive Sitzplatz-Suche für eure Gäste.
+          </p>
+          <p style={{ fontSize: 13, color: "var(--terracotta-dark)", fontWeight: 600, marginBottom: 16 }}>
+            Ab Premium Plus verfügbar — im aktuell gebuchten Paket noch nicht enthalten.
+          </p>
+          <Link href={`/dashboard/events/${id}/billing`} className="btn btn-primary">
+            Paket ansehen
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const [tables, guests, seatingSuggestion] = await Promise.all([
     prisma.table.findMany({ where: { eventId: id }, include: { seats: true }, orderBy: { name: "asc" } }),

@@ -6,6 +6,22 @@ import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos, anal
 import { aiPhotoCurationConfigured } from "@/lib/ai-photo-curation";
 import { aiGuestbookCurationConfigured } from "@/lib/ai-guestbook-curation";
 import { CATEGORY_LABEL_DE } from "@/lib/ai-moderation";
+import { eventHasFeature } from "@/lib/event-features";
+
+function LockedSection({ title, description, eventId }: { title: string; description: string; eventId: string }) {
+  return (
+    <div style={{ border: "1px solid var(--line)", background: "var(--ivory-2)", padding: "20px 22px", marginBottom: 24 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>{title}</div>
+      <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 14 }}>{description}</p>
+      <p style={{ fontSize: 12.5, color: "var(--terracotta-dark)", fontWeight: 600, marginBottom: 16 }}>
+        Ab Premium Plus verfügbar — im aktuell gebuchten Paket noch nicht enthalten.
+      </p>
+      <Link href={`/dashboard/events/${eventId}/billing`} className="btn btn-primary" style={{ padding: "8px 16px", fontSize: 12.5 }}>
+        Paket ansehen
+      </Link>
+    </div>
+  );
+}
 
 const statusLabel: Record<string, string> = { PENDING: "Wartet auf Freigabe", APPROVED: "Freigegeben", HIDDEN: "Ausgeblendet", DELETED: "Gelöscht" };
 const statusColor: Record<string, string> = { PENDING: "#B9975B", APPROVED: "#5B7A4E", HIDDEN: "#8A7F6E", DELETED: "#B2543A" };
@@ -44,8 +60,11 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
   const { id } = await params;
   const sp = await searchParams;
   const session = await auth();
-  const event = await prisma.event.findUnique({ where: { id } });
+  const event = await prisma.event.findUnique({ where: { id }, include: { order: { include: { package: true } } } });
   if (!event || event.ownerId !== session!.user.id) notFound();
+
+  const hasGallery = eventHasFeature(event, "gallery");
+  const hasGuestbook = eventHasFeature(event, "guestbook");
 
   const [galleryItemsRaw, guestbookEntries] = await Promise.all([
     prisma.galleryItem.findMany({ where: { eventId: id, status: { not: "DELETED" } }, include: { media: true }, orderBy: { createdAt: "desc" } }),
@@ -100,6 +119,13 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
         Gästebuch &amp; Galerie — {event.title}
       </h1>
 
+      {!hasGallery ? (
+        <LockedSection
+          eventId={id}
+          title={`Galerie (${galleryItems.length})`}
+          description="Gäste laden eigene Fotos/Videos hoch, die in einer gemeinsamen Galerie erscheinen."
+        />
+      ) : (
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Galerie ({galleryItems.length})</div>
@@ -159,7 +185,15 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
           </div>
         )}
       </div>
+      )}
 
+      {!hasGuestbook ? (
+        <LockedSection
+          eventId={id}
+          title={`Gästebuch (${guestbookEntries.length})`}
+          description="Gäste hinterlassen Text- oder Videonachrichten für euch."
+        />
+      ) : (
       <div style={{ border: "1px solid var(--line)", padding: "20px 22px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Gästebuch ({guestbookEntries.length})</div>
@@ -225,6 +259,7 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

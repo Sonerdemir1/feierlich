@@ -32,6 +32,7 @@ import { isPast } from "@/lib/time";
 import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
 import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, revokeGalleryMediaConsent, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
 import { AI_CONSENT_GENERAL_TEXT, AI_CONSENT_FACE_TEXT } from "@/lib/ai-consent";
+import { eventHasFeature } from "@/lib/event-features";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -55,6 +56,7 @@ async function getEvent(slug: string) {
       backgroundMusic: true,
       audioInvitation: true,
       videoMessage: true,
+      order: { include: { package: true } },
     },
   });
 }
@@ -145,6 +147,14 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     if (!m) return false;
     return enabled.get(m.id) ?? true;
   };
+  // Tier-Gating (Sitzplan-Suche/Gästebuch/Galerie ab Premium Plus, siehe
+  // event-features.ts) — bewusst getrennt von isModuleOn() oben: das ist
+  // der An/Aus-Schalter des Gastgebers, das hier ist die tatsaechliche
+  // Paket-Berechtigung. Beides muss zutreffen, damit der Abschnitt
+  // erscheint. Nur diese drei Module, keine Ausweitung auf andere.
+  const hasSeatingAccess = eventHasFeature(event, "seating");
+  const hasGalleryAccess = eventHasFeature(event, "gallery");
+  const hasGuestbookAccess = eventHasFeature(event, "guestbook");
   const moduleConfig = (key: string): Record<string, unknown> => {
     const m = modules.find((mm) => mm.key === key);
     const em = m ? eventModules.find((e) => e.moduleId === m.id) : undefined;
@@ -311,7 +321,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const musicError = typeof sp.musicError === "string" ? sp.musicError : undefined;
 
   const [galleryItems, guestbookEntries, wishlistItems, menuItems] = await Promise.all([
-    isModuleOn("gallery")
+    isModuleOn("gallery") && hasGalleryAccess
       ? prisma.galleryItem.findMany({
           where: { eventId: event.id, status: "APPROVED" },
           include: { media: { include: { photoTags: { include: { guest: true } } } } },
@@ -319,7 +329,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           take: 24,
         })
       : Promise.resolve([]),
-    isModuleOn("guestbook")
+    isModuleOn("guestbook") && hasGuestbookAccess
       ? prisma.guestbookEntry.findMany({ where: { eventId: event.id, status: "APPROVED" }, include: { media: true }, orderBy: { createdAt: "desc" }, take: 30 })
       : Promise.resolve([]),
     isModuleOn("wishlist")
@@ -813,7 +823,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </section>
       )}
 
-      {isModuleOn("seating") && (
+      {isModuleOn("seating") && hasSeatingAccess && (
         <section id="sitzplatz" style={{ order: sectionOrderIndex("seating"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
             {editMode ? (
@@ -951,7 +961,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </section>
       )}
 
-      {isModuleOn("gallery") && (
+      {isModuleOn("gallery") && hasGalleryAccess && (
         <section id="galerie" style={{ order: sectionOrderIndex("gallery"), maxWidth: 640, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
@@ -1121,7 +1131,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </section>
       )}
 
-      {isModuleOn("guestbook") && (
+      {isModuleOn("guestbook") && hasGuestbookAccess && (
         <section id="gaestebuch" style={{ order: sectionOrderIndex("guestbook"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>

@@ -7,6 +7,24 @@ import { validateMediaFile, saveEventMedia, mediaKindFromMime } from "@/lib/uplo
 import { aiTranslateConfigured, detectAndTranslate } from "@/lib/ai-translate";
 import { AI_CONSENT_TEXT_VERSION, revokeAiConsent } from "@/lib/ai-consent";
 import { moderateMediaContent } from "@/lib/ai-moderation";
+import { eventHasFeature } from "@/lib/event-features";
+
+// Serverseitige Tier-Sperre fuer Sitzplan-Suche/Gaestebuch/Galerie (siehe
+// event-features.ts) — die Sichtbarkeit der Abschnitte auf der Seite selbst
+// ist bereits ueber isModuleOn()+eventHasFeature() in page.tsx gesperrt,
+// dieser Check verhindert zusaetzlich ein direktes, am UI vorbei gesendetes
+// POST gegen die jeweilige Action. redirectTo ist bewusst dieselbe Adresse,
+// zu der die Aktion sonst auch weiterleiten wuerde — ohne die Aktion
+// tatsaechlich auszufuehren.
+async function requireEventFeature(eventId: string, featureKey: string, redirectTo: string) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { order: { select: { status: true, package: { select: { features: true } } } } },
+  });
+  if (!eventHasFeature(event ?? { order: null }, featureKey)) {
+    redirect(redirectTo);
+  }
+}
 
 export async function submitRsvp(eventId: string, slug: string, formData: FormData) {
   const name = String(formData.get("name") ?? "").trim().slice(0, 80);
@@ -48,6 +66,8 @@ export async function submitRsvp(eventId: string, slug: string, formData: FormDa
 }
 
 export async function findSeat(eventId: string, slug: string, formData: FormData) {
+  await requireEventFeature(eventId, "seating", `/e/${slug}#sitzplatz`);
+
   const name = String(formData.get("seatName") ?? "").trim().slice(0, 80);
   if (!name) redirect(`/e/${slug}#sitzplatz`);
 
@@ -61,6 +81,8 @@ export async function findSeat(eventId: string, slug: string, formData: FormData
 }
 
 export async function uploadGalleryPhoto(eventId: string, slug: string, formData: FormData) {
+  await requireEventFeature(eventId, "gallery", `/e/${slug}#galerie`);
+
   const file = formData.get("file");
   const error = validateMediaFile(file);
   if (error) redirect(`/e/${slug}?galleryError=${error}#galerie`);
@@ -216,6 +238,8 @@ export async function getEventGuestsForTagging(eventId: string) {
 }
 
 export async function submitGuestbookEntry(eventId: string, slug: string, formData: FormData) {
+  await requireEventFeature(eventId, "guestbook", `/e/${slug}#gaestebuch`);
+
   const authorName = String(formData.get("authorName") ?? "").trim().slice(0, 80);
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000) || null;
   if (!authorName) redirect(`/e/${slug}?guestbookError=no-name#gaestebuch`);

@@ -11,13 +11,20 @@ import {
   type SeatingTableInput,
   type SeatingAssignment,
 } from "@/lib/ai-seating";
+import { eventHasFeature } from "@/lib/event-features";
 
+// Zentral fuer ALLE Aktionen dieser Datei (statt pro Aktion einzeln) — jede
+// hier definierte Aktion gehoert zum Sitzplan-Feature, es gibt keine
+// Ausnahme, die den Check umgehen muesste.
 async function requireOwnedEvent(eventId: string) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
+  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { order: { include: { package: true } } } });
   if (!event || event.ownerId !== session.user.id) {
     throw new Error("Event nicht gefunden oder kein Zugriff.");
+  }
+  if (!eventHasFeature(event, "seating")) {
+    throw new Error("Sitzplan ist in diesem Paket nicht enthalten.");
   }
   return event;
 }

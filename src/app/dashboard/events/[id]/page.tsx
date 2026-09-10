@@ -168,6 +168,8 @@ export default async function EventDetailPage({
   const pendingMemories = pendingGallery + pendingGuestbook;
   const canPublish = session!.user.role === "ADMIN" || event.order?.status === "PAID";
   const hasPhotobook = eventHasFeature(event, "photobook");
+  const hasSeating = eventHasFeature(event, "seating");
+  const hasGuestbookOrGallery = eventHasFeature(event, "guestbook") || eventHasFeature(event, "gallery");
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
@@ -1089,23 +1091,43 @@ export default async function EventDetailPage({
           <span>Gästeliste</span>
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
-        <Link
-          href={`/dashboard/events/${event.id}/seating`}
-          className="card"
-          style={{
-            background: "var(--ivory-2)",
-            padding: "16px 18px",
-            fontSize: 13,
-            color: "var(--ink)",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span>Sitzplan</span>
-          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
-        </Link>
+        {hasSeating ? (
+          <Link
+            href={`/dashboard/events/${event.id}/seating`}
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>Sitzplan</span>
+            <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+          </Link>
+        ) : (
+          <div
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink-faint)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              opacity: 0.6,
+            }}
+          >
+            <span>Sitzplan</span>
+            <span style={{ fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>Ab Premium Plus</span>
+          </div>
+        )}
         <Link
           href={`/dashboard/events/${event.id}/billing`}
           className="card"
@@ -1137,28 +1159,48 @@ export default async function EventDetailPage({
           </span>
           <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
         </Link>
-        <Link
-          href={`/dashboard/events/${event.id}/memories`}
-          className="card"
-          style={{
-            background: "var(--ivory-2)",
-            padding: "16px 18px",
-            fontSize: 13,
-            color: "var(--ink)",
-            fontWeight: 600,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span>
-            Gästebuch &amp; Galerie
-            {pendingMemories > 0 && (
-              <span style={{ marginLeft: 8, fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>{pendingMemories} neu</span>
-            )}
-          </span>
-          <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
-        </Link>
+        {hasGuestbookOrGallery ? (
+          <Link
+            href={`/dashboard/events/${event.id}/memories`}
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>
+              Gästebuch &amp; Galerie
+              {pendingMemories > 0 && (
+                <span style={{ marginLeft: 8, fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>{pendingMemories} neu</span>
+              )}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+          </Link>
+        ) : (
+          <div
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink-faint)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              opacity: 0.6,
+            }}
+          >
+            <span>Gästebuch &amp; Galerie</span>
+            <span style={{ fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>Ab Premium Plus</span>
+          </div>
+        )}
         {hasPhotobook ? (
           <Link
             href={`/dashboard/events/${event.id}/photobook`}
