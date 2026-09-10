@@ -73,6 +73,10 @@ export function DesignEditor({
   audioInvitationUrl,
   uploadAudioInvitationAction,
   removeAudioInvitationAction,
+  generateAudioInvitationSpeechAction,
+  aiAudioTtsConfigured,
+  hasAudioInvitationAiAccess,
+  hasDescriptionForAudioTts,
   videoMessageUrl,
   uploadVideoMessageAction,
   removeVideoMessageAction,
@@ -103,6 +107,13 @@ export function DesignEditor({
   audioInvitationUrl: string | null;
   uploadAudioInvitationAction: (formData: FormData) => void;
   removeAudioInvitationAction: (formData: FormData) => void;
+  // KI-Audiobegruessung (Roadmap-Punkt 4) — Alternative zur eigenen
+  // Aufnahme direkt im selben Panel, gleiches Server-Ermittlungsmuster wie
+  // aiTextConfigured/aiTextAttemptsLeft oben.
+  generateAudioInvitationSpeechAction: (formData: FormData) => void;
+  aiAudioTtsConfigured: boolean;
+  hasAudioInvitationAiAccess: boolean;
+  hasDescriptionForAudioTts: boolean;
   videoMessageUrl: string | null;
   uploadVideoMessageAction: (formData: FormData) => void;
   removeVideoMessageAction: (formData: FormData) => void;
@@ -537,6 +548,10 @@ export function DesignEditor({
               audioInvitationUrl={audioInvitationUrl}
               uploadAction={uploadAudioInvitationAction}
               removeAction={removeAudioInvitationAction}
+              generateSpeechAction={generateAudioInvitationSpeechAction}
+              aiAudioTtsConfigured={aiAudioTtsConfigured}
+              hasAiAccess={hasAudioInvitationAiAccess}
+              hasDescription={hasDescriptionForAudioTts}
             />
           ) : activeTab === "video-message" ? (
             <VideoMessageTab

@@ -5,16 +5,29 @@ import { FileField } from "@/components/public/FileField";
 // Funktion, nur ein dekoratives Mockup im Marketing-Customizer. Anders als
 // Hintergrundmusik (Endlosschleife) ist das hier eine einmalige
 // Sprachnachricht, siehe AudioMessagePlayer.tsx (kein loop).
+//
+// Roadmap-Punkt 4: KI-Alternative zur eigenen Aufnahme — liest den
+// Beschreibungstext mit einer KI-Stimme vor (siehe generateSpeechAction,
+// verdrahtet gegen generateAudioInvitationSpeech() in events/actions.ts).
+// Ab Premium Plus (hasAiAccess, eventHasFeature("audio-invitation")).
 export function AudioInvitationTab({
   eventId,
   audioInvitationUrl,
   uploadAction,
   removeAction,
+  generateSpeechAction,
+  aiAudioTtsConfigured,
+  hasAiAccess,
+  hasDescription,
 }: {
   eventId: string;
   audioInvitationUrl: string | null;
   uploadAction: (formData: FormData) => void;
   removeAction: (formData: FormData) => void;
+  generateSpeechAction: (formData: FormData) => void;
+  aiAudioTtsConfigured: boolean;
+  hasAiAccess: boolean;
+  hasDescription: boolean;
 }) {
   return (
     <div>
@@ -42,6 +55,29 @@ export function AudioInvitationTab({
             Audio entfernen
           </button>
         </form>
+      )}
+
+      {aiAudioTtsConfigured && (
+        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 16, marginTop: 16 }}>
+          <div style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 10 }}>
+            Alternative: Lasst eure Beschreibung von einer KI-Stimme vorlesen, statt selbst aufzunehmen.
+          </div>
+          {!hasAiAccess ? (
+            <div style={{ fontSize: 11.5, color: "var(--terracotta-dark)", fontWeight: 600 }}>
+              Ab Premium Plus verfügbar — im aktuell gebuchten Paket noch nicht enthalten.
+            </div>
+          ) : !hasDescription ? (
+            <div style={{ fontSize: 11.5, color: "var(--ink-faint)" }}>
+              Trägt zuerst eine Beschreibung ein (Details-Tab) — die wird vorgelesen.
+            </div>
+          ) : (
+            <form action={generateSpeechAction}>
+              <button type="submit" className="btn btn-ghost" style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}>
+                ✨ Mit KI-Stimme vorlesen lassen
+              </button>
+            </form>
+          )}
+        </div>
       )}
     </div>
   );

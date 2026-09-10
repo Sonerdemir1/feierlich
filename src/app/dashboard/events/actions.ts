@@ -11,10 +11,12 @@ import { putObject, readObject } from "@/lib/storage";
 import { removeImageBackground } from "@/lib/background-removal";
 import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { generateInvitationCopy } from "@/lib/ai-text";
+import { generateSpeechAudio } from "@/lib/ai-audio-tts";
 import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { stripe } from "@/lib/stripe";
 import { markEventAddOnPaid } from "@/lib/checkout-fulfillment";
 import { buildDesignUpdate } from "@/lib/design-style";
+import { eventHasFeature } from "@/lib/event-features";
 
 const REFERRAL_COOKIE = "ref_partner";
 
@@ -229,6 +231,48 @@ export async function removeAudioInvitation(eventId: string) {
   await prisma.event.update({ where: { id: eventId }, data: { audioInvitationId: null } });
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath(`/e/${event.slug}`);
+  redirect(`/dashboard/events/${eventId}`);
+}
+
+// KI-Alternative zur eigenen Aufnahme (Roadmap-Punkt 4) — liest den
+// bestehenden Beschreibungstext (Event.description, gleiche Quelle wie
+// der KI-Vorschlag-Button dort) mit einer KI-Stimme vor und setzt das
+// Ergebnis in dasselbe audioInvitationId-Feld wie uploadAudioInvitation()
+// oben, damit Player/Modul-Schalter/Gast-Seite unveraendert funktionieren.
+// Gating ab Premium Plus (Nutzer-Entscheidung: "audio-invitation" wurde
+// dafuer zu PREMIUM_PLUS.features hinzugefuegt, siehe seed.ts) ueber
+// eventHasFeature() — gleicher Mechanismus wie beim Tier-Gating-Schritt.
+export async function generateAudioInvitationSpeech(eventId: string) {
+  const { event: ownedEvent } = await requireOwnedEvent(eventId);
+
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    include: { order: { include: { package: true } } },
+  });
+  if (!event) throw new Error("Event nicht gefunden.");
+  if (!eventHasFeature(event, "audio-invitation")) {
+    redirect(`/dashboard/events/${eventId}?error=audio-tts-not-included`);
+  }
+
+  const text = (event.description ?? "").trim();
+  if (!text) redirect(`/dashboard/events/${eventId}?error=audio-tts-no-description`);
+
+  let audioBytes: Buffer;
+  try {
+    audioBytes = await generateSpeechAudio(text);
+  } catch (err) {
+    if (err instanceof AiBudgetExceededError) redirect(`/dashboard/events/${eventId}?error=ai-budget`);
+    redirect(`/dashboard/events/${eventId}?error=audio-tts-failed`);
+  }
+
+  const url = await putObject(`events/${eventId}/audio-invitation/${randomUUID()}.mp3`, audioBytes, "audio/mpeg");
+  const media = await prisma.media.create({
+    data: { eventId, type: "AUDIO", url, mimeType: "audio/mpeg", sizeBytes: audioBytes.length, status: "APPROVED" },
+  });
+  await prisma.event.update({ where: { id: eventId }, data: { audioInvitationId: media.id } });
+
+  revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${ownedEvent.slug}`);
   redirect(`/dashboard/events/${eventId}`);
 }
 

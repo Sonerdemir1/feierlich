@@ -30,6 +30,11 @@ export const HASHTAG_SUGGESTION_COST_ESTIMATE_USD = 0.001;
 // Dankeskarten-Text: gleiches Modell (gpt-5.4-mini), kurze Antwort
 // (2-3 Saetze) — aehnliche Groessenordnung wie der Textvorschlag.
 export const THANK_YOU_MESSAGE_COST_ESTIMATE_USD = 0.002;
+// KI-Audiobegruessung: gpt-4o-mini-tts, ca. $0.015/Minute erzeugtes Audio
+// (recherchiert vor der Umsetzung, siehe ai-audio-tts.ts) — eine typische
+// Begruessung/Beschreibung (50-150 Woerter, ~20-40 Sek. Sprache) kostet
+// real ca. $0.005-0.01, hier grosszuegig aufgerundet.
+export const AUDIO_TTS_COST_ESTIMATE_USD = 0.01;
 
 export const AI_BUDGET_EXCEEDED_MESSAGE = "Momentan überlastet, bitte später erneut versuchen.";
 
