@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
-import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD } from "@/lib/ai-budget";
+import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD, LOVE_STORY_COST_ESTIMATE_USD } from "@/lib/ai-budget";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -120,4 +120,95 @@ export async function generateAndRecordAttempt(eventId: string, input: Invitatio
   });
 
   return result;
+}
+
+// "Wie wir uns kennengelernt haben"-Generator (Roadmap-Punkt 5) — eigenes,
+// von AI_TEXT_ATTEMPT_QUOTA UNABHAENGIGES Kontingent (gleiches Muster wie
+// WEDDING_PORTRAIT_ATTEMPT_QUOTA: jede KI-Funktion zaehlt ihr eigenes
+// Kontingent, kein gemeinsamer Topf).
+export const LOVE_STORY_ATTEMPT_QUOTA = 5;
+export const LOVE_STORY_QUOTA_EXHAUSTED_MESSAGE = `Kontingent von ${LOVE_STORY_ATTEMPT_QUOTA} kostenlosen Geschichten aufgebraucht.`;
+
+export type LoveStoryInput = {
+  question1: string;
+  question2: string;
+  question3: string;
+  question4: string;
+};
+
+type OpenAiLoveStoryResponse = { loveStory?: string };
+
+async function generateLoveStoryText(input: LoveStoryInput): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY ist nicht gesetzt — der Text-Assistent ist nicht konfiguriert.");
+  }
+
+  await checkAndRecordAiBudget(LOVE_STORY_COST_ESTIMATE_USD);
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-5.4-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Du schreibst aus den Antworten eines Brautpaares eine kleine, warme deutsche Liebesgeschichte fuer " +
+            "ihre Hochzeitseinladung (Ueberschrift 'Wie wir uns kennengelernt haben'). Antworte ausschliesslich " +
+            'als JSON-Objekt mit genau dem Feld "loveStory" (ein zusammenhaengender Text aus 3-5 Saetzen, ' +
+            "Ich-Perspektive des Paares, herzlich und persoenlich, keine Ueberschrift, kein Markdown).",
+        },
+        {
+          role: "user",
+          content:
+            `Wo/wie habt ihr euch kennengelernt? ${input.question1}\n` +
+            `Was war euer erster Eindruck voneinander? ${input.question2}\n` +
+            `Wann wusstet ihr, dass es etwas Besonderes ist? ${input.question3}\n` +
+            `Ein besonderer gemeinsamer Moment, den ihr nie vergessen werdet? ${input.question4}`,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`OpenAI-Textgenerierung fehlgeschlagen (${response.status}): ${detail.slice(0, 300)}`);
+  }
+
+  const json = (await response.json()) as OpenAiChatResponse;
+  const raw = json.choices?.[0]?.message?.content;
+  if (!raw) throw new Error("OpenAI-Antwort enthielt keinen Text.");
+
+  let parsed: OpenAiLoveStoryResponse;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("OpenAI-Antwort war kein gueltiges JSON.");
+  }
+  if (!parsed.loveStory) throw new Error("OpenAI-Antwort fehlte das erwartete Feld.");
+
+  return parsed.loveStory;
+}
+
+export class LoveStoryQuotaError extends Error {
+  constructor() {
+    super(LOVE_STORY_QUOTA_EXHAUSTED_MESSAGE);
+    this.name = "LoveStoryQuotaError";
+  }
+}
+
+// Gleiches "Kontingent pruefen -> generieren -> als Attempt speichern"-
+// Muster wie generateAndRecordAttempt() oben, eigenes Modell/Kontingent.
+export async function generateAndRecordLoveStoryAttempt(eventId: string, input: LoveStoryInput): Promise<string> {
+  const attemptCount = await prisma.loveStoryAttempt.count({ where: { eventId } });
+  if (attemptCount >= LOVE_STORY_ATTEMPT_QUOTA) throw new LoveStoryQuotaError();
+
+  const loveStoryText = await generateLoveStoryText(input);
+
+  const prompt = `${input.question1} · ${input.question2} · ${input.question3} · ${input.question4}`;
+  await prisma.loveStoryAttempt.create({ data: { eventId, prompt, loveStoryText } });
+
+  return loveStoryText;
 }

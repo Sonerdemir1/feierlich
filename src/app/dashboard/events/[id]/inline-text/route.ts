@@ -6,6 +6,7 @@ const EDITABLE_FIELDS = new Set([
   "title",
   "subtitle",
   "description",
+  "loveStoryText",
   "eventLabel",
   "familyLeft",
   "familyRight",

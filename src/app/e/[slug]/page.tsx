@@ -17,6 +17,7 @@ import { HeroCard, type LiveDesignState } from "@/components/public/HeroCard";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
 import { EditableDescription } from "@/components/public/EditableDescription";
+import { EditableLoveStory } from "@/components/public/EditableLoveStory";
 import { EditableGuestbookText } from "@/components/public/EditableGuestbookText";
 import { EditableSectionText } from "@/components/public/EditableSectionText";
 import { AudioMessagePlayer } from "@/components/public/AudioMessagePlayer";
@@ -203,6 +204,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // Anlass-Label/Familiennamen werden dagegen jetzt in HeroCard.tsx live
   // (per postMessage) berechnet, siehe initialDesignState weiter unten.
   const descriptionOverride = elementOverrideStyle(style.elements, "description");
+  const loveStoryOverride = elementOverrideStyle(style.elements, "loveStoryText");
   const locationOverride = elementOverrideStyle(style.elements, "location");
   const guestbookHeadingOverride = elementOverrideStyle(style.elements, "guestbookHeading");
   const guestbookHintOverride = elementOverrideStyle(style.elements, "guestbookHint");
@@ -537,6 +539,26 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
             <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
               {event.description}
+            </p>
+          </section>
+        )
+      )}
+
+      {editMode ? (
+        <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
+          <div style={{ fontFamily: headingFont, fontSize: 18, marginBottom: 10, opacity: 0.85 }}>Wie wir uns kennengelernt haben</div>
+          <EditableLoveStory
+            eventId={event.id}
+            value={event.loveStoryText ?? ""}
+            style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...loveStoryOverride }}
+          />
+        </section>
+      ) : (
+        event.loveStoryText && (
+          <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
+            <div style={{ fontFamily: headingFont, fontSize: 18, marginBottom: 10, opacity: 0.85 }}>Wie wir uns kennengelernt haben</div>
+            <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...loveStoryOverride }}>
+              {event.loveStoryText}
             </p>
           </section>
         )

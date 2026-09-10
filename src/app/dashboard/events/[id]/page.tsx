@@ -1055,6 +1055,25 @@ export default async function EventDetailPage({
             <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
           </Link>
         )}
+        {aiTextConfigured && (
+          <Link
+            href={`/dashboard/events/${event.id}/love-story`}
+            className="card"
+            style={{
+              background: "var(--ivory-2)",
+              padding: "16px 18px",
+              fontSize: 13,
+              color: "var(--ink)",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>Kennenlerngeschichte (KI)</span>
+            <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
+          </Link>
+        )}
         {weddingPortraitConfigured && (
           <Link
             href={`/dashboard/events/${event.id}/wedding-portrait`}

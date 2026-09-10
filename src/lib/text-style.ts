@@ -21,6 +21,7 @@ export type TextElementKey =
   | "subtitle"
   | "date"
   | "description"
+  | "loveStoryText"
   | "eventLabel"
   | "family"
   | "location"
@@ -73,6 +74,7 @@ export const TEXT_ELEMENT_KEYS: TextElementKey[] = [
   "date",
   "location",
   "description",
+  "loveStoryText",
   "guestbookHeading",
   "guestbookHint",
   "guestbookButtonText",
@@ -172,6 +174,12 @@ export const ELEMENT_SIZE_PRESETS: Record<TextElementKey, SizePreset[]> = {
     { id: "xl", label: "Sehr groß", px: 15 },
   ],
   description: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 13 },
+    { id: "lg", label: "Groß", px: 16 },
+    { id: "xl", label: "Sehr groß", px: 18 },
+  ],
+  loveStoryText: [
     { id: "md", label: "Standard", px: 0 },
     { id: "sm", label: "Klein", px: 13 },
     { id: "lg", label: "Groß", px: 16 },
@@ -424,6 +432,7 @@ export const TEXT_ELEMENT_LABELS: Record<TextElementKey, string> = {
   subtitle: "Untertitel",
   date: "Datum & Uhrzeit",
   description: "Beschreibung",
+  loveStoryText: "Kennenlerngeschichte",
   eventLabel: "Anlass-Label",
   family: "Familiennamen",
   location: "Ort / Location",

@@ -684,6 +684,15 @@ export function DesignEditor({
                     onChange={(patch) => setElementStyle(selectedKey, patch)}
                     onDeselect={() => setSelectedKey(undefined)}
                   />
+                  {selectedKey === "loveStoryText" && aiTextConfigured && (
+                    <a
+                      href={`/dashboard/events/${eventId}/love-story`}
+                      className="btn btn-ghost"
+                      style={{ display: "block", textAlign: "center", padding: "9px 16px", fontSize: 12.5, marginTop: 12 }}
+                    >
+                      ✨ Zum Kennenlern-Formular →
+                    </a>
+                  )}
                 </div>
               ) : (
                 <div style={{ fontSize: 12, color: "var(--ink-faint)" }}>

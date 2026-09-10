@@ -201,6 +201,12 @@ model Event {
   title           String // z.B. "Anna & Lukas"
   subtitle        String?
   description     String?
+  // KI-generierte (oder frei editierte) "Wie wir uns kennengelernt haben"-
+  // Geschichte, gleiches Speicher-/Bearbeitungsmuster wie description
+  // (siehe EditableLoveStory.tsx, love-story/actions.ts) — bewusst ein
+  // eigenes Feld statt description zu ueberschreiben, beides soll
+  // unabhaengig voneinander bestehen koennen.
+  loveStoryText   String?
   // Ueberschreibt das Standard-Anlass-Label (sonst EventType.name, z.B.
   // "Hochzeit") mit freiem Text, z.B. "DÜĞÜN DAVETİYESİ" — leer = Standard.
   eventLabel      String?
@@ -386,6 +392,7 @@ model Event {
   addOns            EventAddOn[]
   aiDesignAttempts  AiDesignAttempt[]
   aiTextAttempts    AiTextAttempt[]
+  loveStoryAttempts LoveStoryAttempt[]
   weddingPortraitAttempts WeddingPortraitAttempt[]
   weddingPortraitDownloads WeddingPortraitDownload[]
   seatingSuggestion SeatingSuggestion?
@@ -973,6 +980,21 @@ model AiTextAttempt {
   welcomeText String
   description String
   createdAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+// Ein Versuch mit dem "Wie wir uns kennengelernt haben"-Generator —
+// gleiches Kontingent-/Aufzeichnungsmuster wie AiTextAttempt (eigener
+// Zaehler, LOVE_STORY_ATTEMPT_QUOTA, da ein eigenstaendiges Feature mit
+// eigenen Kosten, nicht dasselbe Kontingent wie der Text-Assistent).
+// prompt haelt die vier Antworten zusammengefasst als ein String.
+model LoveStoryAttempt {
+  id            String   @id @default(cuid())
+  eventId       String
+  prompt        String
+  loveStoryText String
+  createdAt     DateTime @default(now())
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
