@@ -19,6 +19,23 @@ falls sie neue laufende Kosten verursacht. Sonst: gleiches Muster wie
 Foto-Moderation (hasAiConsent-Check, HIDDEN bei Treffer, Gastgeber
 gibt frei/löscht).
 
+**Status (2026-09-10): zurückgestellt.** Anbieter-Wahl: Sightengine
+(sightengine.com) — reine REST-API, Video-Upload per multipart/form-data
+mit rohen Bytes (passt zum bestehenden `readObject()`-Muster, kein
+öffentliches URL nötig), synchroner `check-sync`-Endpoint für Videos
+bis 60s, Modelle `nudity-2.1`/`gore-2.0`/`offensive` decken dieselben
+3 Kategorien wie die Foto-Moderation ab. Account existiert
+(`SIGHTENGINE_API_USER`/`SIGHTENGINE_API_SECRET` in `.env`/`.env.example`
+hinterlegt), aber per echtem Testaufruf bestätigt: Video-Analyse ist
+NICHT im kostenlosen Tarif enthalten (Fehler `usage_limit`/3701) —
+erfordert mindestens den Starter-Tarif für 29 $/Monat, unabhängig vom
+Nutzungsvolumen. Nutzer hat entschieden: vorerst zurückstellen, mit
+Punkt 2 weitermachen. Wieder aufnehmen, sobald der Nutzer den
+Sightengine-Tarif upgraded oder eine Alternative ohne Monats-Minimum
+gewünscht wird (AWS Rekognition Video / Google Cloud Video Intelligence
+als Alternativen genannt, brauchen aber Cloud-Account-Setup statt nur
+einem API-Key).
+
 ## 2. Hochzeitsporträt — Pay-per-Download für hochauflösende Version
 Aktuell nur Wasserzeichen-Vorschau, kein Bezahlpfad für die
 hochauflösende Version. `rawUrl` wird laut Code-Kommentar bereits dafür
