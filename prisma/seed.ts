@@ -89,8 +89,8 @@ const packages = [
   },
   {
     key: 'PREMIUM_PLUS', name: 'Premium Plus', priceCents: 14900,
-    description: 'Eventseite, RSVP, Gästeliste, Sitzplan, QR-Codes, Gästebuch, Galerie, Fotobuch',
-    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery', 'photobook'],
+    description: 'Eventseite, RSVP, Gästeliste, Sitzplan, QR-Codes, Gästebuch, Galerie, Fotobuch, Audio-Einladung',
+    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery', 'photobook', 'audio-invitation'],
   },
   {
     key: 'VIP', name: 'VIP', priceCents: 29900,

@@ -5,7 +5,7 @@ Aktive Backlog-Liste, von oben nach unten abgearbeitet, nach den Grundsätzen au
 - [ ] 1. Video-Moderation nachrüsten
 - [ ] 2. Hochzeitsporträt — Pay-per-Download für hochauflösende Version
 - [ ] 3. KI-Hashtag-Generator
-- [ ] 4. KI-Audiobegrüßung (Text-to-Speech)
+- [x] 4. KI-Audiobegrüßung (Text-to-Speech)
 - [ ] 5. "Wie wir uns kennengelernt haben"-Textgenerator
 - [ ] 6. KI-kuratierte Dankeskarte
 
@@ -57,6 +57,30 @@ KI-Stimme vorgelesen, als Ergänzung zur bestehenden Audio-Einladung
 kosteneffiziente TTS-API, melde Modell + Kosten vor der Umsetzung.
 Gating: ab Premium Plus (wie die anderen Kernfunktionen — nutze
 eventHasFeature()).
+
+**Status (2026-09-10): fertig.** Branch `feature/ki-audiobegruessung-tts`.
+Modell-Entscheidung (vor Umsetzung gemeldet, bestätigt): OpenAI TTS
+(`gpt-4o-mini-tts`, Stimme „marin", MP3) — derselbe `OPENAI_API_KEY` wie
+alle anderen KI-Features, kein neuer Anbieter, ~0,005–0,01 $ pro
+Begrüßung. **Gating-Klärung nötig geworden**: „audio-invitation" war
+bisher nur in VIP enthalten, nicht Premium Plus — nach Rückfrage
+entschieden, `audio-invitation` zu `PREMIUM_PLUS.features` hinzuzufügen
+(`prisma/seed.ts` + Live-DB aktualisiert; Premium-Plus-Kunden bekommen
+dadurch jetzt sowohl den bestehenden eigenen Audio-Upload als auch den
+neuen KI-Button). `FEATURE_TIER` im anonymen Gestalten-Customizer
+(`DesignStudio.tsx`) entsprechend von „VIP" auf „Premium Plus"
+nachgezogen, für Konsistenz zwischen Marketing-Vorschau und echtem
+Paket-Inhalt (CLAUDE.md Punkt 6). Neue Datei `ai-audio-tts.ts`, neue
+Aktion `generateAudioInvitationSpeech()` (liest `Event.description` vor,
+schreibt ins bestehende `audioInvitationId`-Feld — Player/Modul-Schalter
+unverändert). Verifiziert: echter OpenAI-Aufruf liefert gültige MP3
+(128 kbps, ~9 Sek. für einen Beispielsatz), Gating-Logik korrekt
+(Premium Plus = Zugriff, Basic = kein Zugriff, geprüft per
+`eventHasFeature()` direkt gegen echte Testevents), voller
+Schreibpfad (Datei speichern + Media-Zeile + `audioInvitationId` setzen)
+für den berechtigten Fall erfolgreich durchlaufen. Gleiche Lücke wie bei
+den vorherigen Punkten: der reale Klick auf den Button im Editor-Panel
+(Login nötig) nicht per Browser nachgestellt.
 
 ## 5. "Wie wir uns kennengelernt haben"-Textgenerator
 Paar beantwortet 3-4 kurze Fragen (Formular, ähnlich dem bestehenden

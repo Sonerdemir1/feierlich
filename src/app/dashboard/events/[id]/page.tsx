@@ -22,6 +22,7 @@ import {
   removeBackgroundMusic,
   uploadAudioInvitation,
   removeAudioInvitation,
+  generateAudioInvitationSpeech,
   uploadVideoMessage,
   removeVideoMessage,
 } from "../actions";
@@ -34,6 +35,8 @@ import { QrPrintDesignFields } from "@/components/dashboard/QrPrintDesignFields"
 import { backgroundRemovalConfigured } from "@/lib/background-removal";
 import { aiDesignConfigured, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } from "@/lib/ai-design";
 import { aiTextConfigured, AI_TEXT_ATTEMPT_QUOTA } from "@/lib/ai-text";
+import { aiAudioTtsConfigured } from "@/lib/ai-audio-tts";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 import { weddingPortraitConfigured } from "@/lib/ai-wedding-portrait";
 import { eventHasFeature } from "@/lib/event-features";
 import { FileField } from "@/components/public/FileField";
@@ -88,6 +91,10 @@ const uploadErrorLabel: Record<string, string> = {
   "payment-required": "Bitte zuerst das Einladungs-Paket bezahlen, bevor das Event veröffentlicht werden kann.",
   "slug-invalid": "Der Link muss mindestens 3 Zeichen haben (Buchstaben, Zahlen, Bindestriche).",
   "slug-taken": "Dieser Link ist schon vergeben — bitte einen anderen wählen.",
+  "ai-budget": AI_BUDGET_EXCEEDED_MESSAGE,
+  "audio-tts-not-included": "Die KI-Audiobegrüßung ist im aktuell gebuchten Paket noch nicht enthalten.",
+  "audio-tts-no-description": "Bitte zuerst eine Beschreibung für euer Event eintragen — die wird vorgelesen.",
+  "audio-tts-failed": "Die Sprachgenerierung ist gerade nicht möglich. Bitte später erneut versuchen.",
   "details-invalid": "Bitte Titel und Datum ausfüllen.",
 };
 
@@ -170,6 +177,7 @@ export default async function EventDetailPage({
   const hasPhotobook = eventHasFeature(event, "photobook");
   const hasSeating = eventHasFeature(event, "seating");
   const hasGuestbookOrGallery = eventHasFeature(event, "guestbook") || eventHasFeature(event, "gallery");
+  const hasAudioInvitationAiAccess = eventHasFeature(event, "audio-invitation");
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
@@ -402,6 +410,10 @@ export default async function EventDetailPage({
           audioInvitationUrl={event.audioInvitation?.url ?? null}
           uploadAudioInvitationAction={uploadAudioInvitation.bind(null, event.id)}
           removeAudioInvitationAction={removeAudioInvitation.bind(null, event.id)}
+          generateAudioInvitationSpeechAction={generateAudioInvitationSpeech.bind(null, event.id)}
+          aiAudioTtsConfigured={aiAudioTtsConfigured}
+          hasAudioInvitationAiAccess={hasAudioInvitationAiAccess}
+          hasDescriptionForAudioTts={Boolean(event.description?.trim())}
           videoMessageUrl={event.videoMessage?.url ?? null}
           uploadVideoMessageAction={uploadVideoMessage.bind(null, event.id)}
           removeVideoMessageAction={removeVideoMessage.bind(null, event.id)}

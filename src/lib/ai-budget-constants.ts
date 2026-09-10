@@ -19,6 +19,11 @@ export const AI_BUDGET_NOTIFY_RATIO = 0.8;
 // siehe ai-wedding-portrait.ts).
 export const TEXT_SUGGESTION_COST_ESTIMATE_USD = 0.002;
 export const WEDDING_PORTRAIT_COST_ESTIMATE_USD = 0.04;
+// KI-Audiobegruessung: gpt-4o-mini-tts, ca. $0.015/Minute erzeugtes Audio
+// (recherchiert vor der Umsetzung, siehe ai-audio-tts.ts) — eine typische
+// Begruessung/Beschreibung (50-150 Woerter, ~20-40 Sek. Sprache) kostet
+// real ca. $0.005-0.01, hier grosszuegig aufgerundet.
+export const AUDIO_TTS_COST_ESTIMATE_USD = 0.01;
 
 export const AI_BUDGET_EXCEEDED_MESSAGE = "Momentan überlastet, bitte später erneut versuchen.";
 
