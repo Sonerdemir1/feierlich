@@ -119,6 +119,8 @@ export function DesignEditor({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [aiDescriptionLoading, setAiDescriptionLoading] = useState(false);
   const [aiDescriptionError, setAiDescriptionError] = useState<string | null>(null);
+  const [aiHashtagLoading, setAiHashtagLoading] = useState(false);
+  const [aiHashtagError, setAiHashtagError] = useState<string | null>(null);
   const [attemptsLeft, setAttemptsLeft] = useState(aiTextAttemptsLeft);
   const [state, setState] = useState<LiveDesignState>({
     colors: initialColors,
@@ -451,6 +453,32 @@ export function DesignEditor({
     }
   }
 
+  // KI-Vorschlag fuer den Hashtag-Text (Social-Media-Sektion) — gleiches
+  // Muster wie suggestDescription() oben, aber ohne Kontingent-Zaehlung
+  // (siehe generateHashtagSuggestions()-Kommentar): kein attemptsLeft, der
+  // Button bleibt nach jedem Klick aktiv.
+  async function suggestHashtags() {
+    if (aiHashtagLoading) return;
+    setAiHashtagLoading(true);
+    setAiHashtagError(null);
+    try {
+      const response = await fetch(`/dashboard/events/${eventId}/text/suggest-hashtags`, { method: "POST" });
+      const json = await response.json().catch(() => null);
+      if (!response.ok || !json?.ok) {
+        throw new Error(json?.error === "budget" ? "budget" : "failed");
+      }
+      iframeRef.current?.contentWindow?.location.reload();
+    } catch (err) {
+      setAiHashtagError(
+        err instanceof Error && err.message === "budget"
+          ? AI_BUDGET_EXCEEDED_MESSAGE
+          : "Der KI-Vorschlag ist gerade nicht verfügbar. Bitte später erneut versuchen."
+      );
+    } finally {
+      setAiHashtagLoading(false);
+    }
+  }
+
   const currentEventDate = state.eventDateIso ? state.eventDateIso.slice(0, 10) : initialEventDate;
   const currentEventTime = state.eventTime !== undefined ? (state.eventTime ?? "") : initialEventTime;
 
@@ -692,6 +720,22 @@ export function DesignEditor({
                     >
                       ✨ Zum Kennenlern-Formular →
                     </a>
+                  )}
+                  {selectedKey === "socialMediaText" && aiTextConfigured && (
+                    <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                      <button
+                        type="button"
+                        onClick={suggestHashtags}
+                        disabled={aiHashtagLoading}
+                        className="btn btn-ghost"
+                        style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
+                      >
+                        {aiHashtagLoading ? "Generiert …" : "✨ KI-Vorschlag"}
+                      </button>
+                      {aiHashtagError && (
+                        <div style={{ fontSize: 11, color: "#B2543A", marginTop: 6 }}>{aiHashtagError}</div>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (

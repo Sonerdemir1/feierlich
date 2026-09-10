@@ -23,6 +23,10 @@ export const WEDDING_PORTRAIT_COST_ESTIMATE_USD = 0.04;
 // Textvorschlag, aber laengere Antwort (eine kleine Geschichte statt
 // zweier kurzer Abschnitte) — daher etwas hoeher angesetzt.
 export const LOVE_STORY_COST_ESTIMATE_USD = 0.003;
+// Hashtag-Vorschlaege: gleiches Modell (gpt-5.4-mini) wie der Textvorschlag,
+// aber deutlich kuerzere Antwort (nur eine kurze Liste von Hashtags statt
+// zwei Textabschnitten) — daher niedriger angesetzt.
+export const HASHTAG_SUGGESTION_COST_ESTIMATE_USD = 0.001;
 
 export const AI_BUDGET_EXCEEDED_MESSAGE = "Momentan überlastet, bitte später erneut versuchen.";
 
