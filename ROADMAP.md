@@ -4,7 +4,7 @@ Aktive Backlog-Liste, von oben nach unten abgearbeitet, nach den Grundsätzen au
 
 - [ ] 1. Video-Moderation nachrüsten
 - [ ] 2. Hochzeitsporträt — Pay-per-Download für hochauflösende Version
-- [ ] 3. KI-Hashtag-Generator
+- [x] 3. KI-Hashtag-Generator
 - [ ] 4. KI-Audiobegrüßung (Text-to-Speech)
 - [ ] 5. "Wie wir uns kennengelernt haben"-Textgenerator
 - [ ] 6. KI-kuratierte Dankeskarte
@@ -49,6 +49,28 @@ Aus Brautpaar-Namen witzige/elegante Hochzeits-Hashtag-Vorschläge
 generieren, direkt in die bestehende Social-Media-Sektion integriert
 (Text-Editier-Panel, "Vorschlag"-Button wie beim Einladungstext).
 Kostenlos, kein Kontingent nötig (minimale Kosten wie Textvorschlag).
+
+**Status (2026-09-10): fertig.** Branch `feature/ki-hashtag-generator`.
+Bestandsaufnahme ergab: der "Vorschlag"-Button beim Einladungstext lebt
+NICHT auf der separaten Text-Assistent-Seite, sondern direkt im
+Kontext-Panel des Dashboard-Editors (`DesignEditor.tsx`, Klick auf die
+Beschreibung in der Live-Vorschau öffnet ein Panel mit „✨ KI-Vorschlag"-
+Button, siehe `suggest-description/route.ts`) — der Hashtag-Text
+(`Event.socialMediaText`, Feld-Label bereits „Hashtag-Text") ist über
+denselben Klick-Auswahl-Mechanismus (`EditableSectionText`) schon lange
+auswählbar, bekam nur noch keinen eigenen Button. Neue Route
+`text/suggest-hashtags` (gleiches Muster wie `suggest-description`, aber
+bewusst OHNE Kontingent/`AiTextAttempt`-Eintrag laut Auftrag) schreibt
+5 KI-generierte Hashtags direkt in `socialMediaText`. Neue Funktion
+`generateHashtagSuggestions()` in `ai-text.ts`, neue Kostenschätzung
+`HASHTAG_SUGGESTION_COST_ESTIMATE_USD` (gleicher Modell wie Textvorschlag,
+gpt-5.4-mini). Verifiziert: echter OpenAI-Aufruf über die Route liefert
+5 plausible deutsche Hashtags (z. B. „#AnnaLukas2026 #TeamAnnaUndLukas
+#JaZuAnnaUndLukas2026..."), in der DB korrekt gespeichert, Route sperrt
+401 ohne Login. Der eigentliche Klick auf das Hashtag-Textfeld im
+Editor-Panel (Browser-Login nötig) wurde aus denselben technischen
+Gründen wie bei Punkt 2 nicht per echtem Klick nachgestellt, nur per
+Code-Abgleich mit dem bereits produktiven Beschreibungstext-Button.
 
 ## 4. KI-Audiobegrüßung (Text-to-Speech)
 Der eingegebene Einladungstext/Beschreibungstext wird von einer

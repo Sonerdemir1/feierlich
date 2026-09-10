@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
-import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD } from "@/lib/ai-budget";
+import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD, HASHTAG_SUGGESTION_COST_ESTIMATE_USD } from "@/lib/ai-budget";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -120,4 +120,63 @@ export async function generateAndRecordAttempt(eventId: string, input: Invitatio
   });
 
   return result;
+}
+
+type OpenAiHashtagResponse = { hashtags?: string[] };
+
+// Hashtag-Vorschlaege fuer die Social-Media-Sektion — bewusst OHNE
+// Kontingent/AiTextAttempt-Aufzeichnung (Auftrag: "kostenlos, kein
+// Kontingent nötig, minimale Kosten wie Textvorschlag"), nur der globale
+// Kosten-Deckel (checkAndRecordAiBudget) wie bei jeder anderen kostenlosen
+// KI-Funktion. Gibt einen einzelnen, sofort speicherbaren String zurueck
+// (leerzeichengetrennte Hashtags) statt eines Arrays, da socialMediaText
+// ein einzeiliges Freitextfeld ist (siehe EditableSectionText.tsx).
+export async function generateHashtagSuggestions(names: string, year: number): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY ist nicht gesetzt — der Text-Assistent ist nicht konfiguriert.");
+  }
+
+  await checkAndRecordAiBudget(HASHTAG_SUGGESTION_COST_ESTIMATE_USD);
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-5.4-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Du erstellst kreative deutsche Hochzeits-Hashtag-Vorschläge fuer ein Brautpaar, die Gaeste bei " +
+            "Social-Media-Posts rund um die Hochzeit verwenden koennen. Antworte ausschliesslich als JSON-Objekt " +
+            'mit genau dem Feld "hashtags" (Array aus 5 kurzen deutschen Hashtag-Vorschlaegen, jeweils mit ' +
+            "#-Praefix, ohne Leerzeichen innerhalb eines Hashtags, eine Mischung aus elegant/romantisch und " +
+            "verspielt/witzig, Namen und/oder Jahr kreativ kombiniert). Kein Markdown, kein zusaetzlicher Text.",
+        },
+        { role: "user", content: `Namen des Brautpaares: ${names}\nJahr der Hochzeit: ${year}` },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`OpenAI-Hashtag-Generierung fehlgeschlagen (${response.status}): ${detail.slice(0, 300)}`);
+  }
+
+  const json = (await response.json()) as OpenAiChatResponse;
+  const raw = json.choices?.[0]?.message?.content;
+  if (!raw) throw new Error("OpenAI-Antwort enthielt keinen Text.");
+
+  let parsed: OpenAiHashtagResponse;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("OpenAI-Antwort war kein gueltiges JSON.");
+  }
+  if (!Array.isArray(parsed.hashtags) || parsed.hashtags.length === 0) {
+    throw new Error("OpenAI-Antwort enthielt keine Hashtags.");
+  }
+
+  return parsed.hashtags.join(" ");
 }
