@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { buildQrDesignSvg, printOrderPriceCents, type PrintSize, type QrTheme } from "@/lib/qr-design";
 import { safeQrColorsFromEvent } from "@/lib/qr";
-import { stripe } from "@/lib/stripe";
+import { stripe, CHECKOUT_PAYMENT_METHOD_TYPES } from "@/lib/stripe";
 import { markPrintOrderPaid } from "@/lib/checkout-fulfillment";
 import type { QrTheme as DbQrTheme } from "@/generated/prisma/client";
 
@@ -179,7 +179,7 @@ export async function createPrintOrder(eventId: string, formData: FormData) {
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
+    payment_method_types: CHECKOUT_PAYMENT_METHOD_TYPES,
     line_items: [
       {
         price_data: {

@@ -15,7 +15,7 @@ import {
 } from "@/lib/ai-wedding-portrait";
 import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
 import { composeWeddingPortraitPreview } from "@/lib/wedding-portrait-preview";
-import { stripe } from "@/lib/stripe";
+import { stripe, CHECKOUT_PAYMENT_METHOD_TYPES } from "@/lib/stripe";
 import { markWeddingPortraitDownloadPaid } from "@/lib/checkout-fulfillment";
 
 async function requireOwnedEvent(eventId: string) {
@@ -132,7 +132,7 @@ export async function startWeddingPortraitDownloadCheckout(eventId: string, atte
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
+    payment_method_types: CHECKOUT_PAYMENT_METHOD_TYPES,
     line_items: [
       {
         price_data: {

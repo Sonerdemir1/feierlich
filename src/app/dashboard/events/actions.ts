@@ -13,7 +13,7 @@ import { generateAiDesignImage, AI_DESIGN_ADDON_KEY, AI_DESIGN_ATTEMPT_QUOTA } f
 import { generateInvitationCopy } from "@/lib/ai-text";
 import { generateSpeechAudio } from "@/lib/ai-audio-tts";
 import { AiBudgetExceededError } from "@/lib/ai-budget-constants";
-import { stripe } from "@/lib/stripe";
+import { stripe, CHECKOUT_PAYMENT_METHOD_TYPES } from "@/lib/stripe";
 import { markEventAddOnPaid } from "@/lib/checkout-fulfillment";
 import { buildDesignUpdate } from "@/lib/design-style";
 import { eventHasFeature } from "@/lib/event-features";
@@ -366,7 +366,7 @@ export async function startAddOnCheckout(eventId: string, formData: FormData) {
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
+    payment_method_types: CHECKOUT_PAYMENT_METHOD_TYPES,
     line_items: [
       {
         price_data: {

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { stripe, CHECKOUT_PAYMENT_METHOD_TYPES } from "@/lib/stripe";
 import { markOrderPaid } from "@/lib/checkout-fulfillment";
 
 async function requireOwnedEvent(eventId: string) {
@@ -91,7 +91,7 @@ export async function startCheckout(eventId: string, formData: FormData) {
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",
-    payment_method_types: ["card"],
+    payment_method_types: CHECKOUT_PAYMENT_METHOD_TYPES,
     line_items: [
       {
         price_data: {
