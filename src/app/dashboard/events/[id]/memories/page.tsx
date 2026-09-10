@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos, analyzeGuestbookEntries } from "./actions";
+import { moderateGalleryItem, moderateGuestbookEntry, analyzeGalleryPhotos, analyzeGuestbookEntries, suggestThankYouCard } from "./actions";
 import { aiPhotoCurationConfigured } from "@/lib/ai-photo-curation";
 import { aiGuestbookCurationConfigured } from "@/lib/ai-guestbook-curation";
+import { aiTextConfigured } from "@/lib/ai-text";
+import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 import { CATEGORY_LABEL_DE } from "@/lib/ai-moderation";
 import { eventHasFeature } from "@/lib/event-features";
 
@@ -109,6 +111,19 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
   });
   const pendingMessageCount = guestbookEntries.filter((e) => e.status === "PENDING" && e.message).length;
   const guestbookCurationError = sp.error === "guestbook-curation-failed";
+
+  // Dankeskarte (Roadmap-Punkt 6) — aktuelle Foto-Auswahl + Text laden, um
+  // den letzten Vorschlag anzuzeigen. Gleiche Config-Stelle wie
+  // inline-text/route.ts (EventModule "thank-you-card").
+  const thankYouPhotoIds: string[] = event.thankYouPhotoIds ? JSON.parse(event.thankYouPhotoIds) : [];
+  const [thankYouPhotos, thankYouModule] = await Promise.all([
+    thankYouPhotoIds.length > 0 ? prisma.media.findMany({ where: { id: { in: thankYouPhotoIds } } }) : Promise.resolve([]),
+    prisma.eventModule.findFirst({ where: { eventId: id, module: { key: "thank-you-card" } } }),
+  ]);
+  const thankYouPhotosOrdered = thankYouPhotoIds.map((mid) => thankYouPhotos.find((m) => m.id === mid)).filter((m): m is NonNullable<typeof m> => Boolean(m));
+  const thankYouMessage = thankYouModule?.config ? (JSON.parse(thankYouModule.config).message ?? "") : "";
+  const thankYouError = sp.error === "thank-you-failed" ? "Der Vorschlag ist gerade nicht möglich. Bitte später erneut versuchen." : sp.error === "ai-budget" ? AI_BUDGET_EXCEEDED_MESSAGE : undefined;
+  const thankYouSuggested = sp.thankYouSuggested === "1";
 
   return (
     <div>
@@ -259,6 +274,47 @@ export default async function MemoriesPage({ params, searchParams }: PageProps<"
           </div>
         )}
       </div>
+      )}
+
+      {hasGallery && (
+        <div style={{ border: "1px solid var(--line)", padding: "20px 22px", marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Dankeskarte</div>
+            {aiTextConfigured && (
+              <form action={suggestThankYouCard.bind(null, id)}>
+                <button type="submit" className="btn btn-ghost" style={{ padding: "7px 14px", fontSize: 11.5 }}>
+                  🎉 Dankeskarte vorschlagen (KI)
+                </button>
+              </form>
+            )}
+          </div>
+          <p style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16 }}>
+            Wählt automatisch eure besten, von der KI empfohlenen Gäste-Fotos aus (siehe &bdquo;Empfehlung&ldquo;-
+            Markierung oben in der Galerie) und schlägt einen Dankestext vor — beides erscheint direkt auf eurer
+            Einladungsseite, sobald das Event vorbei ist.
+          </p>
+          {thankYouSuggested && (
+            <div style={{ border: "1px solid var(--sage)", background: "#EEF2E8", color: "#3E4A2E", padding: "10px 14px", fontSize: 12.5, marginBottom: 16 }}>
+              Vorschlag übernommen.
+            </div>
+          )}
+          {thankYouError && (
+            <div style={{ border: "1px solid #C97E5E", background: "#F5E1DE", color: "#6B2F1A", padding: "10px 14px", fontSize: 12.5, marginBottom: 16 }}>
+              {thankYouError}
+            </div>
+          )}
+          {thankYouMessage && <p style={{ fontSize: 13, color: "var(--ink)", marginBottom: 14 }}>{thankYouMessage}</p>}
+          {thankYouPhotosOrdered.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 8 }}>
+              {thankYouPhotosOrdered.map((m) => (
+                // eslint-disable-next-line @next/next/no-img-element -- guest upload, unknown dimensions
+                <img key={m.id} src={m.url} alt="" style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", border: "1px solid var(--line)" }} />
+              ))}
+            </div>
+          ) : (
+            !thankYouMessage && <p style={{ fontSize: 12, color: "var(--ink-faint)" }}>Noch kein Vorschlag erzeugt.</p>
+          )}
+        </div>
       )}
     </div>
   );

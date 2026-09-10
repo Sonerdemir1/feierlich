@@ -327,6 +327,12 @@ model Event {
   // bewusst dieselbe Stelle statt eine zweite Quelle der Wahrheit
   // einzufuehren (siehe inline-text/route.ts MODULE_CONFIG_FIELDS).
   thankYouHeading String?
+  // Roadmap-Punkt 6: KI-kuratierte Dankeskarte — JSON-Array ausgewaehlter
+  // Media-IDs (gleiches Muster wie photobookMediaIds), automatisch befuellt
+  // aus Gaeste-Fotos mit aiVerdict "empfehlung" (siehe ai-photo-curation.ts/
+  // memories/actions.ts::suggestThankYouCard()). Leer/null = keine
+  // Foto-Auswahl, Dankeskarte zeigt nur den Text wie bisher.
+  thankYouPhotoIds String?
   // Audio-Einladung (Schritt 7) — komplett neues Feature, vorher nur ein
   // rein dekoratives, nicht-funktionales Mockup im Marketing-Customizer.
   // Gleiches Muster wie envelopeVideoId/backgroundMusicId oben: eine

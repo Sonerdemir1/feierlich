@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
-import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD, LOVE_STORY_COST_ESTIMATE_USD, HASHTAG_SUGGESTION_COST_ESTIMATE_USD } from "@/lib/ai-budget";
+import { checkAndRecordAiBudget, TEXT_SUGGESTION_COST_ESTIMATE_USD, LOVE_STORY_COST_ESTIMATE_USD, HASHTAG_SUGGESTION_COST_ESTIMATE_USD, THANK_YOU_MESSAGE_COST_ESTIMATE_USD } from "@/lib/ai-budget";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -270,4 +270,56 @@ export async function generateHashtagSuggestions(names: string, year: number): P
   }
 
   return parsed.hashtags.join(" ");
+}
+
+type OpenAiThankYouResponse = { thankYouMessage?: string };
+
+// Dankeskarten-Text (Roadmap-Punkt 6) — bewusst OHNE eigenes Kontingent
+// (einmaliger Vorgang nach dem Event, kein wiederholtes Ausprobieren wie
+// beim Text-Assistenten zu erwarten), nur der globale Kosten-Deckel.
+export async function generateThankYouMessage(names: string): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY ist nicht gesetzt — der Text-Assistent ist nicht konfiguriert.");
+  }
+
+  await checkAndRecordAiBudget(THANK_YOU_MESSAGE_COST_ESTIMATE_USD);
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-5.4-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Du schreibst im Namen eines frisch verheirateten Paares einen kurzen, herzlichen deutschen " +
+            "Dankestext an ihre Hochzeitsgaeste, der nach der Feier auf der Einladungsseite erscheint. " +
+            'Antworte ausschliesslich als JSON-Objekt mit genau dem Feld "thankYouMessage" (2-3 Saetze, ' +
+            "Ich-Perspektive des Paares, warm und dankbar, keine Ueberschrift, kein Markdown).",
+        },
+        { role: "user", content: `Namen des Brautpaares: ${names}` },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`OpenAI-Textgenerierung fehlgeschlagen (${response.status}): ${detail.slice(0, 300)}`);
+  }
+
+  const json = (await response.json()) as OpenAiChatResponse;
+  const raw = json.choices?.[0]?.message?.content;
+  if (!raw) throw new Error("OpenAI-Antwort enthielt keinen Text.");
+
+  let parsed: OpenAiThankYouResponse;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("OpenAI-Antwort war kein gueltiges JSON.");
+  }
+  if (!parsed.thankYouMessage) throw new Error("OpenAI-Antwort fehlte das erwartete Feld.");
+
+  return parsed.thankYouMessage;
 }

@@ -27,6 +27,9 @@ export const LOVE_STORY_COST_ESTIMATE_USD = 0.003;
 // aber deutlich kuerzere Antwort (nur eine kurze Liste von Hashtags statt
 // zwei Textabschnitten) — daher niedriger angesetzt.
 export const HASHTAG_SUGGESTION_COST_ESTIMATE_USD = 0.001;
+// Dankeskarten-Text: gleiches Modell (gpt-5.4-mini), kurze Antwort
+// (2-3 Saetze) — aehnliche Groessenordnung wie der Textvorschlag.
+export const THANK_YOU_MESSAGE_COST_ESTIMATE_USD = 0.002;
 
 export const AI_BUDGET_EXCEEDED_MESSAGE = "Momentan überlastet, bitte später erneut versuchen.";
 
