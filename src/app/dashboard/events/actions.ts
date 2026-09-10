@@ -135,7 +135,7 @@ export async function suggestEventDescription(
 }
 
 export async function uploadCoverImage(eventId: string, formData: FormData) {
-  await requireOwnedEvent(eventId);
+  const { event } = await requireOwnedEvent(eventId);
 
   const file = formData.get("file");
   const error = validateImageFile(file);
@@ -151,7 +151,13 @@ export async function uploadCoverImage(eventId: string, formData: FormData) {
   });
   await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
 
+  // Fehlte hier bisher (im Unterschied zu z.B. uploadEnvelopeVideo direkt
+  // darunter) — ohne diesen Aufruf blieb die oeffentliche Event-Seite nach
+  // einem Titelbild-Upload in bestimmten Faellen ungueltig zwischengespeichert
+  // (Next.js Router Cache bei clientseitiger Navigation dorthin). Live als Teil
+  // der Titelbild-Vorschau-Fehlersuche gefunden.
   revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);
 }
 
@@ -328,6 +334,7 @@ export async function removeCoverImageBackground(eventId: string) {
   await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
 
   revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);
 }
 
@@ -429,6 +436,7 @@ export async function generateAiDesignForCover(eventId: string, formData: FormDa
   await prisma.event.update({ where: { id: eventId }, data: { coverImageId: media.id } });
 
   revalidatePath(`/dashboard/events/${eventId}`);
+  revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}`);
 }
 

@@ -52,6 +52,7 @@ type Colors = { primary: string; accent: string; background: string };
 export function DesignEditor({
   eventId,
   eventSlug,
+  coverImageVersion,
   initialColors,
   initialFontId,
   initialOrnaments,
@@ -86,6 +87,14 @@ export function DesignEditor({
 }: {
   eventId: string;
   eventSlug: string;
+  // Wechselt (Media-ID oder "none"), sobald sich das Titelbild aendert
+  // (Upload/Ersetzen/Hintergrund entfernen/KI-Design, siehe events/actions.ts)
+  // — als iframe-key genutzt, damit die Vorschau danach WIRKLICH neu laedt.
+  // Ohne das behaelt der Browser den alten iframe-Inhalt (andere Farb-/
+  // Text-Aenderungen erreichen die Vorschau per postMessage OHNE Neuladen,
+  // sodass hierfuer sonst nichts einen Reload ausloest) — live als Ursache
+  // fuer "Titelbild-Upload aktualisiert die Editor-Vorschau nicht" gefunden.
+  coverImageVersion: string;
   initialColors: Colors;
   initialFontId: string | undefined;
   initialOrnaments: boolean;
@@ -513,7 +522,13 @@ export function DesignEditor({
           Tipp: Titel, Untertitel und Beschreibung direkt in der Vorschau anklicken und bearbeiten.
         </div>
         <div className="card" style={{ height: "min(82vh, 920px)", minHeight: 560 }}>
-          <iframe ref={iframeRef} title="Vorschau der Einladungsseite" src={`/e/${eventSlug}?dashboardPreview=1`} style={{ width: "100%", height: "100%", border: "none" }} />
+          <iframe
+            key={coverImageVersion}
+            ref={iframeRef}
+            title="Vorschau der Einladungsseite"
+            src={`/e/${eventSlug}?dashboardPreview=1`}
+            style={{ width: "100%", height: "100%", border: "none" }}
+          />
         </div>
       </div>
       <div

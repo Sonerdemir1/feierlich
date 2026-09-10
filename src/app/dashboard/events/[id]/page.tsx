@@ -386,6 +386,7 @@ export default async function EventDetailPage({
         <DesignEditor
           eventId={event.id}
           eventSlug={event.slug}
+          coverImageVersion={event.coverImageId ?? "none"}
           initialColors={activeColors}
           initialFontId={activeStyle.fontId}
           initialOrnaments={Boolean(activeStyle.ornaments)}
