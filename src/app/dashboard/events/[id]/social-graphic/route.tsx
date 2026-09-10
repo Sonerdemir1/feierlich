@@ -22,6 +22,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const format: SocialGraphicFormat = url.searchParams.get("format") === "post" ? "post" : "story";
   const download = url.searchParams.get("download") === "1";
   const { width, height } = SOCIAL_GRAPHIC_SIZES[format];
+  // Vorher fix 170px auf 1080px Canvas-Breite (~16 %) — wirkte "visitenkarten-
+  // klein" (Bestandsaufnahme Punkt F(a)). Beide Formate teilen dieselbe
+  // Canvas-Breite (1080), daher ein einzelner, breitenbasierter Wert statt
+  // zweier separater Zahlen. ~31 % der Breite, mit reichlich Puffer zum
+  // restlichen Inhalt auch im kuerzeren "post"-Format getestet.
+  const qrSize = Math.round(width * 0.31);
 
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const colors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
@@ -98,7 +104,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         )}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 64 }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- Satori (next/og) rendert kein next/image, nur <img> */}
-          <img src={qrDataUri} alt="" width={170} height={170} style={{ borderRadius: 10 }} />
+          <img src={qrDataUri} alt="" width={qrSize} height={qrSize} style={{ borderRadius: 10 }} />
           <div style={{ display: "flex", fontSize: 18, color: colors.primary, opacity: 0.7, marginTop: 14, fontFamily: bodyFont }}>
             Scannt für die Einladung
           </div>

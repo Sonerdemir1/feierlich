@@ -440,7 +440,8 @@ export async function generateAiDesignForCover(eventId: string, formData: FormDa
 // nicht: ohne diese serverseitige Pruefung koennte man das Haekchen per
 // manuell nachgebautem POST trotzdem durchschmuggeln.
 export async function gatedModuleKeys(eventId: string): Promise<Set<string>> {
-  const [activeAddOns, paidEventAddOns] = await Promise.all([
+  const [event, activeAddOns, paidEventAddOns] = await Promise.all([
+    prisma.event.findUnique({ where: { id: eventId }, include: { order: { include: { package: true } } } }),
     prisma.addOn.findMany({ where: { active: true } }),
     prisma.eventAddOn.findMany({ where: { eventId, status: "PAID" } }),
   ]);
@@ -450,7 +451,16 @@ export async function gatedModuleKeys(eventId: string): Promise<Set<string>> {
   for (const addOn of activeAddOns) {
     if (paidAddOnIds.has(addOn.id)) continue;
     const keys: string[] = JSON.parse(addOn.moduleKeys || "[]");
-    keys.forEach((k) => gated.add(k));
+    // Ein Modul, das bereits ueber das gebuchte Paket abgedeckt ist (z.B.
+    // "gallery" ab Premium Plus), braucht KEIN zusaetzliches AddOn — sonst
+    // wird ein bereits bezahltes Feature faelschlich als kostenpflichtiges
+    // Zusatzpaket angezeigt (Bestandsaufnahme Punkt B). event kann nur dann
+    // fehlen, wenn die Event-ID ungueltig ist — dann bleibt alles gegated,
+    // wie bisher (sichere Default-Richtung).
+    keys.forEach((k) => {
+      if (event && eventHasFeature(event, k)) return;
+      gated.add(k);
+    });
   }
   return gated;
 }

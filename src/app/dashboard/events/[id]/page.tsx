@@ -911,7 +911,7 @@ export default async function EventDetailPage({
           Nur für euch sichtbar — Gäste reichen Wünsche ein, ohne die Liste anderer zu sehen.
         </div>
         {musicRequests.length === 0 ? (
-          <p style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Noch keine Musikwünsche.</p>
+          <p style={{ fontSize: 12.5, color: "var(--ink-faint)" }}>Hier erscheinen Musikwünsche, sobald Gäste welche einreichen.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {musicRequests.map((r) => (

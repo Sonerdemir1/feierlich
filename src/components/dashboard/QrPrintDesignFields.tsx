@@ -36,6 +36,11 @@ export function QrPrintDesignFields({
   // "" = Schriftart des Events uebernehmen (Server-Default) statt einer der
   // kuratierten Optionen fest vorzugeben.
   const [fontId, setFontId] = useState("");
+  // Klick-zum-Vergroessern (Bestandsaufnahme Punkt C3) — die feste
+  // 140px-Vorschau war zu klein, um Details zu erkennen. Rein clientseitig:
+  // dieselbe previewSrc wird nur in einem groesseren Overlay erneut
+  // gerendert, kein zusaetzlicher Server-Aufruf noetig.
+  const [enlarged, setEnlarged] = useState(false);
 
   const previewSrc = `/dashboard/events/${eventId}/qr/design-preview?theme=${theme}&size=${size}${tableId ? `&tableId=${tableId}` : ""}${fontId ? `&fontId=${fontId}` : ""}`;
   const downloadSrc = `${previewSrc}&download=1`;
@@ -87,10 +92,39 @@ export function QrPrintDesignFields({
         <img
           key={previewSrc}
           src={previewSrc}
-          alt="Vorschau des Karten-Designs"
-          style={{ width: "100%", border: "1px solid var(--line)", background: "#fff", display: "block" }}
+          alt="Vorschau des Karten-Designs — zum Vergrößern anklicken"
+          onClick={() => setEnlarged(true)}
+          style={{ width: "100%", border: "1px solid var(--line)", background: "#fff", display: "block", cursor: "zoom-in" }}
         />
+        <div style={{ fontSize: 10.5, color: "var(--ink-faint)", marginTop: 4, textAlign: "center" }}>Zum Vergrößern anklicken</div>
       </div>
+
+      {enlarged && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setEnlarged(false)}
+          onKeyDown={(e) => e.key === "Escape" && setEnlarged(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.75)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 32,
+            cursor: "zoom-out",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- serverseitig generiertes SVG, kein next/image-Asset */}
+          <img
+            src={previewSrc}
+            alt="Vorschau des Karten-Designs, vergrößert"
+            style={{ maxWidth: "min(90vw, 640px)", maxHeight: "90vh", width: "auto", background: "#fff", boxShadow: "0 8px 40px rgba(0,0,0,0.4)" }}
+          />
+        </div>
+      )}
     </div>
   );
 }
