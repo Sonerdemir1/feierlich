@@ -1,7 +1,9 @@
 # Einladi – Design- & Motion-Spezifikation
 
-**Gültig für:** Startseite und Vorlagen-Galerie. Andere Bereiche später.
+**Gültig für:** Alle Marketing-/Verkaufsseiten von einladi.de (Startseite, Preise, Vorlagen-Galerie-Übersicht, Kontakt, Impressum, Datenschutz). **Nicht gültig für:** den Gestalten-Editor (`/gestalten/[templateId]`) und die veröffentlichten Einladungsseiten der Brautpaare (`/e/[slug]`) — die laufen unverändert im Belle-artigen One-Page-Stil (siehe Branch `feature/belle-invitation-preview`), komplett getrennt von dieser Spezifikation.
 **Ablage:** `docs/MOTION.md`. In `CLAUDE.md` verlinken mit dem Satz: *"Vor jeder Arbeit an Startseite oder Galerie diese Datei vollständig lesen und einhalten."*
+
+> **Versionshinweis:** Diese Fassung ersetzt §0–§2 der vorherigen "Tinte & Kerzenlicht"-Richtung durch die neue "Editoriale Erlebniswelt" (Zera-Studio-artiger Kapitel-Aufbau, Branch `feature/homepage-zerasoftware`). §3–§7 (Galerie-Konzept, Ton-Regeln, Barrierefreiheits-/Performance-Grenzen, Envato-Asset-Regeln, Abnahme-Checkliste) gelten unverändert weiter — sie betreffen entweder die Vorlagen-Galerie speziell (bleibt in ihrer bestehenden Kartenoptik) oder sind produktweit gültige Grenzen, unabhängig vom visuellen Stil der Marketingseiten.
 
 ---
 
@@ -9,67 +11,65 @@
 
 Einladi verkauft digitale Einladungskarten für Hochzeit, Verlobung, Kına, Düğün, Sünnet, Geburtstag, Babyshower und Firmenevents – deutsch und türkisch. Die Kunden sind Brautpaare und Familien, die einen einmaligen Moment im Leben planen. Sie öffnen die Seite zu 85 % auf dem Handy, oft abends, oft zu zweit auf einem Bildschirm.
 
-Die Konkurrenz sieht aus wie ein Druckerei-Katalog. Einladi soll sich anfühlen wie der Moment, in dem man einen schweren Umschlag in der Hand hält.
+Die Konkurrenz sieht aus wie ein Druckerei-Katalog. Die einladi-Marketingseiten sollen sich anfühlen wie das Durchblättern eines edlen Editorial-Magazins — jede Sektion ein eigenes, in sich abgeschlossenes "Kapitel", nicht ein endloses Scrollen durch gleichförmige Blöcke.
 
-**Der Leitsatz für alles Folgende:** Die Startseite ist keine Seite *über* Einladungen. Sie ist selbst eine.
+**Der Leitsatz für alles Folgende:** Die Startseite ist keine Seite *über* Einladungen, die beiläufig gescrollt wird. Sie ist eine kuratierte Abfolge von Kapiteln, jedes mit eigener Nummer, eigenem Thema, eigenem Bild.
+
+**Sprache (vorerst):** Die Marketingseiten in diesem neuen Stil werden ausschließlich auf Deutsch gestaltet und getextet. Das türkische Produkt selbst — Vorlagenkategorien, KI-Textvorschläge, veröffentlichte Einladungsseiten — bleibt davon komplett unberührt; das wird hier nicht angetastet. Sollte die türkische Marketingseite später nachgezogen werden, ist das eine eigene, separate Entscheidung.
 
 ---
 
-## 1. Gestalterische Richtung: "Tinte & Kerzenlicht"
+## 1. Gestalterische Richtung: "Editoriale Erlebniswelt"
 
-Kein Weiß-auf-Weiß-Katalog, kein Creme-Beige mit Terrakotta-Akzent, keine Karten-Kacheln mit gleichem Radius und grauem Schatten. Die Seite ist hell, warm und weich – wie Porzellan im Tageslicht. `--ink` ist Textfarbe und ausschließlich der Startzustand des Hero, nicht die Grundfläche der Seite.
+Kein klassischer Nav-Header-Content-Aufbau. Die Seite ist eine Abfolge vollbildfüllender, nummerierter Kapitel im Stil von zerasoftwarestudio.com — jedes Kapitel füllt bewusst den gesamten Bildschirm (`min-height: 100vh`), trägt eine sichtbare Nummer/Kennzeichnung ("(01) — Thema") und endet in einer durchgehenden Paginierung mit "Weiter"-CTA am unteren Rand.
 
 ### Farben
 
 ```
---porcelain:  #FAF8F5   /* Grundfläche der gesamten Seite */
---linen:      #EFE8DE   /* Zweite Flächenfarbe, Abschnittswechsel, Karten-Untergrund */
---ink:        #1A1723   /* Textfarbe; als Fläche ausschließlich der Hero-Startzustand */
---gold:       #9A7534   /* Prägung, Linien, Siegel. Sparsam. */
---henna:      #8E2C3B   /* Akzent für türkische Kategorien */
---sage:       #6C7A63   /* Akzent für botanisch/deutsche Kategorien */
+--zc-bg:     #F2EEE6   /* Grundfläche jedes Kapitels */
+--zc-ink:    #1A1A1A   /* Haupttext, nahezu Schwarz */
+--zc-muted:  #8A8478   /* Sekundärtext, Kapitel-Nummern, Eyebrow-Labels */
+--zc-accent: #B89968   /* gedämpftes Gold/Taupe — Akzentwörter, Trennlinien, Fortschrittsbalken */
 ```
 
-Gold wird nie als Fläche eingesetzt, nur als Linie, Kante oder Textfarbe. Wenn Gold mehr als 5 % der Bildfläche einnimmt, ist es zu viel.
+Diese Palette gilt für die Marketingseiten. Sie ersetzt die vorherige "Tinte & Kerzenlicht"-Palette (`--porcelain`/`--ink`/`--gold`/`--henna`/`--sage`) dort vollständig. Die Vorlagen-Galerie behält ihre eigene, bestehende Kategorie-Akzentfarblogik (siehe §3) unverändert bei — die Zera-Farben umschließen die Galerie nur als Kapitel-Rahmen, greifen aber nicht in ihre eigene Kartenoptik ein.
 
 ### Typografie
 
-Zwei Familien, klar unterschieden:
+- **Display: Fraunces**, in Großbuchstaben, für Kapitel-Überschriften. Große Grade (`clamp(38px, 6vw, 84px)`), Schriftschnitt 500.
+- **Akzentwörter innerhalb der Überschrift**: ausdrücklich erlaubt und gewünscht — dieselbe Serife, **kursiv**, in `--zc-accent`, dabei bewusst *nicht* in Großbuchstaben (Kleinschreibung setzt den Kontrast zum Rest der Zeile).
+- **Kleine Labels** (Kapitel-Nummer, Eyebrow, Paginierung): **Karla**, Großbuchstaben, Schriftschnitt 700, Buchstabenabstand `0.22em`–`0.24em`.
+- **Fließtext**: Karla, normale Groß-/Kleinschreibung.
 
-- **Display: Fraunces** (variabel, Achsen `opsz`, `wght`, `SOFT`, `WONK`). Für Namen, Überschriften, Kategorie-Titel. Große Grade in 300–400, `opsz` hochdrehen, `WONK` an – das gibt den kalligrafischen Zug ohne Skript-Schrift-Kitsch.
-- **Text: Karla.** Für alles Funktionale: Navigation, Preise, Buttons, Formulare.
+*Damit sind die bisherigen Verbote aus der Vorversion ("kein farbiges/kursives Wort in der Überschrift", "keine Versal-Labels über Abschnitten") für die Marketingseiten aufgehoben — sie waren Teil der alten Tinte-&-Kerzenlicht-Richtung, nicht mehr gültig.*
 
-**Pflichtprüfung vor jedem Schriftwechsel:** Die Schrift muss `ğ Ğ ş Ş ı İ ç Ç ö Ö ü Ü` vollständig enthalten. Das dotless ı und das İ mit Punkt sind der häufigste Fehler bei Display-Schriften. Wird eine Envato-Schrift eingesetzt, zuerst diese acht Zeichen rendern und im Screenshot prüfen.
-
-Verboten: ein einzelnes Wort in der Überschrift farbig oder kursiv hervorheben. Versal-Labels über Abschnitten. Ein `→` hinter Buttontexten.
+**Türkisch-Zeichenprüfung** (produktweit weiter gültig, siehe auch §3): Jede Schrift, die irgendwo im Produkt türkischsprachigen Text darstellen muss — insbesondere die Vorlagen-Galerie und die veröffentlichten Einladungsseiten —, muss `ğ Ğ ş Ş ı İ ç Ç ö Ö ü Ü` vollständig und korrekt enthalten (dotless ı und İ mit Punkt sind der häufigste Fehler bei Display-Schriften). Da die Marketingseiten in diesem Stil vorerst rein deutsch sind, gilt die Prüfpflicht hier nicht für Fraunces/Karla — wird aber fällig, sobald/falls eine türkische Fassung der neuen Marketingseiten entsteht.
 
 ### Material
 
-Jede Fläche hat eine Materialität, keine flachen Farbblöcke:
-
-- Papier: leichte Faser-Textur als `background-image`, dazu ein `box-shadow` mit zwei Ebenen (nah/hart, fern/weich), damit die Karte über der Fläche schwebt statt aufgeklebt zu sein. Schatten sind warm und weich, nie schwarz: nah `rgba(60, 40, 20, .10)`, fern `rgba(60, 40, 20, .06)`.
-- Gold-Prägung: animierter Verlauf unter `background-clip: text`, 6 s Loop, sehr langsam. Nur auf einem Element pro Bildschirm.
-- **Keine Vignette, kein Grain-Overlay.** Kein Effekt darf über Text oder Kartenvorschauen liegen. Kontrast von Fließtext zu Hintergrund mindestens 4.5:1.
+- Papier-Textur, Gold-Prägungs-Loop und Vignette/Grain-Verbot aus der Vorversion entfallen — die neue Richtung arbeitet mit klaren Flächen, echter (gestagter) Fotografie und Schatten statt Textur-Overlays.
+- Gestagte Bilder ("wie auf einem Sockel platziert"): weicher, warmer Schlagschatten (`0 40px 70px -30px rgba(26,26,26,.35)`, `0 10px 24px -12px rgba(26,26,26,.22)`) plus ein dezenter Goldverlauf hinter dem Bild (`radial-gradient` mit `--zc-accent`, niedrige Deckkraft) statt eines physischen Sockel-Elements.
 
 ---
 
-## 2. Startseite
+## 2. Struktur & Bewegung der Marketingseiten
 
-> Rückbau (siehe Git-Historie): Die vormals hier beschriebene Umschlag-Hero-Sequenz
-> (geschlossener Umschlag mit Siegel, Tap-zum-Öffnen, Karte gleitet heraus,
-> Hintergrund hellt von `--ink` nach `--porcelain` auf) war eine Fehlannahme über
-> die bestehende Seite und wurde entfernt. Der Hero zeigt wieder seine
-> ursprüngliche Positionierung: Überschrift, Absatztext, zwei CTA-Buttons, Telefon-
-> Vorschau. Die zugehörige Komponente liegt unbenutzt in `src/components/
-> MotionHero.tsx`, falls dafür später ein passender Ort gefunden wird.
+**Betroffene Seiten:** Startseite, Preise, Vorlagen-Galerie-Übersicht, Kontakt, Impressum, Datenschutz — jede als eigene Abfolge nummerierter Kapitel, mit fortlaufender Kapitelnummer pro Seite.
 
-### Kamerafahrten beim Scrollen
+### Aufbau pro Kapitel
 
-GSAP ScrollTrigger, `scrub: 1`, dazu Lenis für weiches Scrollen (`duration: 1.2`).
+- `min-height: 100vh`, Kapitel-Kopf oben links (Nummer + Thema-Label), Inhalt vertikal zentriert/verteilt, Paginierung + "Weiter"-Link unten.
+- Zweispaltiges Grundmuster (Text/CTA eine Seite, gestagtes Bild die andere), alternierend links/rechts von Kapitel zu Kapitel für Rhythmus. Kapitel mit eigener Komponente (z. B. die Vorlagen-Galerie-Kacheln, siehe §3) dürfen davon abweichen und die volle Breite nutzen.
+- Letztes Element jeder Seite: ein normaler, nicht nummerierter Footer-Streifen (Kontakt/Rechtliches/Tagline) — kein weiteres Kapitel.
 
-- Hintergrund-Textur läuft mit Faktor 0.3 mit (Parallax), Vordergrund mit 1.0.
-- Übergang zwischen den Abschnitten: der nächste Abschnitt schiebt sich nicht ein, sondern wird durch eine Tiefenänderung erreicht – `scale 1.08 → 1` plus `opacity 0 → 1` über den Scroll-Verlauf. Es soll wirken, als bewege sich die Kamera nach vorn, nicht als bewege sich der Inhalt nach oben.
-- **Kein** Fade-and-slide-up auf jedem Abschnitt. Das ist der generische Standard und genau das, was die Seite alt aussehen lässt.
+### Scroll-Animationen
+
+**Motion** (`motion/react`, siehe auch CLAUDE.md "Design- & Motion-Standards" — ersetzt die in der Vorversion vorgesehene Kombination aus GSAP ScrollTrigger + Lenis, die für dieses Projekt nie umgesetzt wurde).
+
+- Inhalte, die beim Laden bereits im sichtbaren Bereich stehen (z. B. das erste Kapitel einer Seite): `initial`/`animate` (feuert beim Einhängen, nicht scroll-getriggert — dafür gibt es nichts "hineinzuscrollen").
+- Inhalte unterhalb der ersten Bildschirmhöhe: `whileInView` mit `viewport={{ once: true, amount: 0.2 }}`. Bewusst **kein** `margin`-basierter Viewport-Ausschnitt (unzuverlässig bei sehr großen Elementen, siehe Testlauf) — `amount` ist robuster.
+- Bewegung: `opacity 0→1` plus `y: 28px→0`, `duration: 0.7s`, `ease: [0.16, 1, 0.3, 1]`. Innerhalb eines Kapitels leicht gestaffelt (`delay` in ca. 0.08s-Schritten: Eyebrow → Überschrift → Text → CTA/Bild).
+- Das ist bewusst ein einfaches, zuverlässiges Fade-up-Muster statt einer Kamerafahrt-Illusion — die in der Vorversion beschriebene "Tiefenänderung" (`scale 1.08→1`) wurde nie umgesetzt und wird hiermit nicht weiterverfolgt.
 
 ---
 
@@ -96,15 +96,17 @@ Beim Öffnen einer Vorlage: View Transitions API, die Karte wächst aus ihrer Po
 
 Die Struktur laut Projektstand: türkischer Zweig (Düğün, Kına, Sünnet, Nişan) und deutscher Zweig (Hochzeit, Verlobung, Babyshower, Geburtstag, Firmenevents).
 
-Die Umschaltung zwischen den beiden Zweigen ändert die Akzentfarbe der gesamten Galerie – `--henna` für den türkischen, `--sage` für den deutschen Zweig – über eine 600-ms-Überblendung der CSS-Variablen. Das ist ein Systemwechsel, kein Filter-Klick, und soll sich auch so anfühlen.
+Die Umschaltung zwischen den beiden Zweigen ändert die Akzentfarbe der gesamten Galerie – `--henna` für den türkischen, `--sage` für den deutschen Zweig – über eine 600-ms-Überblendung der CSS-Variablen. Das ist ein Systemwechsel, kein Filter-Klick, und soll sich auch so anfühlen. Diese beiden Farben leben ausschließlich innerhalb der Galerie-Kacheln, unabhängig von der Zera-Palette aus §1, die den Rest der Marketingseiten umgibt.
 
 Filterwechsel: die ausscheidenden Karten fallen mit 30 ms Stagger heraus (`opacity → 0`, `scale → 0.96`), die neuen kommen mit 40 ms Stagger herein. FLIP-Technik, damit die bleibenden Karten an ihre neue Position gleiten statt zu springen.
+
+**Türkisch-Zeichenprüfung:** Da die Galerie türkische Vorlagennamen/-kategorien zeigt und unverändert bestehen bleibt, gilt hier weiterhin verbindlich: jede eingesetzte Schrift muss `ğ Ğ ş Ş ı İ ç Ç ö Ö ü Ü` vollständig und korrekt rendern (dotless ı, İ mit Punkt), vor jedem Schriftwechsel im Screenshot geprüft.
 
 ---
 
 ## 4. Ton
 
-Auf der Startseite läuft nie automatisch Ton. Browser blocken das ohnehin, und Kunden schauen abends neben schlafenden Kindern.
+Auf den Marketingseiten läuft nie automatisch Ton. Browser blocken das ohnehin, und Kunden schauen abends neben schlafenden Kindern.
 
 - Hero-Hintergrundvideo, falls verwendet: `muted`, `playsinline`, `loop`.
 - Der Tap auf das Siegel ist die gültige User-Geste. Danach – und nur danach – darf Musik starten, und zwar leise eingeblendet über 1200 ms.
@@ -115,7 +117,7 @@ Auf der Startseite läuft nie automatisch Ton. Browser blocken das ohnehin, und 
 
 ## 5. Grenzen (verbindlich)
 
-- `prefers-reduced-motion: reduce` → alle Sequenzen entfallen, es bleiben Überblendungen unter 200 ms. Der Umschlag ist dann direkt offen. Die Seite muss in diesem Zustand vollständig funktionieren, nicht nur "auch gehen".
+- `prefers-reduced-motion: reduce` → alle Sequenzen entfallen, es bleiben Überblendungen unter 200 ms. Die Seite muss in diesem Zustand vollständig funktionieren, nicht nur "auch gehen".
 - Animiert wird ausschließlich über `transform` und `opacity`. Kein `top`, `left`, `width`, `height`, `margin` in Keyframes.
 - Ziel: 60 fps auf einem Android-Mittelklassegerät. Prüfen mit CPU-Drosselung 4× in den DevTools.
 - LCP unter 2,5 s auf 4G. Das Hero-Poster ist das LCP-Element, nicht das Video.
@@ -151,7 +153,7 @@ Regeln:
 Kein Abschnitt gilt als erledigt, bevor folgendes gelaufen ist:
 
 1. Dev-Server starten, mit Playwright bei 390 × 844 px (iPhone-Format) und bei 1440 px Screenshots erstellen.
-2. Von der Hero-Sequenz Screenshots bei 0, 400, 900, 1500 und 3000 ms.
+2. Von jedem neuen Kapitel Screenshots im Ruhezustand (voll eingeblendet) — nicht mitten in der Animation.
 3. Diese Bilder selbst ansehen und gegen diese Datei prüfen.
 4. Drei Punkte benennen, an denen es noch nach Standard-Template aussieht, und sie beheben, bevor du meldest, dass es fertig ist.
 5. Einen Durchlauf mit `prefers-reduced-motion: reduce` screenshotten.
