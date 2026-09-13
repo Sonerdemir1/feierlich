@@ -9,7 +9,8 @@ export const homepageCopy = {
     nav: { gallery: "Fotos & Gästebuch", templates: "Vorlagen", pricing: "Preise", login: "Anmelden", cta: "Fotos & Videos sammeln" },
     hero: {
       eyebrow: "Fotos, Videos & Gästebuch — digital gesammelt",
-      title: "Eure Erinnerungen. Nicht verstreut auf fremden Handys.",
+      titleLine1: "Eure Erinnerungen.",
+      titleLine2: "Nicht verstreut auf fremden Handys.",
       sub: "Jedes Gästefoto, jedes Video, jede Nachricht landet an einem Ort — sofort sichtbar, für immer gesichert. Dazu, wenn ihr wollt: eine passende digitale Einladung im selben Design.",
       ctaPrimary: "Fotos & Videos sammeln",
       ctaSecondary: "Auch Einladung gestalten",
@@ -92,7 +93,8 @@ export const homepageCopy = {
     nav: { gallery: "Fotoğraf & Anı Defteri", templates: "Şablonlar", pricing: "Fiyatlar", login: "Giriş Yap", cta: "Fotoğraf & Video Toplayın" },
     hero: {
       eyebrow: "Fotoğraflar, Videolar & Anı Defteri — dijital olarak bir arada",
-      title: "Anılarınız. Başkalarının telefonlarında kaybolmadan.",
+      titleLine1: "Anılarınız.",
+      titleLine2: "Başkalarının telefonlarında kaybolmadan.",
       sub: "Her misafir fotoğrafı, her video, her mesaj tek bir yerde toplanır — anında görünür, sonsuza dek güvende. İsterseniz aynı tasarımda dijital bir davetiye de ekleyin.",
       ctaPrimary: "Fotoğraf & Video Toplayın",
       ctaSecondary: "Davetiye de Tasarlayın",

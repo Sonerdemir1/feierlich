@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Lizenziertes Envato-Template, eigenes unabhaengiges Next.js-Projekt
+    // (eigene @/-Pfade) — nur interne Design-/Technik-Referenz, siehe
+    // .gitignore.
+    "Dixor v1.4/**",
   ]),
 ]);
 

@@ -61,3 +61,8 @@ scripts/tmp-*.ts
 # lokal abgelegtes Referenzmaterial (Design-Rohbilder), gehoert nicht ins Repo
 /Einladi Hochzeit Karten/
 /QR CARD/
+
+# Lizenziertes Envato-Elements-Template, NUR interne technische/
+# gestalterische Referenz (Layout/Bewegungstechnik) — Fremdmaterial,
+# darf niemals committet werden.
+/Dixor v1.4/

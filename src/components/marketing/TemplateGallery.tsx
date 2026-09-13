@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { categorySlug, categoryLabel, type GalleryCategory } from "@/lib/gallery-templates";
 import type { Locale } from "@/lib/i18n";
@@ -6,6 +7,17 @@ import type { Locale } from "@/lib/i18n";
 export type { GalleryCategory, GalleryTemplate } from "@/lib/gallery-templates";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+
+// docs/MOTION.md §3 "Karten als physische Objekte": Rotation deterministisch
+// aus der Template-ID, nicht zufaellig pro Render — sonst springt sie bei
+// jedem Re-Render (Suspense, Refetch, ...). Kein externer Hash noetig, ein
+// simpler String-Hash reicht fuer eine stabile Pseudo-Zufallszahl.
+function tiltForId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  const normalized = (Math.abs(hash) % 1000) / 1000;
+  return Math.round((-1.8 + normalized * 3.6) * 100) / 100;
+}
 
 // Reines Kachel-Raster ohne eigenen Client-State — Klick auf eine Vorlage
 // fuehrt auf die dedizierte Design-Studio-Seite (/gestalten/[id]) statt ein
@@ -43,7 +55,12 @@ export function TemplateGallery({
           </div>
           <div className="cat-grid">
             {items.map((item) => (
-              <Link key={item.id} href={paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`} className="tpl">
+              <Link
+                key={item.id}
+                href={paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`}
+                className="tpl"
+                style={{ "--tpl-rotate": `${tiltForId(item.id)}deg` } as CSSProperties}
+              >
                 <span className="tpl-open-hint">Design anpassen</span>
                 <TemplatePreview layoutKey={item.layoutKey} />
                 <span className="tpl-label">

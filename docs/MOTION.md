@@ -64,12 +64,28 @@ Diese Palette gilt für die Marketingseiten. Sie ersetzt die vorherige "Tinte & 
 
 ### Scroll-Animationen
 
-**Motion** (`motion/react`, siehe auch CLAUDE.md "Design- & Motion-Standards" — ersetzt die in der Vorversion vorgesehene Kombination aus GSAP ScrollTrigger + Lenis, die für dieses Projekt nie umgesetzt wurde).
+**Motion** (`motion/react`, siehe auch CLAUDE.md "Design- & Motion-Standards").
 
-- Inhalte, die beim Laden bereits im sichtbaren Bereich stehen (z. B. das erste Kapitel einer Seite): `initial`/`animate` (feuert beim Einhängen, nicht scroll-getriggert — dafür gibt es nichts "hineinzuscrollen").
-- Inhalte unterhalb der ersten Bildschirmhöhe: `whileInView` mit `viewport={{ once: true, amount: 0.2 }}`. Bewusst **kein** `margin`-basierter Viewport-Ausschnitt (unzuverlässig bei sehr großen Elementen, siehe Testlauf) — `amount` ist robuster.
-- Bewegung: `opacity 0→1` plus `y: 28px→0`, `duration: 0.7s`, `ease: [0.16, 1, 0.3, 1]`. Innerhalb eines Kapitels leicht gestaffelt (`delay` in ca. 0.08s-Schritten: Eyebrow → Überschrift → Text → CTA/Bild).
-- Das ist bewusst ein einfaches, zuverlässiges Fade-up-Muster statt einer Kamerafahrt-Illusion — die in der Vorversion beschriebene "Tiefenänderung" (`scale 1.08→1`) wurde nie umgesetzt und wird hiermit nicht weiterverfolgt.
+> **Korrektur einer früheren Fassung dieses Abschnitts:** Hier stand, die in
+> der Vor-Zera-Version beschriebene GSAP-ScrollTrigger-Kamerafahrt
+> (`scale 1.08→1` + `opacity`, an die Scroll-Position gekoppelt) sei "nie
+> umgesetzt" worden — das war falsch. Sie lief produktiv in
+> `MotionScrollCamera.tsx` auf der echten Startseite, bis diese Datei beim
+> Zera-Umbau ersetzt wurde. Lenis (künstliches Scroll-Smoothing) wurde
+> dagegen tatsächlich nie eingesetzt — bewusst, siehe unten.
+
+**Verbindliche Regel, dauerhaft und unabhängig von Farbpalette/Stilrichtung:**
+Niemals reines `whileInView`-Fade-Slide (`opacity 0→1` plus `y: 28px→0`,
+einmalig durch Sichtbarkeit ausgelöst) auf Abschnittsebene als **einzige**
+Bewegungstechnik verwenden — das ist der generische Standard, den
+zehntausende Template-Websites nutzen, und macht eine Seite austauschbar,
+unabhängig davon, wie gut Farben/Typografie sonst sind. Ein Abgleich gegen
+diese Regel gehört in die Checkliste in §7.
+
+- Inhalte, die beim Laden bereits im sichtbaren Bereich stehen (z. B. das erste Kapitel einer Seite): `initial`/`animate` bzw. unanimiert — dafür gibt es nichts "hineinzuscrollen", die Kamerafahrt betrifft per Definition den Übergang zwischen Abschnitten.
+- **Übergänge zwischen Kapiteln:** scroll-gekoppelte Kamerafahrt statt Sichtbarkeits-Trigger — das ganze Kapitel (Kopf + Inhalt als Einheit, wie im ursprünglichen GSAP-Setup) skaliert kontinuierlich von `scale 1.08 → 1` und blendet von `opacity 0 → 1`, direkt an den tatsächlichen Scroll-Fortschritt gekoppelt. Es soll wirken, als bewege sich die Kamera nach vorn, nicht als schiebe sich der Inhalt nach oben. Kein `y`-Versatz in dieser Technik — nur `scale` und `opacity`, beide ausschließlich transform-/opacity-basiert (siehe §5).
+- Technisch: Motions `useScroll`/`useTransform` (`target` = Kapitel-`<section>`, `offset: ["start end", "start start"]`), **nicht** `whileInView`. Deckt den scrub-Charakter von GSAP ScrollTrigger technisch gleichwertig ab — CLAUDE.md legt Motion als feste Bibliothek für dieses Projekt fest, GSAP ist inzwischen keine Dependency mehr im Projekt.
+- Bewusst **ohne** Lenis: künstliches Über-Zeit-Glätten jedes Scroll-Impulses machte die Seite in einem früheren Test spürbar träge ("extrem langsam" laut Nutzer-Feedback) — native Scroll-Performance ist die validierte Entscheidung, nur die scale/opacity-Kamerafahrt selbst wird eingesetzt.
 
 ---
 

@@ -1,0 +1,78 @@
+/* Ergaenzung zu zera.css: Pinning, Text-Fuell-Effekt, Wort-Stagger und
+   horizontaler Einschub (Techniken 4-5, siehe docs/MOTION.md) fuer die
+   Startseiten-Kapitel. Nutzt die Farb-/Abstands-Tokens aus zera.css
+   (--zc-bg/--zc-ink/--zc-muted/--zc-accent), eigener Namensraum (.zdx-*)
+   damit nichts mit den Basis-Klassen kollidiert. */
+
+/* --- Pinning (Kapitel 05, Editor) --- */
+.zdx-pin-wrapper {
+  position: relative;
+  height: 220vh;
+}
+.zdx-pin-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  overflow: hidden;
+  padding: 40px clamp(24px, 6vw, 96px) 32px;
+}
+.zdx-pin-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 5vw, 72px);
+  align-items: center;
+  width: 100%;
+  flex: 1;
+}
+.zdx-pin-media {
+  transform-origin: center;
+  will-change: transform;
+}
+@media (max-width: 860px) {
+  .zdx-pin-wrapper {
+    height: 180vh;
+  }
+  .zdx-pin-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Text-Fuell-Uebergang (zwischen Hauptkapiteln) --- */
+.zdx-textfill-band {
+  min-height: 46vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px clamp(24px, 6vw, 96px);
+  border-top: 1px solid rgba(26, 26, 26, 0.1);
+}
+.zdx-textfill-text {
+  margin: 0;
+  max-width: 18ch;
+  text-align: center;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+  font-size: clamp(28px, 4.6vw, 56px);
+  line-height: 1.15;
+  background-image: linear-gradient(90deg, var(--zc-ink), var(--zc-accent) 55%, var(--zc-ink));
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: rgba(26, 26, 26, 0.22);
+  -webkit-text-fill-color: rgba(26, 26, 26, 0.22);
+}
+
+/* --- Wort-Stagger-Reveal (einzelne Kapitel-Ueberschriften) --- */
+.zdx-stagger-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+}
+.zdx-stagger-word > span {
+  display: inline-block;
+}
