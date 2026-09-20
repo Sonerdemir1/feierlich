@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState, type CSSProperties, type ElementType } from "react";
 import { SelectableElement } from "@/components/editor/SelectableElement";
+import { ElementToolbar } from "@/components/editor/ElementToolbar";
 import { InlineEditableText } from "@/components/public/InlineEditableText";
-import { elementOverrideStyle } from "@/lib/text-style";
+import { elementOverrideStyle, type TextElementStyle } from "@/lib/text-style";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
-import type { LiveDesignState } from "@/components/public/HeroCard";
+import type { LiveDesignState } from "@/lib/live-design-state";
 
 // Generische Variante von EditableGuestbookText.tsx (Schritt 3) fuer
 // einfache Ueberschriften/Hinweistexte/Button-/Label-Beschriftungen, die
@@ -24,12 +25,20 @@ export function EditableSectionText({
   value,
   placeholder,
   style,
+  className,
   as = "div",
+  defaultColor = "#211C19",
 }: {
   eventId: string;
   field:
+    | "coupleLeftName"
+    | "coupleLeftBio"
+    | "coupleRightName"
+    | "coupleRightBio"
     | "wishlistHeading"
     | "wishlistHint"
+    | "weddingPartyHeading"
+    | "weddingPartyHint"
     | "musicHeading"
     | "musicHint"
     | "musicButtonText"
@@ -60,10 +69,17 @@ export function EditableSectionText({
   value: string;
   placeholder: string;
   style: CSSProperties;
+  className?: string;
   as?: ElementType;
+  // Fuer die Kontext-Toolbar (ElementToolbar.tsx): Ausgangsfarbe fuers
+  // Farb-Rad, bevor der Kunde "Eigene Farbe" anhakt — Aufrufer geben hier
+  // colors.primary durch, Fallback nur fuer den (praktisch nie
+  // vorkommenden) Fall eines fehlenden Aufruf-Updates.
+  defaultColor?: string;
 }) {
   const [selected, setSelected] = useState(false);
   const [liveOverride, setLiveOverride] = useState<CSSProperties>({});
+  const [rawStyle, setRawStyle] = useState<TextElementStyle>({});
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -71,6 +87,7 @@ export function EditableSectionText({
       if (event.data?.type !== "einladi-style-preview") return;
       const state = event.data.state as LiveDesignState;
       setLiveOverride(elementOverrideStyle(state.elements, field));
+      setRawStyle(state.elements?.[field] ?? {});
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
@@ -83,9 +100,22 @@ export function EditableSectionText({
     window.parent.postMessage({ type: "einladi-element-selected", key: field }, window.location.origin);
   }
 
+  function changeStyle(patch: Partial<TextElementStyle>) {
+    const next = { ...rawStyle, ...patch };
+    setRawStyle(next);
+    window.parent.postMessage({ type: "einladi-style-patch", key: field, patch }, window.location.origin);
+  }
+
   return (
-    <SelectableElement kind="text" label={label} selected={selected} onSelect={select} style={{ display: "block" }}>
-      <InlineEditableText eventId={eventId} field={field} value={value} as={as} placeholder={placeholder} onFocus={select} style={{ ...style, ...liveOverride }} />
+    <SelectableElement
+      kind="text"
+      label={label}
+      selected={selected}
+      onSelect={select}
+      style={{ display: "block" }}
+      toolbar={selected ? <ElementToolbar elementKey={field} style={rawStyle} defaultColor={defaultColor} onChange={changeStyle} /> : undefined}
+    >
+      <InlineEditableText eventId={eventId} field={field} value={value} as={as} placeholder={placeholder} onFocus={select} style={{ ...style, ...liveOverride }} className={className} />
     </SelectableElement>
   );
 }

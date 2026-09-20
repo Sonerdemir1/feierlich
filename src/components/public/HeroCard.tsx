@@ -7,49 +7,23 @@ import { CornerMotif } from "@/components/marketing/TemplatePreview";
 import { InlineEditableText } from "@/components/public/InlineEditableText";
 import { SelectableElement } from "@/components/editor/SelectableElement";
 import { fontOptionById } from "@/lib/fonts";
-import { elementOverrideStyle, type StyleElements, type TextElementKey } from "@/lib/text-style";
+import { elementOverrideStyle, type TextElementKey } from "@/lib/text-style";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
 import { photoStyle, type PhotoShape } from "@/lib/photo-shape";
-import type { AgendaItem } from "@/lib/agenda";
-import type { WishlistItemData } from "@/lib/wishlist";
+import type { LiveDesignState } from "@/lib/live-design-state";
 
-type Colors = { primary: string; accent: string; background: string };
+export type { LiveDesignState };
+
 type TextZone = { top: number; right: number; bottom: number; left: number };
 
-export type LiveDesignState = {
-  colors: Colors;
-  fontId?: string;
-  ornaments: boolean;
-  elements?: StyleElements;
-  // Live-Override fuers Datum (DateQuickEdit.tsx, Phase 3) — undefined laesst
-  // die serverseitig berechneten eventDate/eventTime-Props unangetastet,
-  // gesetzt aktualisiert Datumszeile + Countdown sofort ohne Seiten-Reload.
-  eventDateIso?: string;
-  eventTime?: string | null;
-  // Live-Override fuer die Location (LocationQuickEdit.tsx) — wird von
-  // HeroCard.tsx selbst nicht gerendert (die Karte zeigt keine Location,
-  // siehe e/[slug]/page.tsx "Ort"-Sektion), aber ueber denselben
-  // "einladi-style-preview"-Broadcast an EditableLocation.tsx weitergereicht,
-  // die unabhaengig von HeroCard denselben State-Kanal mitliest.
-  locationName?: string | null;
-  locationAddress?: string | null;
-  // Live-Override fuer den Ablaufplan (siehe EditableAgenda.tsx) — wie
-  // locationName/-Address von HeroCard.tsx selbst nicht gerendert, aber
-  // ueber denselben Broadcast an EditableAgenda.tsx weitergereicht.
-  agendaItems?: AgendaItem[];
-  // Live-Override fuer die Wunschliste (siehe EditableWishlist.tsx) — wie
-  // agendaItems von HeroCard.tsx selbst nicht gerendert, aber ueber
-  // denselben Broadcast weitergereicht (Schritt 4).
-  wishlistItems?: WishlistItemData[];
-  // Uebernommen aus dem anonymen Gestalten-Entwurf (apply-draft/route.ts,
-  // Bugfix "Foto & Verzierungen gehen beim Signup verloren") — nur gesetzt,
-  // wenn das Event aus einem Entwurf mit aktiv gewaehlter Foto-Form
-  // entstand, sonst undefined (bestehende Events unveraendert, siehe
-  // useCardPhoto in e/[slug]/page.tsx).
-  photoShape?: PhotoShape;
-  showFloral?: boolean;
-  showPhotoBackground?: boolean;
-};
+// HINWEIS (Plan-Phase D): HeroCard.tsx wird NICHT mehr fuer alle Vorlagen
+// genutzt — nur noch fuer die Duegduen-Blanko-Vorlagen mit echter
+// Kartengrafik (cardImageUrl, siehe e/[slug]/page.tsx). Alle anderen
+// Vorlagen nutzen jetzt EventHero.tsx (Hero.tsx/BigDayCountdown.tsx aus
+// invitation-sections, gleiche Komponenten wie im Gestalten-Bereich).
+// Exakt dasselbe Prinzip wie in DesignStudio.tsx: die feste Kartengrafik-
+// Optik bleibt fuer diese Vorlagen unangetastet, kein Belle-Umbau dafuer
+// (siehe dortiger Kommentar "item.cardImageUrl && zone").
 
 // Eigenstaendige Client-Komponente statt eines reinen Server-Blocks: haelt
 // Farben/Schriftart/Verzierungen/Pro-Element-Feinsteuerung in lokalem State

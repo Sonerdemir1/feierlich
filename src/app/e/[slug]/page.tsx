@@ -13,7 +13,10 @@ import type { AgendaItem } from "@/lib/agenda";
 import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
 import { VideoEnvelope } from "@/components/marketing/VideoEnvelope";
 import { BackgroundMusicToggle } from "@/components/marketing/BackgroundMusicToggle";
-import { HeroCard, type LiveDesignState } from "@/components/public/HeroCard";
+import { HeroCard } from "@/components/public/HeroCard";
+import { EventHero } from "@/components/public/EventHero";
+import { CameraSection } from "@/components/invitation-sections/CameraSection";
+import type { LiveDesignState } from "@/lib/live-design-state";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
 import { EditableDescription } from "@/components/public/EditableDescription";
@@ -24,6 +27,8 @@ import { AudioMessagePlayer } from "@/components/public/AudioMessagePlayer";
 import { VideoMessagePlayer } from "@/components/public/VideoMessagePlayer";
 import { EditableWishlist } from "@/components/public/EditableWishlist";
 import { WISHLIST_TYPE_LABEL, WISHLIST_TYPES, type WishlistItemData } from "@/lib/wishlist";
+import { EditableWeddingParty } from "@/components/public/EditableWeddingParty";
+import { WEDDING_PARTY_ROLE_LABEL, WEDDING_PARTY_ROLES, type WeddingPartyMemberData } from "@/lib/wedding-party";
 import { cardTextZone } from "@/lib/card-frames";
 import { PHOTO_BACKGROUND } from "@/lib/gallery-templates";
 import type { PhotoShape } from "@/lib/photo-shape";
@@ -34,6 +39,8 @@ import { getEventWeather, weatherCodeInfo } from "@/lib/weather";
 import { submitRsvp, findSeat, uploadGalleryPhoto, setUploaderName, revokeGalleryMediaConsent, submitGuestbookEntry, submitMusicRequest, confirmCheckIn, checkInGuestByName } from "./actions";
 import { AI_CONSENT_GENERAL_TEXT } from "@/lib/ai-consent";
 import { eventHasFeature } from "@/lib/event-features";
+import { activeSectionOrder, sectionOrderIndex as sectionOrderIndexFn } from "@/lib/section-order";
+import { ReorderableSection } from "@/components/public/ReorderableSection";
 
 type TemplateColors = { primary: string; accent: string; background: string };
 type TemplateFonts = { display: string; body: string };
@@ -156,6 +163,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const hasSeatingAccess = eventHasFeature(event, "seating");
   const hasGalleryAccess = eventHasFeature(event, "gallery");
   const hasGuestbookAccess = eventHasFeature(event, "guestbook");
+  const hasWeddingPartyAccess = eventHasFeature(event, "wedding-party");
   const moduleConfig = (key: string): Record<string, unknown> => {
     const m = modules.find((mm) => mm.key === key);
     const em = m ? eventModules.find((e) => e.moduleId === m.id) : undefined;
@@ -205,12 +213,18 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // (per postMessage) berechnet, siehe initialDesignState weiter unten.
   const descriptionOverride = elementOverrideStyle(style.elements, "description");
   const loveStoryOverride = elementOverrideStyle(style.elements, "loveStoryText");
+  const coupleLeftNameOverride = elementOverrideStyle(style.elements, "coupleLeftName");
+  const coupleLeftBioOverride = elementOverrideStyle(style.elements, "coupleLeftBio");
+  const coupleRightNameOverride = elementOverrideStyle(style.elements, "coupleRightName");
+  const coupleRightBioOverride = elementOverrideStyle(style.elements, "coupleRightBio");
   const locationOverride = elementOverrideStyle(style.elements, "location");
   const guestbookHeadingOverride = elementOverrideStyle(style.elements, "guestbookHeading");
   const guestbookHintOverride = elementOverrideStyle(style.elements, "guestbookHint");
   const guestbookButtonOverride = elementOverrideStyle(style.elements, "guestbookButtonText");
   const wishlistHeadingOverride = elementOverrideStyle(style.elements, "wishlistHeading");
   const wishlistHintOverride = elementOverrideStyle(style.elements, "wishlistHint");
+  const weddingPartyHeadingOverride = elementOverrideStyle(style.elements, "weddingPartyHeading");
+  const weddingPartyHintOverride = elementOverrideStyle(style.elements, "weddingPartyHint");
   const musicHeadingOverride = elementOverrideStyle(style.elements, "musicHeading");
   const musicHintOverride = elementOverrideStyle(style.elements, "musicHint");
   const musicButtonOverride = elementOverrideStyle(style.elements, "musicButtonText");
@@ -268,6 +282,17 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // photoShape im styleJson) sind davon unveraendert.
   const useCardPhoto = Boolean(style.photoShape && event.coverImage);
   const photoBackground = PHOTO_BACKGROUND[event.template.layoutKey] ?? null;
+  // Foto fuer den Ablaufplan-Zweispalter (Belle-Vorbild, siehe
+  // EventsTimeline.tsx im Gestalten-Bereich) — gleiche Prioritaet wie
+  // ueberall sonst: eigenes Titelbild vor generischem Vorlagen-Stockfoto.
+  const agendaPhotoUrl = event.coverImage?.url ?? photoBackground?.src;
+  // Die Ablaufplan-Zeilen sitzen auf einer FEST hellen Flaeche (var(--ivory-2)
+  // in .iv-events-list .customizer-card-agenda-row, Belle-Vorbild: "boxige
+  // graue Zeilen") — unabhaengig von der Vorlagenfarbe. colors.primary waere
+  // hier falsch: bei dunklen Vorlagen (z.B. Bordeaux-Hintergrund mit hellem
+  // Vordergrundtext) ergaebe das helle Schrift auf heller Flaeche
+  // (Kontrast-Bug, live gefunden). Fester dunkler Ton statt Vorlagenfarbe.
+  const agendaRowInk = "#2b241f";
 
   // Abschnitts-Reihenfolge (Bugfix "sectionOrder geht beim Signup verloren")
   // — <main> wird weiter unten auf display:flex/flex-direction:column
@@ -276,23 +301,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   // Baum zu aendern. Bewusst NICHT die JSX-Struktur der einzelnen (teils
   // sehr umfangreichen) Abschnitte selbst angefasst — das haette ein
   // deutlich riskanteres Refactoring der wichtigsten Seite der App bedeutet.
-  // LEGACY_SECTION_ORDER ist die bisherige, fest kodierte Reihenfolge dieser
-  // Seite (unveraendert fuer alle BESTEHENDEN Events ohne sectionOrder im
-  // styleJson) — bewusst NICHT identisch mit DesignStudio.tsx' eigenem
-  // DEFAULT_SECTION_ORDER (dort z.B. rsvp/seating/gallery vor agenda), um
-  // das Aussehen jedes bereits bestehenden Events unveraendert zu lassen.
-  // Neue, aus einem Entwurf entstandene Events erhalten stattdessen die vom
-  // Kunden im Editor gesehene/gewaehlte Reihenfolge.
-  const LEGACY_SECTION_ORDER = [
-    "agenda", "rsvp", "seating", "menu", "gallery", "guestbook",
-    "music-requests", "wishlist", "dresscode", "social-media",
-    "audio-invitation", "video-invitation", "thank-you-card",
-  ];
-  const activeSectionOrder =
-    Array.isArray(style.sectionOrder) && style.sectionOrder.length > 0 ? style.sectionOrder : LEGACY_SECTION_ORDER;
+  // Liste + Indexberechnung jetzt in lib/section-order.ts (geteilt mit
+  // DesignEditor.tsx/ReorderableSection.tsx, Inline Umsortieren).
+  const activeOrder = activeSectionOrder(style.sectionOrder);
   function sectionOrderIndex(key: string): number {
-    const idx = activeSectionOrder.indexOf(key);
-    return 100 + (idx === -1 ? activeSectionOrder.length : idx);
+    return sectionOrderIndexFn(activeOrder, key);
   }
   const envelopeImages: string[] | null = event.template.envelopeSequenceUrls
     ? JSON.parse(event.template.envelopeSequenceUrls)
@@ -322,7 +335,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   const musicStatus = typeof sp.music === "string" ? sp.music : undefined;
   const musicError = typeof sp.musicError === "string" ? sp.musicError : undefined;
 
-  const [galleryItems, guestbookEntries, wishlistItems, menuItems] = await Promise.all([
+  const [galleryItems, guestbookEntries, wishlistItems, weddingPartyMembers, menuItems] = await Promise.all([
     isModuleOn("gallery") && hasGalleryAccess
       ? prisma.galleryItem.findMany({
           where: { eventId: event.id, status: "APPROVED" },
@@ -336,6 +349,9 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       : Promise.resolve([]),
     isModuleOn("wishlist")
       ? prisma.wishlistItem.findMany({ where: { eventId: event.id }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] })
+      : Promise.resolve([]),
+    isModuleOn("wedding-party") && hasWeddingPartyAccess
+      ? prisma.weddingPartyMember.findMany({ where: { eventId: event.id }, include: { photo: true }, orderBy: { sortOrder: "asc" } })
       : Promise.resolve([]),
     isModuleOn("menu")
       ? prisma.menuItem.findMany({ where: { eventId: event.id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] })
@@ -360,6 +376,13 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     title: w.title,
     description: w.description ?? "",
     url: w.url ?? "",
+  }));
+  const weddingPartyItemsData: WeddingPartyMemberData[] = weddingPartyMembers.map((m) => ({
+    id: m.id,
+    role: m.role,
+    name: m.name,
+    photoUrl: m.photo?.url ?? "",
+    photoId: m.photoId ?? undefined,
   }));
 
   // Fuer PhotoWall/PhotoTagger auf ein schlankes Format reduziert, statt die
@@ -402,12 +425,15 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
   };
   const mediaAccept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm";
 
-  // Hero-Inhalt (Anlass-Label, Namen, Familiennamen, Datum, Countdown) lebt
-  // jetzt in HeroCard.tsx (Client-Komponente) statt hier als reines
-  // Server-JSX — haelt Farben/Schriftart/Verzierungen/Feinsteuerung in
-  // lokalem State, den DesignEditor.tsx im Dashboard per postMessage live
-  // aktualisiert, ohne dass dieser iframe neu laedt.
-  const heroInner = (
+  // Hero-Inhalt: Duegduen-Blanko-Vorlagen mit echter Kartengrafik behalten
+  // HeroCard.tsx unveraendert (siehe dortiger Kommentar). Alle anderen
+  // Vorlagen nutzen jetzt EventHero.tsx — dieselben Hero.tsx/
+  // BigDayCountdown.tsx-Komponenten wie im Gestalten-Bereich (Plan-Phase D,
+  // CLAUDE.md Regel 6). Die "Der große Tag"-Bandueberschrift teilt sich das
+  // description-Feld mit der bisherigen eigenstaendigen Beschreibungs-
+  // Sektion (siehe dortige Ausblendung weiter unten, "countdownOnAndNoCard").
+  const countdownOnAndNoCard = isModuleOn("countdown") && !cardImageUrl;
+  const heroInner = cardImageUrl ? (
     <HeroCard
       eventId={event.id}
       eventSlug={event.slug}
@@ -437,7 +463,45 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       coverImageUrl={useCardPhoto ? (event.coverImage?.url ?? null) : null}
       photoBackground={photoBackground}
     />
+  ) : (
+    <EventHero
+      eventId={event.id}
+      eventSlug={event.slug}
+      title={event.title}
+      familyLeft={event.familyLeft}
+      familyRight={event.familyRight}
+      eventDate={event.eventDate}
+      eventTime={event.eventTime}
+      eventLabelText={eventLabelText}
+      eventLabelRaw={event.eventLabel}
+      editMode={editMode}
+      envelopeImages={envelopeImages}
+      hasFamilyNames={hasFamilyNames}
+      eventLocationText={eventLocationText}
+      countdownOn={isModuleOn("countdown")}
+      templateFontFallback={templateFontFallback}
+      initial={initialDesignState}
+      countdownDaysLabel={event.countdownDaysLabel ?? "TAGE"}
+      countdownHoursLabel={event.countdownHoursLabel ?? "STD"}
+      countdownMinutesLabel={event.countdownMinutesLabel ?? "MIN"}
+      calendarSaveText={event.calendarSaveText ?? "In Kalender speichern"}
+      calendarGoogleText={event.calendarGoogleText ?? "Google Kalender"}
+      calendarUrl={calendarUrl}
+      descriptionText={event.description ?? ""}
+      // Gleiche Prioritaet wie im Gestalten-Bereich (DesignStudio.tsx): das
+      // eigene Titelbild schlaegt immer das generische Vorlagen-Stock-Foto.
+      // Ersetzt damit auch den bisherigen separaten Titelbild-Banner unter
+      // der Karte (siehe Ausblendung weiter unten, "!useNewHeroPhoto") —
+      // sonst erschiene dasselbe Foto zweimal.
+      photoUrl={event.coverImage?.url ?? photoBackground?.src ?? undefined}
+    />
   );
+  // Steuert, ob der bisherige separate Titelbild-Banner (order:3 weiter
+  // unten) ausgeblendet bleibt, weil EventHero das Foto bereits selbst als
+  // Hero-Hintergrund zeigt — nur fuer Vorlagen OHNE Kartengrafik relevant,
+  // bei cardImageUrl bleibt das bisherige Verhalten (useCardPhoto-Flag)
+  // unveraendert bestehen.
+  const heroShowsOwnPhoto = !cardImageUrl && Boolean(event.coverImage);
 
   // Ganzseitiger Hintergrund, der das gewaehlte Kartendesign aufgreift —
   // vorher stand die eigentliche Kartengrafik als kleine Box in einer
@@ -488,8 +552,48 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
     );
   }
 
+  // Fuer den Inline-Umsortieren-Pfeil (ReorderableSection.tsx): welche der
+  // umsortierbaren Abschnitte gerade tatsaechlich sichtbar sind — dieselben
+  // Bedingungen wie die {isModuleOn(...) && ... && (<ReorderableSection>)}-
+  // Bloecke weiter unten, hier einmal gesammelt, damit "nach oben"/"nach
+  // unten" mit dem naechsten SICHTBAREN Nachbarn tauscht statt mit einem
+  // gerade ausgeblendeten (der Klick haette sonst keine sichtbare Wirkung).
+  const visibleSectionKeys = [
+    isModuleOn("agenda") && (agendaItems.length > 0 || editMode) && "agenda",
+    isModuleOn("rsvp") && "rsvp",
+    isModuleOn("seating") && hasSeatingAccess && "seating",
+    isModuleOn("menu") && (menuItems.length > 0 || editMode) && "menu",
+    isModuleOn("gallery") && hasGalleryAccess && "gallery",
+    isModuleOn("guestbook") && hasGuestbookAccess && "guestbook",
+    isModuleOn("wedding-party") && hasWeddingPartyAccess && (weddingPartyItemsData.length > 0 || editMode) && "wedding-party",
+    isModuleOn("music-requests") && "music-requests",
+    isModuleOn("wishlist") && (wishlistItemsData.length > 0 || editMode) && "wishlist",
+    isModuleOn("dresscode") && (event.dresscodeText || editMode) && "dresscode",
+    isModuleOn("social-media") && (event.socialMediaText || editMode) && "social-media",
+    isModuleOn("audio-invitation") && Boolean(event.audioInvitation) && "audio-invitation",
+    isModuleOn("video-invitation") && Boolean(event.videoMessage) && "video-invitation",
+    isModuleOn("thank-you-card") && (isPastEvent || editMode) && "thank-you-card",
+  ].filter((k): k is string => typeof k === "string");
+  const sectionLabels: Record<string, string> = {
+    agenda: "Ablaufplan",
+    rsvp: "Zusagen",
+    seating: "Sitzplan",
+    menu: "Menü",
+    gallery: "Galerie",
+    guestbook: "Gästebuch",
+    "wedding-party": "Trauzeugen & Brautjungfern",
+    "music-requests": "Musikwünsche",
+    wishlist: "Wunschliste",
+    dresscode: "Dresscode",
+    "social-media": "Social Media",
+    "audio-invitation": "Audio-Einladung",
+    "video-invitation": "Video-Einladung",
+    "thank-you-card": "Dankeskarte",
+  };
+
   return (
     <main
+      className="iv-page"
       style={{
         minHeight: "100vh",
         color: colors.primary,
@@ -505,6 +609,13 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         // risikoaermer als ein Umbau der Render-Struktur dieser Seite.
         display: "flex",
         flexDirection: "column",
+        // Live gefunden (Playwright, 375px): CameraSection skaliert Abschnitte
+        // beim Einblenden kurzzeitig auf scale(1.08) (siehe CameraSection.tsx)
+        // — das schiebt den sichtbaren Rand ueber die Seitenbreite hinaus und
+        // erzeugt auf JEDEM per CameraSection animierten Abschnitt (nicht nur
+        // den beiden hier neuen) horizontales Scrollen auf schmalen Screens.
+        // Betrifft die ganze Seite, nicht nur diese Aenderung — siehe Bericht.
+        overflowX: "hidden",
       }}
     >
       {isOwner && event.status !== "PUBLISHED" && (
@@ -513,7 +624,13 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </div>
       )}
 
-      <section style={{ order: 1, padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
+      <section
+        style={
+          cardImageUrl
+            ? { order: 1, padding: "72px 28px 48px", textAlign: "center", maxWidth: 560, margin: "0 auto" }
+            : { order: 1 }
+        }
+      >
         {isModuleOn("video-invitation") && event.envelopeVideo ? (
           <VideoEnvelope videoUrl={event.envelopeVideo.url} primary={colors.primary}>
             {heroInner}
@@ -527,57 +644,170 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         )}
       </section>
 
+      {(editMode || event.coupleLeftName || event.coupleLeftBio || event.coupleRightName || event.coupleRightBio) && (
+        <CameraSection style={{ order: 2 }}>
+        <section id="paar" className="iv-section" style={{ background: colors.background, ["--iv-accent" as string]: colors.accent }}>
+          <div className="iv-inner">
+            <div className="iv-head">
+              <span className="iv-eyebrow">Hallo!</span>
+              <h2 className="iv-heading" style={{ fontFamily: headingFont, color: colors.primary }}>
+                Wir laden euch ein, mit uns zu feiern
+              </h2>
+            </div>
+            <div className="iv-couple-row">
+              <div className="iv-couple-bio">
+                {editMode ? (
+                  <EditableSectionText
+                    eventId={event.id}
+                    defaultColor={colors.primary}
+                    field="coupleLeftName"
+                    label="Name (links)"
+                    value={event.coupleLeftName ?? ""}
+                    placeholder="Anna"
+                    as="div"
+                    style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleLeftNameOverride }}
+                  />
+                ) : (
+                  event.coupleLeftName && (
+                    <div style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleLeftNameOverride }}>
+                      {event.coupleLeftName}
+                    </div>
+                  )
+                )}
+                {editMode ? (
+                  <EditableSectionText
+                    eventId={event.id}
+                    defaultColor={colors.primary}
+                    field="coupleLeftBio"
+                    label="Kurzvorstellung (links)"
+                    value={event.coupleLeftBio ?? ""}
+                    placeholder="Ein paar Worte über sie…"
+                    as="p"
+                    style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleLeftBioOverride }}
+                  />
+                ) : (
+                  event.coupleLeftBio && (
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleLeftBioOverride }}>{event.coupleLeftBio}</p>
+                  )
+                )}
+              </div>
+              <div className="iv-couple-photo" style={{ background: colors.accent }} />
+              <span className="iv-couple-heart" aria-hidden="true">
+                ♥
+              </span>
+              <div className="iv-couple-photo" style={{ background: colors.accent }} />
+              <div className="iv-couple-bio">
+                {editMode ? (
+                  <EditableSectionText
+                    eventId={event.id}
+                    defaultColor={colors.primary}
+                    field="coupleRightName"
+                    label="Name (rechts)"
+                    value={event.coupleRightName ?? ""}
+                    placeholder="Lukas"
+                    as="div"
+                    style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleRightNameOverride }}
+                  />
+                ) : (
+                  event.coupleRightName && (
+                    <div style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleRightNameOverride }}>
+                      {event.coupleRightName}
+                    </div>
+                  )
+                )}
+                {editMode ? (
+                  <EditableSectionText
+                    eventId={event.id}
+                    defaultColor={colors.primary}
+                    field="coupleRightBio"
+                    label="Kurzvorstellung (rechts)"
+                    value={event.coupleRightBio ?? ""}
+                    placeholder="Ein paar Worte über ihn…"
+                    as="p"
+                    style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleRightBioOverride }}
+                  />
+                ) : (
+                  event.coupleRightBio && (
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleRightBioOverride }}>{event.coupleRightBio}</p>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+        </CameraSection>
+      )}
+
       {isModuleOn("background-music") && event.backgroundMusic && (
         <BackgroundMusicToggle url={event.backgroundMusic.url} accent={colors.accent} background={colors.background} />
       )}
 
-      {event.coverImage && !useCardPhoto && (
-        <div style={{ order: 3, maxWidth: 640, margin: "0 auto 48px", padding: "0 28px" }}>
+      {event.coverImage && !useCardPhoto && !heroShowsOwnPhoto && (
+        <CameraSection style={{ order: 3 }}>
+        <div style={{ maxWidth: 640, margin: "0 auto 48px", padding: "0 28px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- user upload, unknown dimensions */}
           <img src={event.coverImage.url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
         </div>
+        </CameraSection>
       )}
 
-      {editMode ? (
-        <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-          <EditableDescription
-            eventId={event.id}
-            value={event.description ?? ""}
-            style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}
-          />
-        </section>
-      ) : (
-        event.description && (
-          <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-            <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
-              {event.description}
-            </p>
+      {/* Bei aktivem Countdown (und keiner Kartengrafik-Vorlage) zeigt
+          EventHero denselben description-Text bereits als "Der große
+          Tag"-Introtext — diese eigenstaendige Sektion bliebe sonst eine
+          reine Dopplung desselben Textes. */}
+      {!countdownOnAndNoCard && (
+        <CameraSection style={{ order: 4 }}>
+        {editMode ? (
+          <section style={{ maxWidth: 560, margin: "0 auto", padding: "56px 28px", textAlign: "center" }}>
+            <EditableDescription
+              eventId={event.id}
+              value={event.description ?? ""}
+              style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}
+              defaultColor={colors.primary}
+            />
           </section>
-        )
+        ) : (
+          event.description && (
+            <section style={{ maxWidth: 560, margin: "0 auto", padding: "56px 28px", textAlign: "center" }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...descriptionOverride }}>
+                {event.description}
+              </p>
+            </section>
+          )
+        )}
+        </CameraSection>
       )}
 
-      {editMode ? (
-        <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-          <div style={{ fontFamily: headingFont, fontSize: 18, marginBottom: 10, opacity: 0.85 }}>Wie wir uns kennengelernt haben</div>
-          <EditableLoveStory
-            eventId={event.id}
-            value={event.loveStoryText ?? ""}
-            style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...loveStoryOverride }}
-          />
+      <CameraSection style={{ order: 4 }}>
+      {(editMode || event.loveStoryText) && (
+        <section id="geschichte" className="iv-section" style={{ background: colors.background, ["--iv-accent" as string]: colors.accent }}>
+          <div className="iv-inner">
+            <div className="iv-head">
+              <span className="iv-eyebrow">Wir lieben uns</span>
+              <h2 className="iv-heading" style={{ fontFamily: headingFont, color: colors.primary }}>
+                Unsere Geschichte
+              </h2>
+              {editMode ? (
+                <EditableLoveStory
+                  eventId={event.id}
+                  value={event.loveStoryText ?? ""}
+                  style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...loveStoryOverride }}
+                  defaultColor={colors.primary}
+                />
+              ) : (
+                <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...loveStoryOverride }}>
+                  {event.loveStoryText}
+                </p>
+              )}
+            </div>
+          </div>
         </section>
-      ) : (
-        event.loveStoryText && (
-          <section style={{ order: 4, maxWidth: 560, margin: "0 auto", padding: "0 28px 48px", textAlign: "center" }}>
-            <div style={{ fontFamily: headingFont, fontSize: 18, marginBottom: 10, opacity: 0.85 }}>Wie wir uns kennengelernt haben</div>
-            <p style={{ fontSize: 14.5, lineHeight: 1.7, opacity: 0.85, whiteSpace: "pre-line", color: colors.primary, ...loveStoryOverride }}>
-              {event.loveStoryText}
-            </p>
-          </section>
-        )
       )}
+      </CameraSection>
 
       {isModuleOn("location") && (event.locationName || editMode) && (
-        <section style={{ order: 5, maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
+        <CameraSection style={{ order: 5 }}>
+        <section style={{ maxWidth: 480, margin: "0 auto", padding: "56px 28px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 10 }}>
               Ort
@@ -588,6 +818,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 initialLocationAddress={event.locationAddress}
                 headingStyle={{ fontFamily: headingFont, fontSize: 19, ...locationOverride }}
                 addressStyle={{ fontSize: 13, opacity: 0.75, marginTop: 6, color: locationOverride.color }}
+                defaultColor={colors.primary}
               />
             ) : (
               <>
@@ -624,38 +855,64 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               })()}
           </div>
         </section>
+        </CameraSection>
       )}
 
       {isModuleOn("agenda") && (agendaItems.length > 0 || editMode) && (
-        <section style={{ order: sectionOrderIndex("agenda"), maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
-          <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
-            <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 14 }}>
-              Ablaufplan
+        <ReorderableSection
+          sectionKey="agenda"
+          label={sectionLabels["agenda"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("agenda")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="ablaufplan" className="iv-section" style={{ background: colors.background, ["--iv-accent" as string]: colors.accent }}>
+          <div className="iv-inner">
+            <div className="iv-head">
+              <span className="iv-eyebrow">Ablaufplan</span>
+              <h2 className="iv-heading" style={{ fontFamily: headingFont, color: colors.primary }}>
+                Der Ablauf des Tages
+              </h2>
             </div>
-            {editMode ? (
-              <EditableAgenda initialItems={agendaItems} baseStyle={{ fontFamily: headingFont, color: colors.primary }} accentColor={colors.accent} />
-            ) : (
-              <div className="customizer-card-agenda">
-                {agendaItems.map((it) => {
-                  const override = elementOverrideStyle({ agenda: it.style }, "agenda");
-                  return (
-                    <div key={it.id} className="customizer-card-agenda-row" style={{ fontFamily: headingFont, color: colors.primary, ...override }}>
-                      <span className="customizer-card-agenda-dot" style={{ background: colors.accent }} />
-                      <span className="customizer-card-agenda-time" style={{ color: colors.accent }}>
-                        {it.time}
-                      </span>
-                      <span>{it.label}</span>
-                    </div>
-                  );
-                })}
+            <div className="iv-events-grid">
+              <div
+                className="iv-events-photo"
+                style={
+                  agendaPhotoUrl
+                    ? { backgroundImage: `url(${agendaPhotoUrl})` }
+                    : { background: `linear-gradient(155deg, ${colors.accent}, ${colors.primary})` }
+                }
+              />
+              <div className="iv-events-list">
+                {editMode ? (
+                  <EditableAgenda initialItems={agendaItems} baseStyle={{ fontFamily: headingFont, color: agendaRowInk }} accentColor={colors.accent} />
+                ) : (
+                  <div className="customizer-card-agenda">
+                    {agendaItems.map((it) => {
+                      const override = elementOverrideStyle({ agenda: it.style }, "agenda");
+                      return (
+                        <div key={it.id} className="customizer-card-agenda-row" style={{ fontFamily: headingFont, color: agendaRowInk, ...override }}>
+                          <span className="customizer-card-agenda-dot" style={{ background: colors.accent }} />
+                          <span className="customizer-card-agenda-time" style={{ color: colors.accent }}>
+                            {it.time}
+                          </span>
+                          <span>{it.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </section>
+        </ReorderableSection>
       )}
 
       {weather && (
-        <section style={{ maxWidth: 480, margin: "0 auto", padding: "0 28px 48px" }}>
+        <CameraSection>
+        <section style={{ maxWidth: 480, margin: "0 auto", padding: "56px 28px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 26px", textAlign: "center" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 10 }}>
               Wetter am {new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "long" }).format(event.eventDate)}
@@ -667,10 +924,12 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             </div>
           </div>
         </section>
+        </CameraSection>
       )}
 
       {isModuleOn("check-in") && linkedGuest && (
-        <section style={{ order: 90, maxWidth: 420, margin: "0 auto", padding: "0 28px 48px" }}>
+        <CameraSection style={{ order: 90 }}>
+        <section style={{ maxWidth: 420, margin: "0 auto", padding: "56px 28px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "24px 26px", textAlign: "center" }}>
             {linkedGuest.checkIn ? (
               <>
@@ -692,15 +951,26 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )}
           </div>
         </section>
+        </CameraSection>
       )}
 
       {isModuleOn("rsvp") && (
-        <section id="rsvp" style={{ order: sectionOrderIndex("rsvp"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="rsvp"
+          label={sectionLabels["rsvp"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("rsvp")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="rsvp" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 420 }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px" }}>
             {editMode ? (
               <div style={{ marginBottom: 20 }}>
                 <EditableSectionText
                   eventId={event.id}
+                  defaultColor={colors.primary}
                   field="rsvpHeading"
                   label="Zusagen-Überschrift"
                   value={event.rsvpHeading ?? "Zusagen"}
@@ -744,6 +1014,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                     {editMode ? (
                       <EditableSectionText
                         eventId={event.id}
+                        defaultColor={colors.primary}
                         field="rsvpYesLabel"
                         label='"Wir kommen"-Beschriftung'
                         value={event.rsvpYesLabel ?? "Wir kommen"}
@@ -760,6 +1031,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                     {editMode ? (
                       <EditableSectionText
                         eventId={event.id}
+                        defaultColor={colors.primary}
                         field="rsvpMaybeLabel"
                         label='"Noch unsicher"-Beschriftung'
                         value={event.rsvpMaybeLabel ?? "Noch unsicher"}
@@ -776,6 +1048,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                     {editMode ? (
                       <EditableSectionText
                         eventId={event.id}
+                        defaultColor={colors.primary}
                         field="rsvpNoLabel"
                         label='"Leider nicht"-Beschriftung'
                         value={event.rsvpNoLabel ?? "Leider nicht"}
@@ -827,6 +1100,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 {editMode ? (
                   <EditableSectionText
                     eventId={event.id}
+                    defaultColor={colors.primary}
                     field="rsvpButtonText"
                     label="Zusagen-Button"
                     value={event.rsvpButtonText ?? "Zusage senden"}
@@ -854,16 +1128,27 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </form>
             )}
           </div>
+        </div>
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("seating") && hasSeatingAccess && (
-        <section id="sitzplatz" style={{ order: sectionOrderIndex("seating"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="seating"
+          label={sectionLabels["seating"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("seating")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="sitzplatz" style={{ maxWidth: 420, margin: "0 auto", padding: "72px 28px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
             {editMode ? (
               <div style={{ marginBottom: 8 }}>
                 <EditableSectionText
                   eventId={event.id}
+                  defaultColor={colors.primary}
                   field="seatingHeading"
                   label="Sitzplan-Überschrift"
                   value={event.seatingHeading ?? "Finde deinen Sitzplatz"}
@@ -880,6 +1165,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               <div style={{ marginBottom: 18 }}>
                 <EditableSectionText
                   eventId={event.id}
+                  defaultColor={colors.primary}
                   field="seatingHint"
                   label="Sitzplan-Hinweistext"
                   value={event.seatingHint ?? "Gib deinen Namen ein."}
@@ -904,6 +1190,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               {editMode ? (
                 <EditableSectionText
                   eventId={event.id}
+                  defaultColor={colors.primary}
                   field="seatingButtonText"
                   label="Sitzplan-Such-Button"
                   value={event.seatingButtonText ?? "Suchen"}
@@ -936,14 +1223,24 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )}
           </div>
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("menu") && (menuItems.length > 0 || editMode) && (
-        <section id="menu" style={{ order: sectionOrderIndex("menu"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="menu"
+          label={sectionLabels["menu"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("menu")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="menu" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="menuHeading"
                 label="Menükarte-Überschrift"
                 value={event.menuHeading ?? "Menü"}
@@ -960,6 +1257,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="menuHint"
                 label="Menükarte-Hinweistext"
                 value={event.menuHint ?? ""}
@@ -993,45 +1291,60 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </div>
             ))}
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("gallery") && hasGalleryAccess && (
-        <section id="galerie" style={{ order: sectionOrderIndex("gallery"), maxWidth: 640, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="gallery"
+          label={sectionLabels["gallery"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("gallery")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="galerie" className="iv-section">
+          <div className="iv-inner" style={{ maxWidth: 640 }}>
+          <div className="iv-head">
+          <span className="iv-eyebrow">Unsere Erinnerungen</span>
           {editMode ? (
-            <div style={{ marginBottom: 8 }}>
-              <EditableSectionText
-                eventId={event.id}
-                field="galleryHeading"
-                label="Galerie-Überschrift"
-                value={event.galleryHeading ?? "Teilt eure schönsten Momente"}
-                placeholder="Teilt eure schönsten Momente"
-                style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...galleryHeadingOverride }}
-              />
-            </div>
+            <EditableSectionText
+              eventId={event.id}
+              defaultColor={colors.primary}
+              field="galleryHeading"
+              label="Galerie-Überschrift"
+              value={event.galleryHeading ?? "Teilt eure schönsten Momente"}
+              placeholder="Teilt eure schönsten Momente"
+              as="h2"
+              className="iv-heading"
+              style={{ fontFamily: headingFont, color: colors.primary, ...galleryHeadingOverride }}
+            />
           ) : (
-            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...galleryHeadingOverride }}>
+            <h2 className="iv-heading" style={{ fontFamily: headingFont, color: colors.primary, ...galleryHeadingOverride }}>
               {event.galleryHeading || "Teilt eure schönsten Momente"}
-            </div>
+            </h2>
           )}
 
           {editMode ? (
-            <div style={{ textAlign: "center", marginBottom: 20 }}>
-              <EditableSectionText
-                eventId={event.id}
-                field="galleryHint"
-                label="Galerie-Hinweistext"
-                value={event.galleryHint ?? ""}
-                placeholder="Hinweistext hinzufügen…"
-                style={{ fontSize: 13, opacity: 0.75, ...galleryHintOverride }}
-              />
-            </div>
+            <EditableSectionText
+              eventId={event.id}
+              defaultColor={colors.primary}
+              field="galleryHint"
+              label="Galerie-Hinweistext"
+              value={event.galleryHint ?? ""}
+              placeholder="Hinweistext hinzufügen…"
+              as="p"
+              className="iv-intro"
+              style={{ ...galleryHintOverride }}
+            />
           ) : (
             event.galleryHint && (
-              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...galleryHintOverride }}>
+              <p className="iv-intro" style={{ ...galleryHintOverride }}>
                 {event.galleryHint}
-              </div>
+              </p>
             )
           )}
+          </div>
 
           {/* TODO: von Anwalt/Datenschutzbeauftragten pruefen lassen — Entwurf
               zur Transparenz ueber die Fotobuch-Funktion (siehe Gaeste-
@@ -1135,6 +1448,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   // FileField.tsx), statt nur den Button-Text auszuwaehlen.
                   <EditableSectionText
                     eventId={event.id}
+                    defaultColor={colors.primary}
                     field="galleryButtonText"
                     label="Galerie-Upload-Button"
                     value={event.galleryButtonText ?? "Foto oder Video auswählen"}
@@ -1164,46 +1478,62 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </form>
             )}
           </div>
+          </div>
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("guestbook") && hasGuestbookAccess && (
-        <section id="gaestebuch" style={{ order: sectionOrderIndex("guestbook"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="guestbook"
+          label={sectionLabels["guestbook"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("guestbook")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="gaestebuch" className="iv-section">
+          <div className="iv-inner" style={{ maxWidth: 480 }}>
+          <div className="iv-head">
+          <span className="iv-eyebrow">Für euch aufgeschrieben</span>
           {editMode ? (
-            <div style={{ marginBottom: 8 }}>
-              <EditableGuestbookText
-                eventId={event.id}
-                field="guestbookHeading"
-                label="Gästebuch-Überschrift"
-                value={event.guestbookHeading ?? "Eure Nachrichten"}
-                placeholder="Eure Nachrichten"
-                style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", ...guestbookHeadingOverride }}
-              />
-            </div>
+            <EditableGuestbookText
+              eventId={event.id}
+              defaultColor={colors.primary}
+              field="guestbookHeading"
+              label="Gästebuch-Überschrift"
+              value={event.guestbookHeading ?? "Eure Nachrichten"}
+              placeholder="Eure Nachrichten"
+              as="h2"
+              className="iv-heading"
+              style={{ fontFamily: headingFont, color: colors.primary, ...guestbookHeadingOverride }}
+            />
           ) : (
-            <div style={{ fontFamily: headingFont, fontSize: 20, textAlign: "center", marginBottom: 8, ...guestbookHeadingOverride }}>
+            <h2 className="iv-heading" style={{ fontFamily: headingFont, color: colors.primary, ...guestbookHeadingOverride }}>
               {event.guestbookHeading || "Eure Nachrichten"}
-            </div>
+            </h2>
           )}
 
           {editMode ? (
-            <div style={{ textAlign: "center", marginBottom: 20 }}>
-              <EditableGuestbookText
-                eventId={event.id}
-                field="guestbookHint"
-                label="Gästebuch-Hinweistext"
-                value={event.guestbookHint ?? ""}
-                placeholder="Hinweistext hinzufügen…"
-                style={{ fontSize: 13, opacity: 0.75, ...guestbookHintOverride }}
-              />
-            </div>
+            <EditableGuestbookText
+              eventId={event.id}
+              defaultColor={colors.primary}
+              field="guestbookHint"
+              label="Gästebuch-Hinweistext"
+              value={event.guestbookHint ?? ""}
+              placeholder="Hinweistext hinzufügen…"
+              as="p"
+              className="iv-intro"
+              style={{ ...guestbookHintOverride }}
+            />
           ) : (
             event.guestbookHint && (
-              <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, opacity: 0.75, ...guestbookHintOverride }}>
+              <p className="iv-intro" style={{ ...guestbookHintOverride }}>
                 {event.guestbookHint}
-              </div>
+              </p>
             )
           )}
+          </div>
 
           {guestbookEntries.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
@@ -1251,6 +1581,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   // echten, funktionsfaehigen submit-Button.
                   <EditableGuestbookText
                     eventId={event.id}
+                    defaultColor={colors.primary}
                     field="guestbookButtonText"
                     label="Gästebuch-Button"
                     value={event.guestbookButtonText ?? "Nachricht senden"}
@@ -1277,15 +1608,111 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </form>
             )}
           </div>
+          </div>
         </section>
+        </ReorderableSection>
+      )}
+
+      {isModuleOn("wedding-party") && hasWeddingPartyAccess && (weddingPartyItemsData.length > 0 || editMode) && (
+        <ReorderableSection
+          sectionKey="wedding-party"
+          label={sectionLabels["wedding-party"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("wedding-party")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="trauzeugen">
+          <div className="iv-inner" style={{ maxWidth: 640 }}>
+          <div className="iv-head">
+          <span className="iv-eyebrow">An unserer Seite</span>
+          {editMode ? (
+            <EditableSectionText
+              eventId={event.id}
+              defaultColor={colors.primary}
+              field="weddingPartyHeading"
+              label="Trauzeugen/Brautjungfern-Überschrift"
+              value={event.weddingPartyHeading ?? "Trauzeugen & Brautjungfern"}
+              placeholder="Trauzeugen & Brautjungfern"
+              as="h2"
+              className="iv-heading"
+              style={{ fontFamily: headingFont, color: colors.primary, ...weddingPartyHeadingOverride }}
+            />
+          ) : (
+            <h2 className="iv-heading" style={{ fontFamily: headingFont, color: colors.primary, ...weddingPartyHeadingOverride }}>
+              {event.weddingPartyHeading || "Trauzeugen & Brautjungfern"}
+            </h2>
+          )}
+          {editMode ? (
+            <EditableSectionText
+              eventId={event.id}
+              defaultColor={colors.primary}
+              field="weddingPartyHint"
+              label="Trauzeugen/Brautjungfern-Hinweistext"
+              value={event.weddingPartyHint ?? ""}
+              placeholder="Hinweistext hinzufügen…"
+              as="p"
+              className="iv-intro"
+              style={{ ...weddingPartyHintOverride }}
+            />
+          ) : (
+            event.weddingPartyHint && (
+              <p className="iv-intro" style={{ ...weddingPartyHintOverride }}>
+                {event.weddingPartyHint}
+              </p>
+            )
+          )}
+          </div>
+
+          {editMode ? (
+            <EditableWeddingParty initialItems={weddingPartyItemsData} baseStyle={{ color: colors.primary }} accentColor={colors.accent} />
+          ) : (
+            WEDDING_PARTY_ROLES.map((role) => ({ role, items: weddingPartyItemsData.filter((m) => m.role === role) }))
+              .filter((group) => group.items.length > 0)
+              .map((group) => (
+                <div key={group.role} style={{ marginBottom: 28, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.6, marginBottom: 16 }}>
+                    {WEDDING_PARTY_ROLE_LABEL[group.role]}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 24 }}>
+                    {group.items.map((m) => (
+                      <div key={m.id} style={{ width: 100 }}>
+                        <div
+                          style={{
+                            width: 84,
+                            height: 84,
+                            borderRadius: "50%",
+                            margin: "0 auto 10px",
+                            background: m.photoUrl ? `url(${m.photoUrl}) center/cover` : `${colors.accent}33`,
+                          }}
+                        />
+                        <div style={{ fontSize: 13.5, fontWeight: 600 }}>{m.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+          )}
+          </div>
+        </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("music-requests") && (
-        <section id="musikwuensche" style={{ order: sectionOrderIndex("music-requests"), maxWidth: 420, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="music-requests"
+          label={sectionLabels["music-requests"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("music-requests")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="musikwuensche" style={{ maxWidth: 420, margin: "0 auto", padding: "72px 28px" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="musicHeading"
                 label="Musikwünsche-Überschrift"
                 value={event.musicHeading ?? "Musikwünsche"}
@@ -1303,6 +1730,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="musicHint"
                 label="Musikwünsche-Hinweistext"
                 value={event.musicHint ?? ""}
@@ -1357,6 +1785,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                   // <form> per Default type="submit".
                   <EditableSectionText
                     eventId={event.id}
+                    defaultColor={colors.primary}
                     field="musicButtonText"
                     label="Musikwünsche-Button"
                     value={event.musicButtonText ?? "Wunsch senden"}
@@ -1384,13 +1813,23 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )}
           </div>
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("wishlist") && (wishlistItemsData.length > 0 || editMode) && (
-        <section id="wunschliste" style={{ order: sectionOrderIndex("wishlist"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="wishlist"
+          label={sectionLabels["wishlist"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("wishlist")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="wunschliste" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px" }}>
           {editMode ? (
             <EditableSectionText
               eventId={event.id}
+              defaultColor={colors.primary}
               field="wishlistHeading"
               label="Wunschliste-Überschrift"
               value={event.wishlistHeading ?? "Wunschliste"}
@@ -1407,6 +1846,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="wishlistHint"
                 label="Wunschliste-Hinweistext"
                 value={event.wishlistHint ?? ""}
@@ -1453,14 +1893,24 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               ))
           )}
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("dresscode") && (event.dresscodeText || editMode) && (
-        <section id="dresscode" style={{ order: sectionOrderIndex("dresscode"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <ReorderableSection
+          sectionKey="dresscode"
+          label={sectionLabels["dresscode"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("dresscode")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="dresscode" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="dresscodeHeading"
                 label="Dresscode-Überschrift"
                 value={event.dresscodeHeading ?? "Dresscode"}
@@ -1476,6 +1926,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           {editMode ? (
             <EditableSectionText
               eventId={event.id}
+              defaultColor={colors.primary}
               field="dresscodeText"
               label="Dresscode-Text"
               value={event.dresscodeText ?? ""}
@@ -1486,14 +1937,24 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ fontSize: 14, opacity: 0.85, ...dresscodeTextOverride }}>{event.dresscodeText}</div>
           )}
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("social-media") && (event.socialMediaText || editMode) && (
-        <section id="social-media" style={{ order: sectionOrderIndex("social-media"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <ReorderableSection
+          sectionKey="social-media"
+          label={sectionLabels["social-media"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("social-media")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="social-media" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="socialMediaHeading"
                 label="Social-Media-Überschrift"
                 value={event.socialMediaHeading ?? "Social Media"}
@@ -1509,6 +1970,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           {editMode ? (
             <EditableSectionText
               eventId={event.id}
+              defaultColor={colors.primary}
               field="socialMediaText"
               label="Hashtag-Text"
               value={event.socialMediaText ?? ""}
@@ -1519,14 +1981,24 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ fontSize: 14, opacity: 0.85, ...socialMediaTextOverride }}>{event.socialMediaText}</div>
           )}
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("audio-invitation") && event.audioInvitation && (
-        <section id="audio-einladung" style={{ order: sectionOrderIndex("audio-invitation"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <ReorderableSection
+          sectionKey="audio-invitation"
+          label={sectionLabels["audio-invitation"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("audio-invitation")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="audio-einladung" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px", textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="audioInvitationHeading"
                 label="Audio-Einladung-Überschrift"
                 value={event.audioInvitationHeading ?? "Eine Nachricht für euch"}
@@ -1543,6 +2015,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ marginBottom: 20 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="audioInvitationHint"
                 label="Audio-Einladung-Hinweistext"
                 value={event.audioInvitationHint ?? ""}
@@ -1559,14 +2032,25 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           )}
           <AudioMessagePlayer url={event.audioInvitation.url} accent={colors.accent} primary={colors.background} />
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("video-invitation") && event.videoMessage && (
-        <section id="video-einladung" style={{ order: sectionOrderIndex("video-invitation"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px", textAlign: "center" }}>
+        <ReorderableSection
+          sectionKey="video-invitation"
+          label={sectionLabels["video-invitation"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("video-invitation")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section id="video-einladung" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 480, textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="videoMessageHeading"
                 label="Video-Einladung-Überschrift"
                 value={event.videoMessageHeading ?? "Unsere Videobotschaft"}
@@ -1583,6 +2067,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             <div style={{ marginBottom: 20 }}>
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="videoMessageHint"
                 label="Video-Einladung-Hinweistext"
                 value={event.videoMessageHint ?? ""}
@@ -1598,17 +2083,28 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )
           )}
           <VideoMessagePlayer url={event.videoMessage.url} accent={colors.accent} primary={colors.primary} background={colors.background} />
+        </div>
         </section>
+        </ReorderableSection>
       )}
 
       {isModuleOn("thank-you-card") && (isPastEvent || editMode) && (
-        <section style={{ order: sectionOrderIndex("thank-you-card"), maxWidth: 480, margin: "0 auto", padding: "0 28px 72px" }}>
+        <ReorderableSection
+          sectionKey="thank-you-card"
+          label={sectionLabels["thank-you-card"]}
+          editMode={editMode}
+          fallbackOrder={sectionOrderIndex("thank-you-card")}
+          initialOrder={activeOrder}
+          visibleKeys={visibleSectionKeys}
+        >
+        <section style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "32px 28px", textAlign: "center" }}>
             <div style={{ fontSize: 22, marginBottom: 10, color: colors.accent }}>♥</div>
             {editMode ? (
               <div style={{ marginBottom: 12 }}>
                 <EditableSectionText
                   eventId={event.id}
+                  defaultColor={colors.primary}
                   field="thankYouHeading"
                   label="Dankeskarte-Überschrift"
                   value={event.thankYouHeading ?? "Danke euch von Herzen"}
@@ -1624,6 +2120,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             {editMode ? (
               <EditableSectionText
                 eventId={event.id}
+                defaultColor={colors.primary}
                 field="thankYouMessage"
                 label="Dankestext"
                 value={thankYouMessage}
@@ -1646,6 +2143,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )}
           </div>
         </section>
+        </ReorderableSection>
       )}
 
       <footer style={{ order: 999, textAlign: "center", padding: "24px 28px 40px", fontSize: 11, opacity: 0.5 }}>

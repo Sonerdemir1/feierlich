@@ -7,11 +7,31 @@ import { TEXT_ELEMENT_KEYS } from "./text-style";
 // (src/app/dashboard/events/[id]/design/route.ts, kein Redirect/Remount).
 // Reine Datenfunktion, kein "use server" hier — sonst wuerde Next.js sie
 // selbst als Server Action behandeln.
-export function buildDesignUpdate(formData: FormData): { colorOverride: string; styleJson: string } {
+// `existingStyleJson` (Event.styleJson VOR diesem Speichervorgang) —
+// gefundener Bug: diese Funktion baute styleJson bisher komplett neu auf
+// (nur aus den Feldern, die DIESES Formular kennt: fontId/ornaments/
+// elements). Felder, die nur beim Signup aus dem Gestalten-Entwurf gesetzt
+// werden (photoShape/showFloral/showPhotoBackground) und jetzt auch die
+// neue Abschnitts-Reihenfolge (sectionOrder, Inline-Umsortieren) gingen
+// dadurch beim naechsten Design-Speichern (Farbe/Schrift/Textstil aendern)
+// STILLSCHWEIGEND verloren, weil sie nicht ins neu gebaute Objekt
+// uebernommen wurden. Jetzt: alles aus dem bestehenden JSON uebernehmen,
+// das dieses Formular nicht selbst setzt.
+export function buildDesignUpdate(formData: FormData, existingStyleJson?: string | null): { colorOverride: string; styleJson: string } {
   const override: Record<string, string> = {};
   for (const key of ["primary", "accent", "background"] as const) {
     const value = String(formData.get(key) ?? "").trim();
     if (value) override[key] = value;
+  }
+
+  let existing: Record<string, unknown> = {};
+  if (existingStyleJson) {
+    try {
+      const parsed = JSON.parse(existingStyleJson);
+      if (parsed && typeof parsed === "object") existing = parsed;
+    } catch {
+      // ungueltiges bestehendes JSON — wie bisher, faengt bei leerem Objekt an
+    }
   }
 
   const fontId = String(formData.get("fontId") ?? "").trim();
@@ -19,6 +39,25 @@ export function buildDesignUpdate(formData: FormData): { colorOverride: string; 
   const style: Record<string, unknown> = {};
   if (fontId) style.fontId = fontId;
   if (ornaments) style.ornaments = true;
+  if (existing.photoShape) style.photoShape = existing.photoShape;
+  if (existing.showFloral) style.showFloral = existing.showFloral;
+  if (existing.showPhotoBackground) style.showPhotoBackground = existing.showPhotoBackground;
+
+  // Abschnitts-Reihenfolge (Inline-Umsortieren am Element, siehe
+  // ReorderableSection.tsx) — als JSON-Array-String im Formular, sonst wie
+  // bisher aus dem bestehenden styleJson uebernommen (z.B. wenn nur die
+  // Farbe geaendert wurde).
+  const sectionOrderRaw = String(formData.get("sectionOrder") ?? "").trim();
+  if (sectionOrderRaw) {
+    try {
+      const parsed = JSON.parse(sectionOrderRaw);
+      if (Array.isArray(parsed)) style.sectionOrder = parsed;
+    } catch {
+      if (Array.isArray(existing.sectionOrder)) style.sectionOrder = existing.sectionOrder;
+    }
+  } else if (Array.isArray(existing.sectionOrder)) {
+    style.sectionOrder = existing.sectionOrder;
+  }
 
   type ElementEntry = {
     size?: string;

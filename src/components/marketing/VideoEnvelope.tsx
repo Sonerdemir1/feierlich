@@ -19,7 +19,11 @@ export function VideoEnvelope({ videoUrl, primary, children }: { videoUrl: strin
   if (phase === "done") return <>{children}</>;
 
   return (
-    <div style={{ maxWidth: 360, margin: "0 auto" }}>
+    // War frueher hart auf maxWidth:360 begrenzt (kleine Umschlag-Karte) —
+    // Phase-D-Umbau: oeffnet sich jetzt zum randlosen Vollbild-Hero, deshalb
+    // volle Breite + dieselbe Zielhoehe wie .iv-hero (min-height:82vh),
+    // objectFit:cover fuellt die Flaeche unabhaengig vom Video-Seitenverhaeltnis.
+    <div style={{ width: "100%" }}>
       <button
         type="button"
         onClick={handleTap}
@@ -28,6 +32,7 @@ export function VideoEnvelope({ videoUrl, primary, children }: { videoUrl: strin
           position: "relative",
           display: "block",
           width: "100%",
+          minHeight: "82vh",
           padding: 0,
           border: "none",
           background: "none",
@@ -39,7 +44,7 @@ export function VideoEnvelope({ videoUrl, primary, children }: { videoUrl: strin
           src={videoUrl}
           playsInline
           onEnded={() => setPhase("done")}
-          style={{ width: "100%", borderRadius: 10, display: "block" }}
+          style={{ width: "100%", height: "100%", minHeight: "82vh", objectFit: "cover", display: "block" }}
         />
         {phase === "idle" && (
           <div

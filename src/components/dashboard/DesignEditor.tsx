@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { TEXT_ELEMENT_LABELS, TEXT_ELEMENT_KEYS, type StyleElements, type TextElementKey, type TextElementStyle } from "@/lib/text-style";
-import type { LiveDesignState } from "@/components/public/HeroCard";
+import type { LiveDesignState } from "@/lib/live-design-state";
 import { TextControls } from "@/components/editor/TextControls";
 import { DateQuickEdit } from "@/components/editor/DateQuickEdit";
 import { LocationQuickEdit, type LocationPatch } from "@/components/editor/LocationQuickEdit";
@@ -12,6 +12,8 @@ import { AgendaItemQuickEdit } from "@/components/editor/AgendaItemQuickEdit";
 import { newAgendaItem, moveAgendaItem, type AgendaItem } from "@/lib/agenda";
 import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
 import { newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
+import { WeddingPartyMemberQuickEdit } from "@/components/editor/WeddingPartyMemberQuickEdit";
+import { newWeddingPartyMember, moveWeddingPartyMember, type WeddingPartyMemberData, type WeddingPartyRole } from "@/lib/wedding-party";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { ContextPanel } from "@/components/editor/ContextPanel";
 import { EnvelopeTab } from "@/components/dashboard/panels/EnvelopeTab";
@@ -63,6 +65,8 @@ export function DesignEditor({
   initialLocationAddress,
   initialAgendaItems,
   initialWishlistItems,
+  initialWeddingPartyItems,
+  initialSectionOrder,
   hasOverride,
   onReset,
   envelopeVideoUrl,
@@ -105,6 +109,11 @@ export function DesignEditor({
   initialLocationAddress: string;
   initialAgendaItems: AgendaItem[];
   initialWishlistItems: WishlistItemData[];
+  initialWeddingPartyItems: WeddingPartyMemberData[];
+  // Inline Ein-/Ausblenden + Umsortieren direkt am Element auf der echten
+  // Gaeste-Seite (ReorderableSection.tsx) — volle Liste, dieselbe Quelle wie
+  // e/[slug]/page.tsx' activeOrder (lib/section-order.ts).
+  initialSectionOrder: string[];
   hasOverride: boolean;
   onReset: () => Promise<void>;
   envelopeVideoUrl: string | null;
@@ -149,6 +158,8 @@ export function DesignEditor({
     elements: initialElements,
     agendaItems: initialAgendaItems,
     wishlistItems: initialWishlistItems,
+    weddingPartyItems: initialWeddingPartyItems,
+    sectionOrder: initialSectionOrder,
   });
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
@@ -157,6 +168,7 @@ export function DesignEditor({
   // zu selectedKey === "agenda".
   const [selectedAgendaItemId, setSelectedAgendaItemId] = useState<string | undefined>(undefined);
   const [selectedWishlistItemId, setSelectedWishlistItemId] = useState<string | undefined>(undefined);
+  const [selectedWeddingPartyItemId, setSelectedWeddingPartyItemId] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState("design");
   // Auf schmalen Bildschirmen (siehe .editor-panel-sticky-Mobile-Regel in
   // globals.css) wird das Panel bei einer Auswahl zu einem fixierten
@@ -165,11 +177,12 @@ export function DesignEditor({
   // langes Scrollen, obwohl es technisch da war (Bugfix). hasSelection
   // fasst alle drei sich gegenseitig ausschliessenden Auswahl-States
   // zusammen, deselectAll() ist der "X schliessen"-Handler des Sheets.
-  const hasSelection = Boolean(selectedKey || selectedAgendaItemId || selectedWishlistItemId);
+  const hasSelection = Boolean(selectedKey || selectedAgendaItemId || selectedWishlistItemId || selectedWeddingPartyItemId);
   function deselectAll() {
     setSelectedKey(undefined);
     setSelectedAgendaItemId(undefined);
     setSelectedWishlistItemId(undefined);
+    setSelectedWeddingPartyItemId(undefined);
   }
 
   useEffect(() => {
@@ -194,15 +207,86 @@ export function DesignEditor({
         setSelectedKey(undefined);
         setSelectedAgendaItemId(undefined);
         setSelectedWishlistItemId(event.data.itemId as string);
+        setSelectedWeddingPartyItemId(undefined);
+      } else if (key === "wedding-party") {
+        setSelectedKey(undefined);
+        setSelectedAgendaItemId(undefined);
+        setSelectedWishlistItemId(undefined);
+        setSelectedWeddingPartyItemId(event.data.itemId as string);
       } else {
         setSelectedKey(key as TextElementKey);
         setSelectedAgendaItemId(key === "agenda" ? (event.data.itemId as string) : undefined);
         setSelectedWishlistItemId(undefined);
+        setSelectedWeddingPartyItemId(undefined);
       }
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, []);
+
+  // Kontext-Toolbar am Element (ElementToolbar.tsx, siehe EditableSectionText.tsx
+  // & Co.) meldet Groesse/Ausrichtung/Farbe/Schrift-Aenderungen direkt aus dem
+  // iframe statt wie bisher nur ueber das Seitenpanel — landet auf demselben
+  // setElementStyle()-Pfad wie die TextControls-Instanz im Panel, also eine
+  // einzige Quelle der Wahrheit fuer state.elements.
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "einladi-style-patch") return;
+      const key = event.data.key as TextElementKey;
+      const patch = event.data.patch as Partial<TextElementStyle>;
+      setElementStyle(key, patch);
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setElementStyle liest/schreibt state per Closure, siehe Agenda-Request-Effekt unten
+  }, [state.elements]);
+
+  // Inline Umsortieren direkt am Abschnitt (ReorderableSection.tsx) — anders
+  // als beim Ablaufplan/Wunschliste (Aenderung wird hier berechnet) liefert
+  // das iframe hier bereits das FERTIGE neue Array: es kennt als einziges
+  // die gerade sichtbaren Geschwister-Abschnitte, ein Nachbau dieser Logik
+  // hier haette dieselbe "wer ist sichtbar"-Pruefung ein zweites Mal noetig
+  // gemacht. Bleibt komplett live (wie ein Textstil-Patch) — kein Neuladen.
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "einladi-section-reorder-request") return;
+      const order = event.data.order as string[];
+      if (!Array.isArray(order)) return;
+      pushLive({ ...state, sectionOrder: order });
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pushLive liest/schreibt state per Closure, siehe Agenda-Request-Effekt unten
+  }, [state]);
+
+  // Inline Ausblenden direkt am Abschnitt — schaltet ein echtes EventModule
+  // aus (dieselbe Wirkung wie der bestehende "Aktiv — ausschalten"-Button
+  // auf der Dashboard-Seite), dann laedt die Vorschau neu, damit Server und
+  // Anzeige garantiert uebereinstimmen (bewusst NICHT live wie Textstile/
+  // Reihenfolge — siehe Kommentar in ReorderableSection.tsx).
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "einladi-section-hide-request") return;
+      const key = event.data.key as string;
+      fetch(`/dashboard/events/${eventId}/modules`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, enabled: false }),
+      })
+        .then(() => {
+          iframeRef.current?.contentWindow?.location.reload();
+        })
+        .catch(() => {
+          // Ausblenden fehlgeschlagen — Abschnitt bleibt einfach sichtbar,
+          // naechster Klick versucht es erneut.
+        });
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [eventId]);
 
   // Hinzufuegen/Entfernen/Umsortieren werden von EditableAgenda.tsx nur als
   // Wunsch nach oben gemeldet (siehe Kommentar dort) — die eigentliche
@@ -264,6 +348,39 @@ export function DesignEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- pushWishlist liest/schreibt ueber state per Closure, absichtlich bei jeder Aenderung neu registriert (naechster Abschnitt)
   }, [state.wishlistItems, selectedWishlistItemId]);
 
+  // Analog zum Wunschliste-Request-Effekt, fuer Trauzeugen/Brautjungfern
+  // (siehe EditableWeddingParty.tsx) — echte WeddingPartyMember-Zeilen.
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "einladi-wedding-party-request") return;
+      const current = state.weddingPartyItems ?? [];
+      const { action, itemId, direction, role } = event.data as {
+        action: string;
+        itemId?: string;
+        direction?: "up" | "down";
+        role?: WeddingPartyRole;
+      };
+      if (action === "add") {
+        const item = newWeddingPartyMember(role);
+        pushWeddingParty([...current, item]);
+        setSelectedKey(undefined);
+        setSelectedWeddingPartyItemId(item.id);
+      } else if (action === "remove" && itemId) {
+        pushWeddingParty(current.filter((it) => it.id !== itemId));
+        if (selectedWeddingPartyItemId === itemId) {
+          setSelectedKey(undefined);
+          setSelectedWeddingPartyItemId(undefined);
+        }
+      } else if (action === "move" && itemId && direction) {
+        pushWeddingParty(moveWeddingPartyMember(current, itemId, direction));
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pushWeddingParty liest/schreibt ueber state per Closure, absichtlich bei jeder Aenderung neu registriert (naechster Abschnitt)
+  }, [state.weddingPartyItems, selectedWeddingPartyItemId]);
+
   // Titel/Untertitel/Beschreibung werden weiterhin direkt im iframe per
   // InlineEditableText gespeichert (siehe HeroCard.tsx) — die meldet sich
   // per postMessage zurueck, damit die umgebende Dashboard-Seite (Titel-
@@ -291,6 +408,7 @@ export function DesignEditor({
         fontId: next.fontId ?? "",
         ornaments: next.ornaments,
       };
+      if (next.sectionOrder) body.sectionOrder = JSON.stringify(next.sectionOrder);
       for (const key of TEXT_ELEMENT_KEYS) {
         const el = next.elements?.[key];
         if (el?.size) body[`${key}Size`] = el.size;
@@ -439,6 +557,51 @@ export function DesignEditor({
   }
   function updateWishlistItem(id: string, patch: Partial<WishlistItemData>) {
     pushWishlist((state.wishlistItems ?? []).map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+
+  // Trauzeugen/Brautjungfern: gleiches Push-Muster wie pushWishlist, speichert
+  // gegen die echte WeddingPartyMember-Tabelle (siehe /wedding-party/route.ts).
+  const weddingPartySaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function pushWeddingParty(items: WeddingPartyMemberData[]) {
+    const nextState: LiveDesignState = { ...state, weddingPartyItems: items };
+    setState(nextState);
+    iframeRef.current?.contentWindow?.postMessage({ type: "einladi-style-preview", state: nextState }, window.location.origin);
+
+    if (weddingPartySaveTimeout.current) clearTimeout(weddingPartySaveTimeout.current);
+    weddingPartySaveTimeout.current = setTimeout(() => {
+      fetch(`/dashboard/events/${eventId}/wedding-party`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      }).catch(() => {
+        // still verworfen — naechste Aenderung sendet den aktuellen Stand ohnehin erneut
+      });
+    }, 400);
+  }
+  function updateWeddingPartyMember(id: string, patch: Partial<WeddingPartyMemberData>) {
+    pushWeddingParty((state.weddingPartyItems ?? []).map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+  // Echter Server-Upload (anders als im Gestalten-Entwurf, wo eine data:-URL
+  // reicht) — es existiert bereits ein echtes Event, das Foto wird sofort
+  // dauerhaft gespeichert. Ergebnis (photoId+URL) landet direkt im Eintrag,
+  // die naechste debounced pushWeddingParty()-Aenderung schickt photoId beim
+  // Speichern der Gesamtliste mit.
+  const [weddingPartyPhotoUploading, setWeddingPartyPhotoUploading] = useState<string | null>(null);
+  async function uploadWeddingPartyPhoto(id: string, file: File) {
+    setWeddingPartyPhotoUploading(id);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/dashboard/events/${eventId}/wedding-party/photo`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error("upload failed");
+      const { mediaId, url } = (await res.json()) as { mediaId: string; url: string };
+      updateWeddingPartyMember(id, { photoId: mediaId, photoUrl: url });
+    } catch {
+      // Fehlschlag bewusst still — der Eintrag behaelt sein bisheriges Foto,
+      // der Gastgeber kann den Upload jederzeit erneut versuchen.
+    } finally {
+      setWeddingPartyPhotoUploading(null);
+    }
   }
 
   // KI-Vorschlag fuer den Beschreibungstext (Teil C) — ruft dieselbe
@@ -728,6 +891,59 @@ export function DesignEditor({
                         style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
                       >
                         Artikel löschen
+                      </button>
+                    </div>
+                  );
+                })()
+              ) : selectedWeddingPartyItemId ? (
+                (() => {
+                  const item = (state.weddingPartyItems ?? []).find((it) => it.id === selectedWeddingPartyItemId);
+                  if (!item) return null;
+                  return (
+                    <div style={{ borderBottom: "1px solid var(--line)", paddingBottom: 12, marginBottom: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Trauzeuge/Brautjungfer</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedKey(undefined);
+                            setSelectedWeddingPartyItemId(undefined);
+                          }}
+                          style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                        >
+                          Abwählen
+                        </button>
+                      </div>
+                      <WeddingPartyMemberQuickEdit
+                        role={item.role}
+                        name={item.name}
+                        onChange={(patch) => updateWeddingPartyMember(item.id, patch)}
+                      />
+                      <label className="btn btn-ghost" style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%", display: "block", textAlign: "center", cursor: "pointer" }}>
+                        {weddingPartyPhotoUploading === item.id ? "Lädt hoch…" : item.photoId ? "Foto ersetzen" : "Foto hochladen"}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          style={{ display: "none" }}
+                          disabled={weddingPartyPhotoUploading === item.id}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) uploadWeddingPartyPhoto(item.id, file);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          pushWeddingParty((state.weddingPartyItems ?? []).filter((it) => it.id !== item.id));
+                          setSelectedKey(undefined);
+                          setSelectedWeddingPartyItemId(undefined);
+                        }}
+                        className="btn btn-ghost"
+                        style={{ marginTop: 8, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                      >
+                        Eintrag löschen
                       </button>
                     </div>
                   );

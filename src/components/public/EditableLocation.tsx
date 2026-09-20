@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { SelectableElement } from "@/components/editor/SelectableElement";
+import { ElementToolbar } from "@/components/editor/ElementToolbar";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
-import type { LiveDesignState } from "@/components/public/HeroCard";
+import type { LiveDesignState } from "@/lib/live-design-state";
+import type { TextElementStyle } from "@/lib/text-style";
 
 // Duenner Client-Wrapper, weil e/[slug]/page.tsx (Server Component) die
 // "Ort"-Sektion ausserhalb von HeroCard.tsx rendert (eigener Abschnitt
@@ -20,20 +22,24 @@ export function EditableLocation({
   initialLocationAddress,
   headingStyle,
   addressStyle,
+  defaultColor = "#211C19",
 }: {
   initialLocationName: string | null;
   initialLocationAddress: string | null;
   headingStyle: CSSProperties;
   addressStyle: CSSProperties;
+  defaultColor?: string;
 }) {
   const [selected, setSelected] = useState(false);
   const [live, setLive] = useState<{ locationName?: string | null; locationAddress?: string | null }>({});
+  const [rawStyle, setRawStyle] = useState<TextElementStyle>({});
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type !== "einladi-style-preview") return;
       const state = event.data.state as LiveDesignState;
+      if (state.elements) setRawStyle(state.elements.location ?? {});
       if (state.locationName === undefined && state.locationAddress === undefined) return;
       setLive({ locationName: state.locationName, locationAddress: state.locationAddress });
     }
@@ -51,8 +57,19 @@ export function EditableLocation({
     window.parent.postMessage({ type: "einladi-element-selected", key: "location" }, window.location.origin);
   }
 
+  function changeStyle(patch: Partial<TextElementStyle>) {
+    setRawStyle({ ...rawStyle, ...patch });
+    window.parent.postMessage({ type: "einladi-style-patch", key: "location", patch }, window.location.origin);
+  }
+
   return (
-    <SelectableElement kind="date" label="Ort / Location" selected={selected} onSelect={select}>
+    <SelectableElement
+      kind="date"
+      label="Ort / Location"
+      selected={selected}
+      onSelect={select}
+      toolbar={selected ? <ElementToolbar elementKey="location" style={rawStyle} defaultColor={defaultColor} onChange={changeStyle} /> : undefined}
+    >
       <div style={headingStyle}>
         {locationName || "Ort / Location hinzufügen…"}
       </div>

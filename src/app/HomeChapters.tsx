@@ -8,18 +8,19 @@
 // Einschub (x ±20%→0%). Alles mit Motion umgesetzt, kein GSAP. Kapitel 04
 // (Vorlagen) bewusst OHNE jeden Motion-Wrapper (docs/MOTION.md §3) —
 // eigene Kartenoptik/-animation in TemplateGallery bleibt unangetastet.
-import { useRef } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import type { ReactNode, RefObject } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform, type MotionValue } from "motion/react";
+import { motion, useScroll, useTransform, useReducedMotion, type MotionValue } from "motion/react";
 import { GalleryPreview, GuestPagePreview, SharePreview } from "@/components/marketing/PhoneMockups";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
 import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { homepageCopy } from "@/lib/translations/homepage";
+import type { Locale } from "@/lib/i18n";
 import "@/components/marketing/zera/zera.css";
 import "@/components/marketing/zera/dixor-motion.css";
 
-const t = homepageCopy.de;
 const TOTAL_CHAPTERS = 8;
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
 
@@ -31,13 +32,33 @@ function Check({ size = 13 }: { size?: number }) {
   );
 }
 
+// Liefert false beim SSR/ersten Client-Rendering (identisch, kein Hydration-
+// Mismatch), erst danach true — gleiches Muster wie CameraSection.tsx
+// (invitation-sections), siehe dortiger Kommentar.
+function useMounted(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
+
 // Technik 1: Kamerafahrt — scale 1.08→1 + opacity 0→1, kontinuierlich an
 // den Scroll-Fortschritt gekoppelt. Siehe docs/MOTION.md §2.
+// prefers-reduced-motion (MOTION.md §5, verbindlich) — gefundene, dort
+// dokumentierte Luecke jetzt geschlossen: gleiche Technik wie
+// CameraSection.tsx (invitation-sections) — Wertebereich kollabiert auf
+// [1,1] statt die style-Prop-Form zu wechseln (vermeidet einen bereits
+// gefundenen Motion-Aufraeum-Bug beim Prop-Typwechsel, siehe dortiger
+// Kommentar), erst nach dem Mount aktiv (kein Hydration-Mismatch).
 function useCameraProgress() {
   const ref = useRef<HTMLElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const mounted = useMounted();
+  const skipMotion = mounted && prefersReducedMotion;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "start start"] });
-  const scale = useTransform(scrollYProgress, [0, 1], [1.08, 1]);
-  const opacity = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const scale = useTransform(scrollYProgress, [0, 1], skipMotion ? [1, 1] : [1.08, 1]);
+  const opacity = useTransform(scrollYProgress, [0, 1], skipMotion ? [1, 1] : [0, 1]);
   return { ref, scale, opacity };
 }
 
@@ -252,12 +273,15 @@ export function HomeChapters({
   paket,
   packages,
   photoVideoAddOn,
+  locale,
 }: {
   categories: GalleryCategory[];
   paket?: string;
   packages: HomePackage[];
   photoVideoAddOn: { name: string; priceCents: number } | null;
+  locale: Locale;
 }) {
+  const t = homepageCopy[locale];
   const ch2 = useCameraProgress();
   const ch3 = useCameraProgress();
   const ch6 = useCameraProgress();
@@ -267,6 +291,27 @@ export function HomeChapters({
 
   return (
     <div className="zc-page">
+      {/* Oberste Nav-Leiste — beim Umbau auf den Kapitel-Stil versehentlich
+          ersatzlos gestrichen (Nutzer-Regression), hier mit den aktuellen
+          --zc-*-Tokens wiederhergestellt. Statisch, nicht sticky/fixed. */}
+      <header className="zc-nav">
+        <Link href="/" className="zc-nav-logo">
+          einladi
+        </Link>
+        <nav className="zc-nav-links">
+          <a href="#kapitel-02">{t.nav.gallery}</a>
+          <a href="#vorlagen">{t.nav.templates}</a>
+          <a href="#preise">{t.nav.pricing}</a>
+          <Link href="/dashboard">{t.nav.login}</Link>
+        </nav>
+        <div className="zc-nav-right">
+          <LanguageSwitcher locale={locale} redirectTo="/" />
+          <Link href="/dashboard" className="zc-btn zc-btn-primary">
+            {t.nav.cta}
+          </Link>
+        </div>
+      </header>
+
       {/* Kapitel 01 — Hero. Beim Laden bereits sichtbar, unanimiert. */}
       <CameraChapterShell num={1} label="Willkommen" id="kapitel-01" nextHref="#kapitel-02">
         <div className="zc-body">

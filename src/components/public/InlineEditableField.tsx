@@ -13,6 +13,7 @@ export function InlineEditableField({
   as = "div",
   placeholder,
   style,
+  className,
   onFocus,
   multiline = false,
   status = "idle",
@@ -29,6 +30,10 @@ export function InlineEditableField({
   as?: ElementType;
   placeholder?: string;
   style?: CSSProperties;
+  // Zusaetzliche Klasse(n) NEBEN der festen "einladi-inline-editable"
+  // (fuer geteilte Typografie-Klassen wie .iv-heading/.iv-intro, siehe
+  // invitation-sections/EditableText.tsx) — ersetzt sie nicht.
+  className?: string;
   onFocus?: () => void;
   // Enter blurred normalerweise das Feld (Titel/Anlass/Familie etc.) —
   // bei mehrzeiligen Feldern (Beschreibung) soll Enter stattdessen einen
@@ -74,7 +79,7 @@ export function InlineEditableField({
       onKeyDown={handleKeyDown}
       data-placeholder={placeholder}
       data-inline-status={status}
-      className="einladi-inline-editable"
+      className={className ? `einladi-inline-editable ${className}` : "einladi-inline-editable"}
       style={{ outline: "none", cursor: "text", ...style }}
     >
       {value}

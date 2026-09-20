@@ -8,6 +8,10 @@ type Field =
   | "subtitle"
   | "description"
   | "loveStoryText"
+  | "coupleLeftName"
+  | "coupleLeftBio"
+  | "coupleRightName"
+  | "coupleRightBio"
   | "eventLabel"
   | "familyLeft"
   | "familyRight"
@@ -16,6 +20,8 @@ type Field =
   | "guestbookButtonText"
   | "wishlistHeading"
   | "wishlistHint"
+  | "weddingPartyHeading"
+  | "weddingPartyHint"
   | "musicHeading"
   | "musicHint"
   | "musicButtonText"
@@ -64,6 +70,7 @@ export function InlineEditableText({
   as = "div",
   placeholder,
   style,
+  className,
   onFocus,
 }: {
   eventId: string;
@@ -72,6 +79,7 @@ export function InlineEditableText({
   as?: ElementType;
   placeholder?: string;
   style?: CSSProperties;
+  className?: string;
   onFocus?: () => void;
 }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -102,8 +110,17 @@ export function InlineEditableText({
       as={as}
       placeholder={placeholder}
       style={style}
+      className={className}
       onFocus={onFocus}
-      multiline={field === "description" || field === "loveStoryText" || field === "dresscodeText" || field === "socialMediaText" || field === "thankYouMessage"}
+      multiline={
+        field === "description" ||
+        field === "loveStoryText" ||
+        field === "coupleLeftBio" ||
+        field === "coupleRightBio" ||
+        field === "dresscodeText" ||
+        field === "socialMediaText" ||
+        field === "thankYouMessage"
+      }
       status={status}
     />
   );

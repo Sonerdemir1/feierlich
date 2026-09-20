@@ -1,10 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { TemplatePreview, CornerMotif, DotScatter, NazarScatter } from "@/components/marketing/TemplatePreview";
+import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
 import { categoryLabel, type GalleryTemplate } from "@/lib/gallery-templates";
@@ -20,12 +20,26 @@ import { GOOGLE_MAPS_API_KEY, googleMapsSearchUrl } from "@/lib/google-maps";
 import { InlineEditableField } from "@/components/public/InlineEditableField";
 import { FileField } from "@/components/public/FileField";
 import { SectionsList } from "@/components/dashboard/panels/SectionsList";
+import { SectionInlineControls } from "@/components/editor/SectionInlineControls";
 import { AgendaList } from "@/components/editor/AgendaList";
+import { Hero } from "@/components/invitation-sections/Hero";
+import { BigDayCountdown } from "@/components/invitation-sections/BigDayCountdown";
+import { EventsTimeline } from "@/components/invitation-sections/EventsTimeline";
+import { CoupleIntro } from "@/components/invitation-sections/CoupleIntro";
+import { StoryTimeline } from "@/components/invitation-sections/StoryTimeline";
+import { CameraSection } from "@/components/invitation-sections/CameraSection";
+import { GalleryGrid } from "@/components/invitation-sections/GalleryGrid";
+import { WishesCarousel } from "@/components/invitation-sections/WishesCarousel";
+import { VideoAndRsvp } from "@/components/invitation-sections/VideoAndRsvp";
+import type { TextField } from "@/components/invitation-sections/EditableText";
 import { AgendaItemQuickEdit } from "@/components/editor/AgendaItemQuickEdit";
 import { defaultAgendaItems, newAgendaItem, moveAgendaItem, type AgendaItem } from "@/lib/agenda";
 import { WishlistList } from "@/components/editor/WishlistList";
 import { WishlistItemQuickEdit } from "@/components/editor/WishlistItemQuickEdit";
 import { defaultWishlistItems, newWishlistItem, moveWishlistItem, type WishlistItemData } from "@/lib/wishlist";
+import { WeddingPartyList } from "@/components/editor/WeddingPartyList";
+import { WeddingPartyMemberQuickEdit } from "@/components/editor/WeddingPartyMemberQuickEdit";
+import { defaultWeddingPartyMembers, newWeddingPartyMember, moveWeddingPartyMember, type WeddingPartyMemberData } from "@/lib/wedding-party";
 import { AI_TEXT_ATTEMPT_QUOTA, AI_TEXT_QUOTA_EXHAUSTED_MESSAGE } from "@/lib/ai-text-quota";
 import { AI_BUDGET_EXCEEDED_MESSAGE } from "@/lib/ai-budget-constants";
 import {
@@ -38,37 +52,14 @@ import {
   type TextElementStyle,
 } from "@/lib/text-style";
 
+// PHOTO_SHAPES/photoStyle (Polaroid/Rechteck/Kreis/Stern-Auswahl fuer ein
+// kleines eingebettetes Foto) entfernt — draft.image ist jetzt das
+// randlose Hero-Titelbild (siehe Hero-Aufruf weiter unten), eine Form-
+// Auswahl fuer einen kleinen Ausschnitt ergibt dort keinen Sinn mehr.
+// draft.photoShape bleibt im Draft-Typ (siehe unten) fuer die Uebernahme
+// in den Dashboard-Editor/HeroCard.tsx, die ihr eigenes, unveraendertes
+// Foto-Form-System behalten (src/lib/photo-shape.ts).
 type PhotoShape = "rect" | "circle" | "star" | "polaroid";
-
-const PHOTO_SHAPES: { id: PhotoShape; label: string }[] = [
-  { id: "polaroid", label: "Polaroid" },
-  { id: "rect", label: "Rechteck" },
-  { id: "circle", label: "Kreis" },
-  { id: "star", label: "Stern" },
-];
-
-const STAR_CLIP = "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)";
-
-function photoStyle(shape: PhotoShape): CSSProperties {
-  switch (shape) {
-    case "circle":
-      return { width: "52%", aspectRatio: "1", borderRadius: "50%", objectFit: "cover" };
-    case "star":
-      return { width: "58%", aspectRatio: "1", objectFit: "cover", clipPath: STAR_CLIP };
-    case "polaroid":
-      return {
-        width: "68%",
-        aspectRatio: "4 / 3",
-        objectFit: "cover",
-        border: "8px solid #FAF6EF",
-        borderBottom: "22px solid #FAF6EF",
-        boxShadow: "0 10px 20px rgba(0,0,0,0.28)",
-        transform: "rotate(-2deg)",
-      };
-    default:
-      return { width: "80%", aspectRatio: "4 / 3", objectFit: "cover" };
-  }
-}
 
 type Draft = {
   text: string;
@@ -95,6 +86,21 @@ type Draft = {
   locationLng: number | null;
   familyLeft: string;
   familyRight: string;
+  // Paar-Vorstellung + Kennenlerngeschichte — bewusst OHNE Paket-Bindung
+  // (kein Module-DB-Eintrag/Tier-Badge), genau wie descriptionText: auf der
+  // echten Event-Seite ist loveStoryText schon heute ein freies Feld ohne
+  // Tier-Gate (siehe Event.loveStoryText in schema.prisma, gleiches Muster
+  // wie description). KI-Generierung (existiert schon im Dashboard,
+  // /dashboard/events/[id]/love-story) bleibt bewusst ein Bonus NACH der
+  // Anmeldung — hier nur das freie Textfeld, keine KI-Kosten fuer anonyme
+  // Besucher (Nutzer-Entscheidung).
+  showCoupleIntro: boolean;
+  coupleLeftName: string;
+  coupleLeftBio: string;
+  coupleRightName: string;
+  coupleRightBio: string;
+  showLoveStory: boolean;
+  loveStoryText: string;
   fontId: string;
   fontSize: number;
   primary: string;
@@ -134,6 +140,9 @@ type Draft = {
   wishlistHeading: string;
   wishlistHint: string;
   wishlistItems: WishlistItemData[];
+  weddingPartyHeading: string;
+  weddingPartyHint: string;
+  weddingPartyItems: WeddingPartyMemberData[];
   // Musikwuensche (Schritt 4): fester Einzeltext wie Gaestebuch (echtes
   // Gaeste-Formular, kein vom Paar gepflegtes Artikel-Datenmodell).
   musicHeading: string;
@@ -168,6 +177,10 @@ type Draft = {
   galleryHeading: string;
   galleryHint: string;
   galleryButtonText: string;
+  // Nutzer-Bugfix: Galerie-Kacheln/Button liessen sich vorher nur
+  // beschriften, nicht tatsaechlich mit eigenen Fotos befuellen — echte
+  // Vorschau-Fotos hier, dieselbe 5-MB-Grenze wie beim Hero-Foto.
+  galleryPhotos: string[];
   // Dresscode/Social Media (Schritt 7) — komplett neu, kein Datenmodell.
   dresscodeHeading: string;
   dresscodeText: string;
@@ -208,6 +221,7 @@ const FEATURE_TIER: Record<string, string> = {
   seating: "Premium Plus",
   gallery: "Premium Plus",
   guestbook: "Premium Plus",
+  "wedding-party": "Premium Plus",
   dresscode: "VIP",
   "social-media": "VIP",
   menu: "VIP",
@@ -294,6 +308,7 @@ const EXTRA_FEATURES: { key: string; label: string; description: string }[] = [
   { key: "social-media", label: "Social Media", description: "Hashtag-Hinweis, damit ihr die Gäste-Posts wiederfindet." },
   { key: "menu", label: "Digitale Menükarte", description: "Menüauswahl, die Gäste direkt bei der Zusage mit angeben." },
   { key: "wishlist", label: "Wunschliste", description: "Geschenkewunschliste für die Gäste." },
+  { key: "wedding-party", label: "Trauzeugen & Brautjungfern", description: "Stellt Trauzeugen und Brautjungfern mit Foto und Namen vor." },
   { key: "music-requests", label: "Musikwünsche", description: "Gäste reichen Musikwünsche für die Feier ein." },
   { key: "thank-you-card", label: "Digitale Dankeskarte", description: "Erscheint automatisch für eure Gäste, sobald das Event vorbei ist." },
   { key: "audio-invitation", label: "Audio-Einladung", description: "Sprachnachricht als persönliche Einladung." },
@@ -313,7 +328,9 @@ const STORAGE_KEY = "einladi:design-drafts:v1";
 // Baustein nicht das ganze DesignStudio-Modul mitziehen muss — siehe
 // Kommentar dort.
 export const PENDING_DRAFT_KEY = "einladi:pending-draft-template-id";
-const MAX_IMAGE_BYTES = 2_500_000;
+// War 2.5 MB, auf Nutzer-Feedback hin angehoben (2.5 MB zu knapp fuer
+// normale Handyfotos ohne vorheriges Verkleinern).
+const MAX_IMAGE_BYTES = 5_000_000;
 
 function loadDrafts(): Record<string, Draft> {
   if (typeof window === "undefined") return {};
@@ -338,6 +355,13 @@ function defaultDraft(item: GalleryTemplate, maxTierRank: number): Draft {
     locationLng: null,
     familyLeft: "",
     familyRight: "",
+    showCoupleIntro: true,
+    coupleLeftName: "",
+    coupleLeftBio: "",
+    coupleRightName: "",
+    coupleRightBio: "",
+    showLoveStory: true,
+    loveStoryText: "",
     fontId: "cormorant",
     fontSize: 26,
     primary: item.colors.primary,
@@ -366,6 +390,9 @@ function defaultDraft(item: GalleryTemplate, maxTierRank: number): Draft {
     wishlistHeading: "Wunschliste",
     wishlistHint: "Über jeden Herzenswunsch freuen wir uns.",
     wishlistItems: defaultWishlistItems(),
+    weddingPartyHeading: "Trauzeugen & Brautjungfern",
+    weddingPartyHint: "Die Menschen, die uns diesen Tag noch schöner machen.",
+    weddingPartyItems: defaultWeddingPartyMembers(),
     musicHeading: "Musikwünsche",
     musicHint: "Welcher Song darf auf der Tanzfläche nicht fehlen?",
     musicButtonText: "Musikwunsch einreichen",
@@ -385,6 +412,7 @@ function defaultDraft(item: GalleryTemplate, maxTierRank: number): Draft {
     galleryHeading: "Teilt eure schönsten Momente",
     galleryHint: "",
     galleryButtonText: "Foto oder Video auswählen",
+    galleryPhotos: [],
     dresscodeHeading: "Dresscode",
     dresscodeText: DEFAULT_DRESSCODE_TEXT,
     socialMediaHeading: "Social Media",
@@ -489,11 +517,13 @@ export function DesignStudio({
     setSelectedKey(key);
     setSelectedAgendaId(undefined);
     setSelectedWishlistId(undefined);
+    setSelectedWeddingPartyId(undefined);
   }
   function selectAgendaItem(id: string) {
     setSelectedAgendaId(id);
     setSelectedKey(undefined);
     setSelectedWishlistId(undefined);
+    setSelectedWeddingPartyId(undefined);
   }
   // Analog zum Ablaufplan (Schritt 4): eigener Auswahl-State fuer die
   // Wunschliste, alle drei Auswahlen schliessen sich gegenseitig aus.
@@ -502,6 +532,16 @@ export function DesignStudio({
     setSelectedWishlistId(id);
     setSelectedKey(undefined);
     setSelectedAgendaId(undefined);
+    setSelectedWeddingPartyId(undefined);
+  }
+  // Analog zur Wunschliste: eigener Auswahl-State fuer Trauzeugen/
+  // Brautjungfern, schliesst sich mit allen anderen Auswahlen gegenseitig aus.
+  const [selectedWeddingPartyId, setSelectedWeddingPartyId] = useState<string | undefined>(undefined);
+  function selectWeddingPartyMember(id: string) {
+    setSelectedWeddingPartyId(id);
+    setSelectedKey(undefined);
+    setSelectedAgendaId(undefined);
+    setSelectedWishlistId(undefined);
   }
   // Auf schmalen Bildschirmen (siehe .studio-panel-sticky-Mobile-Regel in
   // globals.css) wird das Panel bei einer Auswahl zu einem fixierten
@@ -510,11 +550,12 @@ export function DesignStudio({
   // ohne langes Scrollen, obwohl es technisch da war (Bugfix). hasSelection
   // fasst alle drei sich gegenseitig ausschliessenden Auswahl-States
   // zusammen, deselectAll() ist der "X schliessen"-Handler des Sheets.
-  const hasSelection = Boolean(selectedKey || selectedAgendaId || selectedWishlistId);
+  const hasSelection = Boolean(selectedKey || selectedAgendaId || selectedWishlistId || selectedWeddingPartyId);
   function deselectAll() {
     setSelectedKey(undefined);
     setSelectedAgendaId(undefined);
     setSelectedWishlistId(undefined);
+    setSelectedWeddingPartyId(undefined);
   }
 
   // Merge statt reinem Fallback: ein in localStorage gespeicherter Entwurf
@@ -541,6 +582,14 @@ export function DesignStudio({
       return next;
     });
     setSavedHint(false);
+  }
+
+  // Baut ein TextField (siehe invitation-sections/EditableText.tsx) aus
+  // einem Draft-Feld — gleiches SelectableElement/InlineEditableField-Paar
+  // wie bisher pro Textstelle einzeln, jetzt einmalig verallgemeinert fuer
+  // den neuen One-Page-Abschnitts-Baukasten (Phase C des Plans).
+  function tf(key: TextElementKey, value: string, onChange: (text: string) => void): TextField {
+    return { value, onChange, selected: selectedKey === key, onSelect: () => selectKey(key) };
   }
 
   // Formatiert eventDate/eventTime fuers Karten-Display — gleiche
@@ -593,6 +642,43 @@ export function DesignStudio({
     updateDraft({ wishlistItems: moveWishlistItem(draft.wishlistItems, id, direction) });
   }
 
+  // Trauzeugen/Brautjungfern: gleiches Muster wie die Wunschliste, plus
+  // Foto-Upload (base64 in der Vorschau, siehe handleImageFile-Kommentar) —
+  // hasFinishedUploading noetig, damit weddingPartyPhotoTargetId nach dem
+  // Auswaehlen einer Datei wieder zurueckgesetzt wird.
+  function updateWeddingPartyMember(id: string, patch: Partial<WeddingPartyMemberData>) {
+    updateDraft({ weddingPartyItems: draft.weddingPartyItems.map((it) => (it.id === id ? { ...it, ...patch } : it)) });
+  }
+  function addWeddingPartyMember(role: "TRAUZEUGE" | "BRAUTJUNGFER") {
+    const item = newWeddingPartyMember(role);
+    updateDraft({ weddingPartyItems: [...draft.weddingPartyItems, item] });
+    selectWeddingPartyMember(item.id);
+  }
+  function removeWeddingPartyMember(id: string) {
+    updateDraft({ weddingPartyItems: draft.weddingPartyItems.filter((it) => it.id !== id) });
+    if (selectedWeddingPartyId === id) setSelectedWeddingPartyId(undefined);
+  }
+  function moveWeddingPartyMemberHandler(id: string, direction: "up" | "down") {
+    updateDraft({ weddingPartyItems: moveWeddingPartyMember(draft.weddingPartyItems, id, direction) });
+  }
+  const weddingPartyFileInputRef = useRef<HTMLInputElement>(null);
+  const [weddingPartyPhotoTargetId, setWeddingPartyPhotoTargetId] = useState<string | undefined>(undefined);
+  function requestWeddingPartyPhoto(id: string) {
+    setWeddingPartyPhotoTargetId(id);
+    weddingPartyFileInputRef.current?.click();
+  }
+  function handleWeddingPartyPhotoFile(file: File | null) {
+    if (!file || !weddingPartyPhotoTargetId) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert("Bild ist zu groß (max. 5 MB) für die Vorschau ohne Konto.");
+      return;
+    }
+    const targetId = weddingPartyPhotoTargetId;
+    const reader = new FileReader();
+    reader.onload = () => updateWeddingPartyMember(targetId, { photoUrl: String(reader.result) });
+    reader.readAsDataURL(file);
+  }
+
   // Kleine Render-Helfer statt doppelt kopierter Klick-Auswahl-Logik in den
   // beiden Karten-Layouts (mit/ohne Kartengrafik) — gleiches Muster wie
   // renderEventLabel/renderTitle/renderFamily in HeroCard.tsx.
@@ -637,7 +723,19 @@ export function DesignStudio({
     const override = elementOverrideStyle(draft.elements, "family");
     const nameStyle: CSSProperties = { ...override };
     return (
-      <SelectableElement kind="text" label="Familiennamen" selected={selectedKey === "family"} onSelect={() => selectKey("family")}>
+      <SelectableElement
+        kind="text"
+        label="Familiennamen"
+        selected={selectedKey === "family"}
+        onSelect={() => selectKey("family")}
+        // SelectableElement ist standardmaessig inline-block (schrumpft auf
+        // den Inhalt) — bei den neuen iv-*-Vollbreite-Abschnitten (Hero-
+        // Nachfolgebereich, text-align:start) blieb die Familiennamen-Zeile
+        // dadurch links haengen statt zu zentrieren (Nutzer-Bugfix). block +
+        // volle Breite, damit das umschliessende justifyContent im
+        // customizer-card-families-Flex darunter wirken kann.
+        style={{ display: "block", width: "100%" }}
+      >
         <div className="customizer-card-families" style={containerStyle}>
           <div>
             <InlineEditableField value={draft.familyLeft} onChange={(text) => updateDraft({ familyLeft: text })} placeholder="z. B. Demir" onFocus={() => setSelectedKey("family")} style={nameStyle} />
@@ -748,157 +846,43 @@ export function DesignStudio({
     switch (key) {
       case "countdown": {
         if (!draft.showCountdown) return null;
-        const countdownLabelOverride = elementOverrideStyle(draft.elements, "countdownLabel");
-        const countdownUnits: { n: string; field: "countdownDaysLabel" | "countdownHoursLabel" | "countdownMinutesLabel"; value: string }[] = [
-          { n: "14", field: "countdownDaysLabel", value: draft.countdownDaysLabel },
-          { n: "06", field: "countdownHoursLabel", value: draft.countdownHoursLabel },
-          { n: "32", field: "countdownMinutesLabel", value: draft.countdownMinutesLabel },
-        ];
+        const colors = { primary: draft.primary, accent: draft.accent, background: draft.background };
+        // Gleiche Prioritaet wie beim Hero (Nutzer-Bugfix: eigenes Foto
+        // erschien vorher nur im Hero, hier lief noch das Vorlagen-Stock-
+        // Foto weiter — inkonsistent).
+        const photoUrl = draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined);
+        const targetIso = draft.eventDate ? `${draft.eventDate}T${draft.eventTime || "00:00"}:00` : undefined;
         return (
-          <div className="customizer-card-countdown" key={key}>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.countdownLabel}
-              selected={selectedKey === "countdownLabel"}
-              onSelect={() => selectKey("countdownLabel")}
-            >
-              <div style={{ display: "flex", gap: 16 }}>
-                {countdownUnits.map(({ n, field, value }) => (
-                  <div key={field} style={{ color: draft.primary, textAlign: "center" }}>
-                    <div style={{ fontFamily: font.cssVar, color: draft.accent, fontSize: 19 }}>{n}</div>
-                    <InlineEditableField
-                      value={value}
-                      onChange={(text) => updateDraft({ [field]: text } as Partial<Draft>)}
-                      onFocus={() => setSelectedKey("countdownLabel")}
-                      style={{ fontSize: 8, letterSpacing: "0.1em", opacity: 0.75, ...countdownLabelOverride }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </SelectableElement>
-          </div>
+          <BigDayCountdown
+            key={key}
+            photoUrl={photoUrl}
+            colors={colors}
+            fontFamily={font.cssVar}
+            fontStyle={font.italic ? "italic" : "normal"}
+            dateDisplay={draftDateText()}
+            targetIso={targetIso}
+            intro={tf("description", draft.descriptionText, (text) => updateDraft({ descriptionText: text }))}
+            daysLabel={tf("countdownLabel", draft.countdownDaysLabel, (text) => updateDraft({ countdownDaysLabel: text }))}
+            hoursLabel={tf("countdownLabel", draft.countdownHoursLabel, (text) => updateDraft({ countdownHoursLabel: text }))}
+            minutesLabel={tf("countdownLabel", draft.countdownMinutesLabel, (text) => updateDraft({ countdownMinutesLabel: text }))}
+          />
         );
       }
       case "rsvp": {
         if (!draft.showRsvp) return null;
-        const rsvpHeadingOverride = elementOverrideStyle(draft.elements, "rsvpHeading");
-        const rsvpYesOverride = elementOverrideStyle(draft.elements, "rsvpYesLabel");
-        const rsvpMaybeOverride = elementOverrideStyle(draft.elements, "rsvpMaybeLabel");
-        const rsvpNoOverride = elementOverrideStyle(draft.elements, "rsvpNoLabel");
-        const rsvpButtonOverride = elementOverrideStyle(draft.elements, "rsvpButtonText");
+        const colors = { primary: draft.primary, accent: draft.accent, background: draft.background };
         return (
-          <div className="customizer-card-rsvp" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.rsvpHeading}
-              selected={selectedKey === "rsvpHeading"}
-              onSelect={() => selectKey("rsvpHeading")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.rsvpHeading}
-                onChange={(text) => updateDraft({ rsvpHeading: text })}
-                placeholder="Kommt ihr?"
-                onFocus={() => setSelectedKey("rsvpHeading")}
-                style={{ fontSize: 11, fontWeight: 600, marginBottom: 10, color: draft.primary, ...rsvpHeadingOverride }}
-              />
-            </SelectableElement>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-              <SelectableElement
-                kind="text"
-                label={TEXT_ELEMENT_LABELS.rsvpYesLabel}
-                selected={selectedKey === "rsvpYesLabel"}
-                onSelect={() => selectKey("rsvpYesLabel")}
-              >
-                <InlineEditableField
-                  value={draft.rsvpYesLabel}
-                  onChange={(text) => updateDraft({ rsvpYesLabel: text })}
-                  placeholder="Zusagen"
-                  onFocus={() => setSelectedKey("rsvpYesLabel")}
-                  style={{
-                    display: "inline-block",
-                    fontSize: 9.5,
-                    fontWeight: 600,
-                    padding: "6px 14px",
-                    border: "1px solid",
-                    background: draft.accent,
-                    color: draft.background,
-                    ...rsvpYesOverride,
-                  }}
-                />
-              </SelectableElement>
-              <SelectableElement
-                kind="text"
-                label={TEXT_ELEMENT_LABELS.rsvpMaybeLabel}
-                selected={selectedKey === "rsvpMaybeLabel"}
-                onSelect={() => selectKey("rsvpMaybeLabel")}
-              >
-                <InlineEditableField
-                  value={draft.rsvpMaybeLabel}
-                  onChange={(text) => updateDraft({ rsvpMaybeLabel: text })}
-                  placeholder="Unsicher"
-                  onFocus={() => setSelectedKey("rsvpMaybeLabel")}
-                  style={{
-                    display: "inline-block",
-                    fontSize: 9.5,
-                    fontWeight: 600,
-                    padding: "6px 14px",
-                    border: "1px solid",
-                    borderColor: `${draft.accent}88`,
-                    color: draft.primary,
-                    ...rsvpMaybeOverride,
-                  }}
-                />
-              </SelectableElement>
-              <SelectableElement
-                kind="text"
-                label={TEXT_ELEMENT_LABELS.rsvpNoLabel}
-                selected={selectedKey === "rsvpNoLabel"}
-                onSelect={() => selectKey("rsvpNoLabel")}
-              >
-                <InlineEditableField
-                  value={draft.rsvpNoLabel}
-                  onChange={(text) => updateDraft({ rsvpNoLabel: text })}
-                  placeholder="Absagen"
-                  onFocus={() => setSelectedKey("rsvpNoLabel")}
-                  style={{
-                    display: "inline-block",
-                    fontSize: 9.5,
-                    fontWeight: 600,
-                    padding: "6px 14px",
-                    border: "1px solid",
-                    borderColor: `${draft.accent}88`,
-                    color: draft.primary,
-                    ...rsvpNoOverride,
-                  }}
-                />
-              </SelectableElement>
-            </div>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.rsvpButtonText}
-              selected={selectedKey === "rsvpButtonText"}
-              onSelect={() => selectKey("rsvpButtonText")}
-              style={{ display: "block", marginTop: 10 }}
-            >
-              <InlineEditableField
-                value={draft.rsvpButtonText}
-                onChange={(text) => updateDraft({ rsvpButtonText: text })}
-                placeholder="Zusage senden"
-                onFocus={() => setSelectedKey("rsvpButtonText")}
-                style={{
-                  display: "block",
-                  padding: "8px 14px",
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  background: draft.accent,
-                  color: draft.background,
-                  textAlign: "center",
-                  ...rsvpButtonOverride,
-                }}
-              />
-            </SelectableElement>
-          </div>
+          <VideoAndRsvp
+            key={key}
+            colors={colors}
+            showRsvp
+            showVideo={false}
+            rsvpHeading={tf("rsvpHeading", draft.rsvpHeading, (text) => updateDraft({ rsvpHeading: text }))}
+            yesLabel={tf("rsvpYesLabel", draft.rsvpYesLabel, (text) => updateDraft({ rsvpYesLabel: text }))}
+            maybeLabel={tf("rsvpMaybeLabel", draft.rsvpMaybeLabel, (text) => updateDraft({ rsvpMaybeLabel: text }))}
+            noLabel={tf("rsvpNoLabel", draft.rsvpNoLabel, (text) => updateDraft({ rsvpNoLabel: text }))}
+            submitButtonText={tf("rsvpButtonText", draft.rsvpButtonText, (text) => updateDraft({ rsvpButtonText: text }))}
+          />
         );
       }
       case "seating": {
@@ -974,149 +958,35 @@ export function DesignStudio({
       }
       case "gallery": {
         if (!draft.showGallery) return null;
-        const headingOverride = elementOverrideStyle(draft.elements, "galleryHeading");
-        const hintOverride = elementOverrideStyle(draft.elements, "galleryHint");
-        const buttonOverride = elementOverrideStyle(draft.elements, "galleryButtonText");
+        const colors = { primary: draft.primary, accent: draft.accent, background: draft.background };
         return (
-          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.galleryHeading}
-              selected={selectedKey === "galleryHeading"}
-              onSelect={() => selectKey("galleryHeading")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.galleryHeading}
-                onChange={(text) => updateDraft({ galleryHeading: text })}
-                placeholder="Teilt eure schönsten Momente"
-                onFocus={() => setSelectedKey("galleryHeading")}
-                style={{ color: draft.primary, ...headingOverride }}
-              />
-            </SelectableElement>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.galleryHint}
-              selected={selectedKey === "galleryHint"}
-              onSelect={() => selectKey("galleryHint")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.galleryHint}
-                onChange={(text) => updateDraft({ galleryHint: text })}
-                placeholder="Hinweistext hinzufügen…"
-                onFocus={() => setSelectedKey("galleryHint")}
-                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
-              />
-            </SelectableElement>
-            <div className="customizer-card-gallery-grid">
-              {[0.9, 0.6, 0.8, 0.5, 1, 0.7].map((o, i) => (
-                <span key={i} style={{ background: draft.accent, opacity: o * 0.5 }} />
-              ))}
-            </div>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.galleryButtonText}
-              selected={selectedKey === "galleryButtonText"}
-              onSelect={() => selectKey("galleryButtonText")}
-              style={{ display: "block", marginTop: 8 }}
-            >
-              <InlineEditableField
-                value={draft.galleryButtonText}
-                onChange={(text) => updateDraft({ galleryButtonText: text })}
-                placeholder="Foto oder Video auswählen"
-                onFocus={() => setSelectedKey("galleryButtonText")}
-                style={{
-                  display: "block",
-                  padding: "6px 14px",
-                  fontSize: 10.5,
-                  border: `1px solid ${draft.accent}55`,
-                  color: draft.primary,
-                  textAlign: "left",
-                  ...buttonOverride,
-                }}
-              />
-            </SelectableElement>
-          </div>
+          <GalleryGrid
+            key={key}
+            colors={colors}
+            fontFamily={font.cssVar}
+            fontStyle={font.italic ? "italic" : "normal"}
+            heading={tf("galleryHeading", draft.galleryHeading, (text) => updateDraft({ galleryHeading: text }))}
+            hint={tf("galleryHint", draft.galleryHint, (text) => updateDraft({ galleryHint: text }))}
+            buttonText={tf("galleryButtonText", draft.galleryButtonText, (text) => updateDraft({ galleryButtonText: text }))}
+            photos={draft.galleryPhotos}
+            onUploadClick={() => galleryFileInputRef.current?.click()}
+          />
         );
       }
       case "guestbook": {
         if (!draft.extraFeatures.guestbook) return null;
-        const headingOverride = elementOverrideStyle(draft.elements, "guestbookHeading");
-        const hintOverride = elementOverrideStyle(draft.elements, "guestbookHint");
-        const buttonOverride = elementOverrideStyle(draft.elements, "guestbookButtonText");
-        const sampleOverride = elementOverrideStyle(draft.elements, "guestbookSample");
+        const colors = { primary: draft.primary, accent: draft.accent, background: draft.background };
         return (
-          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.guestbookHeading}
-              selected={selectedKey === "guestbookHeading"}
-              onSelect={() => selectKey("guestbookHeading")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.guestbookHeading}
-                onChange={(text) => updateDraft({ guestbookHeading: text })}
-                placeholder="Gästebuch"
-                onFocus={() => setSelectedKey("guestbookHeading")}
-                style={{ color: draft.primary, ...headingOverride }}
-              />
-            </SelectableElement>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.guestbookHint}
-              selected={selectedKey === "guestbookHint"}
-              onSelect={() => selectKey("guestbookHint")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.guestbookHint}
-                onChange={(text) => updateDraft({ guestbookHint: text })}
-                placeholder="Hinweistext hinzufügen…"
-                onFocus={() => setSelectedKey("guestbookHint")}
-                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
-              />
-            </SelectableElement>
-            <div className="customizer-card-seating-input" style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>
-              Eure Nachricht …
-            </div>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.guestbookButtonText}
-              selected={selectedKey === "guestbookButtonText"}
-              onSelect={() => selectKey("guestbookButtonText")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.guestbookButtonText}
-                onChange={(text) => updateDraft({ guestbookButtonText: text })}
-                placeholder="Nachricht hinterlassen"
-                onFocus={() => setSelectedKey("guestbookButtonText")}
-                style={{
-                  display: "inline-block",
-                  marginTop: 8,
-                  padding: "6px 14px",
-                  fontSize: 10.5,
-                  fontWeight: 600,
-                  background: draft.accent,
-                  color: draft.background,
-                  ...buttonOverride,
-                }}
-              />
-            </SelectableElement>
-            <SelectableElement
-              kind="date"
-              label={TEXT_ELEMENT_LABELS.guestbookSample}
-              selected={selectedKey === "guestbookSample"}
-              onSelect={() => selectKey("guestbookSample")}
-              style={{ display: "block", marginTop: 8 }}
-            >
-              <div className="customizer-card-note" style={{ borderColor: `${draft.accent}55`, color: draft.primary, ...sampleOverride }}>
-                „Wir freuen uns riesig für euch — alles Liebe!“ – Familie Kaya
-              </div>
-            </SelectableElement>
-          </div>
+          <WishesCarousel
+            key={key}
+            colors={colors}
+            fontFamily={font.cssVar}
+            fontStyle={font.italic ? "italic" : "normal"}
+            heading={tf("guestbookHeading", draft.guestbookHeading, (text) => updateDraft({ guestbookHeading: text }))}
+            hint={tf("guestbookHint", draft.guestbookHint, (text) => updateDraft({ guestbookHint: text }))}
+            buttonText={tf("guestbookButtonText", draft.guestbookButtonText, (text) => updateDraft({ guestbookButtonText: text }))}
+            entries={[{ id: "sample", name: "Familie Kaya", message: "Wir freuen uns riesig für euch — alles Liebe!" }]}
+          />
         );
       }
       case "wishlist": {
@@ -1162,6 +1032,56 @@ export function DesignStudio({
               onAdd={addWishlistItem}
               onRemove={removeWishlistItem}
               onMove={moveWishlistItemHandler}
+              baseStyle={{ color: draft.primary }}
+              accentColor={draft.accent}
+            />
+          </div>
+        );
+      }
+      case "wedding-party": {
+        if (!draft.extraFeatures["wedding-party"]) return null;
+        const headingOverride = elementOverrideStyle(draft.elements, "weddingPartyHeading");
+        const hintOverride = elementOverrideStyle(draft.elements, "weddingPartyHint");
+        return (
+          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.weddingPartyHeading}
+              selected={selectedKey === "weddingPartyHeading"}
+              onSelect={() => selectKey("weddingPartyHeading")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.weddingPartyHeading}
+                onChange={(text) => updateDraft({ weddingPartyHeading: text })}
+                placeholder="Trauzeugen & Brautjungfern"
+                onFocus={() => setSelectedKey("weddingPartyHeading")}
+                style={{ color: draft.primary, ...headingOverride }}
+              />
+            </SelectableElement>
+            <SelectableElement
+              kind="text"
+              label={TEXT_ELEMENT_LABELS.weddingPartyHint}
+              selected={selectedKey === "weddingPartyHint"}
+              onSelect={() => selectKey("weddingPartyHint")}
+              style={{ display: "block" }}
+            >
+              <InlineEditableField
+                value={draft.weddingPartyHint}
+                onChange={(text) => updateDraft({ weddingPartyHint: text })}
+                placeholder="Hinweistext hinzufügen…"
+                onFocus={() => setSelectedKey("weddingPartyHint")}
+                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
+              />
+            </SelectableElement>
+            <WeddingPartyList
+              items={draft.weddingPartyItems}
+              selectedId={selectedWeddingPartyId}
+              onSelect={selectWeddingPartyMember}
+              onAdd={addWeddingPartyMember}
+              onRemove={removeWeddingPartyMember}
+              onMove={moveWeddingPartyMemberHandler}
+              onPhotoClick={requestWeddingPartyPhoto}
               baseStyle={{ color: draft.primary }}
               accentColor={draft.accent}
             />
@@ -1464,47 +1384,40 @@ export function DesignStudio({
       }
       case "video-invitation": {
         if (!draft.extraFeatures["video-invitation"]) return null;
-        const headingOverride = elementOverrideStyle(draft.elements, "videoMessageHeading");
-        const hintOverride = elementOverrideStyle(draft.elements, "videoMessageHint");
+        const colors = { primary: draft.primary, accent: draft.accent, background: draft.background };
         return (
-          <div className="customizer-card-section" style={{ borderColor: `${draft.accent}66` }} key={key}>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.videoMessageHeading}
-              selected={selectedKey === "videoMessageHeading"}
-              onSelect={() => selectKey("videoMessageHeading")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.videoMessageHeading}
-                onChange={(text) => updateDraft({ videoMessageHeading: text })}
-                placeholder="Unsere Videobotschaft"
-                onFocus={() => setSelectedKey("videoMessageHeading")}
-                style={{ color: draft.primary, ...headingOverride }}
-              />
-            </SelectableElement>
-            <SelectableElement
-              kind="text"
-              label={TEXT_ELEMENT_LABELS.videoMessageHint}
-              selected={selectedKey === "videoMessageHint"}
-              onSelect={() => selectKey("videoMessageHint")}
-              style={{ display: "block" }}
-            >
-              <InlineEditableField
-                value={draft.videoMessageHint}
-                onChange={(text) => updateDraft({ videoMessageHint: text })}
-                placeholder="Hinweistext hinzufügen…"
-                onFocus={() => setSelectedKey("videoMessageHint")}
-                style={{ fontSize: 10, marginBottom: 8, color: draft.primary, opacity: 0.8, ...hintOverride }}
-              />
-            </SelectableElement>
-            <div className="customizer-card-play-mock" style={{ borderColor: `${draft.accent}88` }}>
-              <span className="customizer-card-play-btn" style={{ background: draft.accent, color: draft.background }}>
-                ▶
-              </span>
-              <span style={{ color: draft.primary, fontSize: 10.5 }}>Videobotschaft ansehen</span>
-            </div>
-          </div>
+          <VideoAndRsvp
+            key={key}
+            colors={colors}
+            showRsvp={false}
+            showVideo
+            rsvpHeading={tf("rsvpHeading", "", () => {})}
+            yesLabel={tf("rsvpYesLabel", "", () => {})}
+            maybeLabel={tf("rsvpMaybeLabel", "", () => {})}
+            noLabel={tf("rsvpNoLabel", "", () => {})}
+            videoHeading={tf("videoMessageHeading", draft.videoMessageHeading, (text) => updateDraft({ videoMessageHeading: text }))}
+            videoHint={tf("videoMessageHint", draft.videoMessageHint, (text) => updateDraft({ videoMessageHint: text }))}
+          />
+        );
+      }
+      case "agenda": {
+        if (!draft.extraFeatures.agenda) return null;
+        const colors = { primary: draft.primary, accent: draft.accent, background: draft.background };
+        const photoUrl = draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined);
+        return (
+          <EventsTimeline
+            key={key}
+            photoUrl={photoUrl}
+            colors={colors}
+            fontFamily={font.cssVar}
+            fontStyle={font.italic ? "italic" : "normal"}
+            items={draft.agendaItems}
+            selectedId={selectedAgendaId}
+            onSelect={selectAgendaItem}
+            onAdd={addAgendaItem}
+            onRemove={removeAgendaItem}
+            onMove={moveAgendaItemHandler}
+          />
         );
       }
       default: {
@@ -1547,11 +1460,33 @@ export function DesignStudio({
   function handleImageFile(file: File | null) {
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
-      alert("Bild ist zu groß (max. 2,5 MB) für die Vorschau ohne Konto.");
+      alert("Bild ist zu groß (max. 5 MB) für die Vorschau ohne Konto.");
       return;
     }
     const reader = new FileReader();
     reader.onload = () => updateDraft({ image: String(reader.result) });
+    reader.readAsDataURL(file);
+  }
+
+  // Nutzer-Bugfix: "Foto oder Video auswählen" liess sich vorher nicht
+  // anklicken, nur der Beschriftungstext war editierbar. galleryFileInputRef
+  // wird per onUploadClick aus GalleryGrid (leere Kachel oder Rund-Button)
+  // programmatisch geklickt, da der eigentliche <input> aus Layout-Gruenden
+  // nicht direkt an der Klickstelle sitzen kann. Maximal 8 Fotos, gleiche
+  // 5-MB-Grenze wie beim Hero-Foto.
+  const MAX_GALLERY_PHOTOS = 8;
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  function handleGalleryPhotoFile(file: File | null) {
+    if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert("Bild ist zu groß (max. 5 MB) für die Vorschau ohne Konto.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const next = [...draft.galleryPhotos, String(reader.result)].slice(0, MAX_GALLERY_PHOTOS);
+      updateDraft({ galleryPhotos: next });
+    };
     reader.readAsDataURL(file);
   }
 
@@ -1651,6 +1586,28 @@ export function DesignStudio({
     const swapWith = direction === "up" ? idx - 1 : idx + 1;
     if (swapWith < 0 || swapWith >= order.length) return;
     [order[idx], order[swapWith]] = [order[swapWith], order[idx]];
+    updateDraft({ sectionOrder: order });
+  }
+
+  // Fuer die Inline-Pfeile direkt am Abschnitt (SectionInlineControls) reicht
+  // ein einfacher Tausch mit dem NAECHSTEN ARRAY-Nachbarn (wie moveSection
+  // oben) nicht: steht zwischen zwei sichtbaren Abschnitten ein gerade
+  // ausgeblendeter, wuerde ein Klick auf "nach oben" nur mit dem
+  // unsichtbaren Nachbarn tauschen — kein sichtbarer Effekt. Bewusst eine
+  // zweite Funktion statt moveSection() umzubauen: die Seitenpanel-Liste
+  // zeigt ALLE Abschnitte (auch ausgeblendete) nebeneinander, dort ist der
+  // einfache Nachbar-Tausch weiterhin das richtige Verhalten.
+  function moveVisibleSection(key: string, direction: "up" | "down") {
+    const visible = draft.sectionOrder.filter((k) => Boolean(renderSection(k)));
+    const vIdx = visible.indexOf(key);
+    if (vIdx === -1) return;
+    const swapWith = direction === "up" ? vIdx - 1 : vIdx + 1;
+    if (swapWith < 0 || swapWith >= visible.length) return;
+    const neighborKey = visible[swapWith];
+    const order = [...draft.sectionOrder];
+    const idxA = order.indexOf(key);
+    const idxB = order.indexOf(neighborKey);
+    [order[idxA], order[idxB]] = [order[idxB], order[idxA]];
     updateDraft({ sectionOrder: order });
   }
 
@@ -1755,6 +1712,34 @@ export function DesignStudio({
 
   return (
     <div className="studio-page">
+      {/* Versteckter Datei-Input fuer die Galerie-Kacheln/-Button (siehe
+          GalleryGrid onUploadClick) — sitzt hier statt an der Klickstelle,
+          da der Klick aus mehreren Stellen (leere Kachel, Rund-Button)
+          denselben Dialog oeffnen soll. */}
+      <input
+        ref={galleryFileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          handleGalleryPhotoFile(e.target.files?.[0] ?? null);
+          e.target.value = "";
+        }}
+      />
+      {/* Analoger versteckter Input fuer Trauzeugen/Brautjungfern-Fotos —
+          gleiches Muster wie oben, Ziel-Eintrag steht in
+          weddingPartyPhotoTargetId, da der Klick von jedem Foto-Kreis in
+          WeddingPartyList.tsx kommen kann. */}
+      <input
+        ref={weddingPartyFileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          handleWeddingPartyPhotoFile(e.target.files?.[0] ?? null);
+          e.target.value = "";
+        }}
+      />
       <div className="studio-top">
         <Link href="/" className="logo">
           <svg width="26" height="20" viewBox="0 0 28 22" fill="none" stroke="var(--terracotta)" strokeWidth="1.4">
@@ -1774,180 +1759,205 @@ export function DesignStudio({
       <div className="studio-grid">
         <div className="studio-canvas-col">
           <div className="studio-canvas">
-            <div
-              className="customizer-card"
-              style={{
-                background: draft.background,
-                borderColor: draft.accent,
-                ...(item.photoBackground && draft.showPhotoBackground
-                  ? {
-                      backgroundImage: `linear-gradient(180deg, rgba(${item.photoBackground.tint},0.55) 0%, rgba(${item.photoBackground.tint},0.78) 55%, rgba(${item.photoBackground.tint},0.94) 100%), url(${item.photoBackground.src})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }
-                  : {}),
-              }}
-            >
-              <div className="customizer-card-frame" style={{ borderColor: `${draft.accent}66` }}>
-                {item.cardImageUrl && zone ? (
-                  <div style={{ position: "relative", margin: "-26px -20px 18px", width: "calc(100% + 40px)" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- feste Kartengrafik mit variablem Seitenverhaeltnis je Design */}
-                    <img src={item.cardImageUrl} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: `${zone.top}% ${zone.right}% ${zone.bottom}% ${zone.left}%`,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        // Verteilt Label / Name / Datum+Ort ueber die gesamte
-                        // Sicherheitszone statt sie eng zusammenzudraengen —
-                        // nutzt den Freiraum, den jede Karte mitbringt.
-                        justifyContent: "space-evenly",
-                        textAlign: "center",
-                      }}
-                    >
-                      {renderEventLabel({ color: draft.accent, marginBottom: 0 })}
-                      {renderTitle({
-                        fontFamily: font.cssVar,
-                        fontStyle: font.italic ? "italic" : "normal",
-                        textTransform: font.uppercase ? "uppercase" : "none",
-                        fontSize: draft.fontSize,
-                        color: draft.primary,
-                      })}
-                      {renderDescription({ fontSize: 11, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 230, margin: "0 auto" })}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                        {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 0 })}
-                        {renderLocation({ color: draft.primary })}
+            <div className="iv-page">
+              {item.cardImageUrl && zone ? (
+                // Feste Kartengrafik-Vorlagen (Düğün-Kartenbilder) behalten
+                // vorerst ihre bisherige Optik, nur zentriert statt in der
+                // alten schmalen Karte — echter Belle-Hero fuer diese
+                // Vorlagen folgt in Plan-Phase F.
+                <div className="iv-section">
+                  <div className="iv-inner" style={{ maxWidth: 420 }}>
+                    <div style={{ position: "relative" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- feste Kartengrafik mit variablem Seitenverhaeltnis je Design */}
+                      <img src={item.cardImageUrl} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
+                      <div
+                        style={{
+                          position: "absolute",
+                          inset: `${zone.top}% ${zone.right}% ${zone.bottom}% ${zone.left}%`,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "space-evenly",
+                          textAlign: "center",
+                        }}
+                      >
+                        {renderEventLabel({ color: draft.accent, marginBottom: 0 })}
+                        {renderTitle({
+                          fontFamily: font.cssVar,
+                          fontStyle: font.italic ? "italic" : "normal",
+                          textTransform: font.uppercase ? "uppercase" : "none",
+                          fontSize: draft.fontSize,
+                          color: draft.primary,
+                        })}
+                        {renderDescription({ fontSize: 11, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 230, margin: "0 auto" })}
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                          {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 0 })}
+                          {renderLocation({ color: draft.primary })}
+                        </div>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {draft.showFloral && !(item.photoBackground && draft.showPhotoBackground) && (
-                      <svg
-                        className="customizer-card-floral"
-                        viewBox="0 0 300 400"
-                        preserveAspectRatio="xMidYMid slice"
-                        aria-hidden="true"
-                      >
-                        <defs>
-                          <pattern
-                            id={`floral-${item.id}`}
-                            width="70"
-                            height="70"
-                            patternUnits="userSpaceOnUse"
-                            patternTransform="rotate(8)"
-                          >
-                            <path
-                              d="M8 62 Q18 42 34 46 Q30 24 8 18 M34 46 Q46 38 44 20"
-                              fill="none"
-                              stroke={draft.accent}
-                              strokeWidth="1.1"
-                            />
-                            <circle cx="34" cy="46" r="1.8" fill={draft.accent} stroke="none" />
-                            <circle cx="8" cy="18" r="1.4" fill={draft.accent} stroke="none" />
-                          </pattern>
-                        </defs>
-                        <rect width="300" height="400" fill={`url(#floral-${item.id})`} />
-                      </svg>
-                    )}
-                    {draft.showOrnaments && (
-                      <>
-                        <CornerMotif color={draft.accent} corner="tl" />
-                        <CornerMotif color={draft.accent} corner="tr" />
-                        <CornerMotif color={draft.accent} corner="bl" />
-                        <CornerMotif color={draft.accent} corner="br" />
-                        <div className="customizer-card-dots">
-                          {category === "Sünnet" ? <NazarScatter /> : <DotScatter color={draft.accent} />}
-                        </div>
-                      </>
-                    )}
-
-                    {draft.image && (
-                      <div className="customizer-card-photo-wrap">
-                        {/* eslint-disable-next-line @next/next/no-img-element -- user upload (data URL), unknown dimensions */}
-                        <img src={draft.image} alt="" style={photoStyle(draft.photoShape)} />
-                      </div>
-                    )}
-
-                    {renderEventLabel({ color: draft.accent })}
-                    {renderTitle({
-                      fontFamily: font.cssVar,
-                      fontStyle: font.italic ? "italic" : "normal",
-                      textTransform: font.uppercase ? "uppercase" : "none",
-                      fontSize: draft.fontSize,
-                      color: draft.accent,
-                    })}
-
-                    {renderFamily({ color: draft.primary })}
-
-                    {renderDescription({ fontSize: 12.5, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 260, margin: "18px auto 0" })}
-
-                    <div className="customizer-card-divider" style={{ background: draft.accent }} />
-                    {renderDate({ color: draft.primary })}
-                    {renderLocation({ color: draft.primary })}
-                  </>
-                )}
-
-                {/* Google Maps/Kalender sind feste UI-Chrome-Elemente, keine
-                    umschalt-/sortierbaren Paket-Module — bleiben deshalb
-                    ausserhalb der sectionOrder-Liste, direkt unter dem
-                    Kopfbereich. */}
-                <div className="customizer-card-actions">
-                  {draft.locationText ? (
-                    <a
-                      href={googleMapsSearchUrl([draft.locationText])}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ borderColor: `${draft.accent}88`, color: draft.primary }}
-                    >
-                      Google Maps
-                    </a>
-                  ) : (
-                    <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Google Maps</span>
-                  )}
-                  <SelectableElement
-                    kind="text"
-                    label={TEXT_ELEMENT_LABELS.calendarSaveText}
-                    selected={selectedKey === "calendarSaveText"}
-                    onSelect={() => selectKey("calendarSaveText")}
-                  >
-                    <InlineEditableField
-                      value={draft.calendarSaveText}
-                      onChange={(text) => updateDraft({ calendarSaveText: text })}
-                      placeholder="In Kalender speichern"
-                      onFocus={() => setSelectedKey("calendarSaveText")}
-                      as="span"
-                      style={{ borderColor: `${draft.accent}88`, color: draft.primary, ...elementOverrideStyle(draft.elements, "calendarSaveText") }}
-                    />
-                  </SelectableElement>
-                  <SelectableElement
-                    kind="text"
-                    label={TEXT_ELEMENT_LABELS.calendarGoogleText}
-                    selected={selectedKey === "calendarGoogleText"}
-                    onSelect={() => selectKey("calendarGoogleText")}
-                  >
-                    <InlineEditableField
-                      value={draft.calendarGoogleText}
-                      onChange={(text) => updateDraft({ calendarGoogleText: text })}
-                      placeholder="Google Kalender"
-                      onFocus={() => setSelectedKey("calendarGoogleText")}
-                      as="span"
-                      style={{
-                        background: draft.accent,
-                        borderColor: draft.accent,
-                        color: draft.background,
-                        ...elementOverrideStyle(draft.elements, "calendarGoogleText"),
-                      }}
-                    />
-                  </SelectableElement>
                 </div>
+              ) : (
+                <>
+                  {/* Nutzer-Bugfix-Folge ("Bild ist nirgendwo zu sehen"):
+                      eigenes hochgeladenes Foto (draft.image) hat jetzt
+                      Prioritaet als Hero-Titelbild — faellt nur auf das
+                      Vorlagen-Stock-Foto (item.photoBackground) zurueck,
+                      wenn kein eigenes Foto gesetzt ist. Floral-/Eck-
+                      Ornament-Regler wurden entfernt (siehe "Foto &
+                      Verzierungen"-Sektion weiter unten) statt wirkungslos
+                      angezeigt zu bleiben. */}
+                  <Hero
+                    photoUrl={draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined)}
+                    colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+                    fontFamily={font.cssVar}
+                    fontStyle={font.italic ? "italic" : "normal"}
+                    eventLabel={tf("eventLabel", draft.eventLabel, (text) => updateDraft({ eventLabel: text }))}
+                    title={tf("title", draft.text, (text) => updateDraft({ text }))}
+                    location={{ display: draft.locationText, selected: selectedKey === "location", onSelect: () => selectKey("location") }}
+                    date={{ display: draftDateText(), selected: selectedKey === "date", onSelect: () => selectKey("date") }}
+                  />
+                  <div className="iv-section iv-section--tight" style={{ background: draft.background }}>
+                    <div className="iv-inner" style={{ maxWidth: 420 }}>
+                      {renderFamily({ color: draft.primary, justifyContent: "center" })}
+                      {renderDescription({ fontSize: 13.5, lineHeight: 1.6, textAlign: "center", color: draft.primary, margin: "18px auto 0" })}
+                    </div>
+                  </div>
+                </>
+              )}
 
-                {draft.sectionOrder.map((key) => (
-                  <Fragment key={key}>{renderSection(key)}</Fragment>
-                ))}
+              {/* Paar-Vorstellung — bewusst kein Paket-/Tier-Modul (siehe
+                  Kommentar am Draft-Typ), einfacher Ein/Aus-Regler im Panel
+                  ("Design"-Tab), manuelle Texteingabe wie descriptionText.
+                  CameraSection: scroll-gekoppelte Kamerafahrt (docs/MOTION.md
+                  §2), jetzt auch fuer /gestalten gueltig. */}
+              {draft.showCoupleIntro && (
+                <CameraSection>
+                  <CoupleIntro
+                    colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+                    fontFamily={font.cssVar}
+                    fontStyle={font.italic ? "italic" : "normal"}
+                    leftName={tf("coupleLeftName", draft.coupleLeftName, (text) => updateDraft({ coupleLeftName: text }))}
+                    leftBio={tf("coupleLeftBio", draft.coupleLeftBio, (text) => updateDraft({ coupleLeftBio: text }))}
+                    rightName={tf("coupleRightName", draft.coupleRightName, (text) => updateDraft({ coupleRightName: text }))}
+                    rightBio={tf("coupleRightBio", draft.coupleRightBio, (text) => updateDraft({ coupleRightBio: text }))}
+                  />
+                </CameraSection>
+              )}
+
+              {/* Google Maps/Kalender sind feste UI-Chrome-Elemente, keine
+                  umschalt-/sortierbaren Paket-Module — bleiben deshalb
+                  ausserhalb der sectionOrder-Liste, direkt unter dem
+                  Kopfbereich. */}
+              <div className="iv-section iv-section--tight" style={{ background: draft.background }}>
+                <div className="iv-inner" style={{ maxWidth: 420 }}>
+                  <div className="customizer-card-actions">
+                    {draft.locationText ? (
+                      <a
+                        href={googleMapsSearchUrl([draft.locationText])}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ borderColor: `${draft.accent}88`, color: draft.primary }}
+                      >
+                        Google Maps
+                      </a>
+                    ) : (
+                      <span style={{ borderColor: `${draft.accent}88`, color: draft.primary }}>Google Maps</span>
+                    )}
+                    <SelectableElement
+                      kind="text"
+                      label={TEXT_ELEMENT_LABELS.calendarSaveText}
+                      selected={selectedKey === "calendarSaveText"}
+                      onSelect={() => selectKey("calendarSaveText")}
+                    >
+                      <InlineEditableField
+                        value={draft.calendarSaveText}
+                        onChange={(text) => updateDraft({ calendarSaveText: text })}
+                        placeholder="In Kalender speichern"
+                        onFocus={() => setSelectedKey("calendarSaveText")}
+                        as="span"
+                        style={{ borderColor: `${draft.accent}88`, color: draft.primary, ...elementOverrideStyle(draft.elements, "calendarSaveText") }}
+                      />
+                    </SelectableElement>
+                    <SelectableElement
+                      kind="text"
+                      label={TEXT_ELEMENT_LABELS.calendarGoogleText}
+                      selected={selectedKey === "calendarGoogleText"}
+                      onSelect={() => selectKey("calendarGoogleText")}
+                    >
+                      <InlineEditableField
+                        value={draft.calendarGoogleText}
+                        onChange={(text) => updateDraft({ calendarGoogleText: text })}
+                        placeholder="Google Kalender"
+                        onFocus={() => setSelectedKey("calendarGoogleText")}
+                        as="span"
+                        style={{
+                          background: draft.accent,
+                          borderColor: draft.accent,
+                          color: draft.background,
+                          ...elementOverrideStyle(draft.elements, "calendarGoogleText"),
+                        }}
+                      />
+                    </SelectableElement>
+                  </div>
+                </div>
               </div>
+
+              {/* Kennenlerngeschichte — ebenfalls kein Paket-Modul, gleiches
+                  Muster wie CoupleIntro oben. Milestones (Zickzack-Punkte)
+                  sind rein strukturell und haben noch kein eigenes
+                  Datenmodell — hier bewusst leer, nur der freie Fliesstext
+                  ist aktuell bedienbar. */}
+              {draft.showLoveStory && (
+                <CameraSection>
+                  <StoryTimeline
+                    colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+                    fontFamily={font.cssVar}
+                    fontStyle={font.italic ? "italic" : "normal"}
+                    text={tf("loveStoryText", draft.loveStoryText, (text) => updateDraft({ loveStoryText: text }))}
+                    milestones={[]}
+                  />
+                </CameraSection>
+              )}
+
+              {(() => {
+                const visibleKeys = draft.sectionOrder.filter((k) => Boolean(renderSection(k)));
+                return draft.sectionOrder.map((key) => {
+                  const rendered = renderSection(key);
+                  if (!rendered) return null;
+                  const visibleIndex = visibleKeys.indexOf(key);
+                  const sectionLabel = toggleItems.find((t) => t.key === key)?.label ?? key;
+                  const inlineControls = (
+                    <SectionInlineControls
+                      label={sectionLabel}
+                      isFirst={visibleIndex === 0}
+                      isLast={visibleIndex === visibleKeys.length - 1}
+                      onMoveUp={() => moveVisibleSection(key, "up")}
+                      onMoveDown={() => moveVisibleSection(key, "down")}
+                      onHide={() => toggleSection(key, false)}
+                    />
+                  );
+                  if (key === "countdown" || key === "agenda") {
+                    return (
+                      <div key={key} style={{ position: "relative" }}>
+                        {inlineControls}
+                        <CameraSection>{rendered}</CameraSection>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={key} style={{ position: "relative" }}>
+                      {inlineControls}
+                      <CameraSection className="iv-section" style={{ background: draft.background }}>
+                        <div className="iv-inner" style={{ maxWidth: 420 }}>
+                          {rendered}
+                        </div>
+                      </CameraSection>
+                    </div>
+                  );
+                });
+              })()}
             </div>
 
             {(prevId || nextId) && (
@@ -2035,6 +2045,46 @@ export function DesignStudio({
                     style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
                   >
                     Artikel löschen
+                  </button>
+                </section>
+              );
+            })()
+          ) : selectedWeddingPartyId ? (
+            (() => {
+              const item = draft.weddingPartyItems.find((it) => it.id === selectedWeddingPartyId);
+              if (!item) return null;
+              return (
+                <section className="studio-section">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <h4 style={{ margin: 0 }}>Trauzeuge/Brautjungfer</h4>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedWeddingPartyId(undefined)}
+                      style={{ fontSize: 11, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      Abwählen
+                    </button>
+                  </div>
+                  <WeddingPartyMemberQuickEdit
+                    role={item.role}
+                    name={item.name}
+                    onChange={(patch) => updateWeddingPartyMember(item.id, patch)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => requestWeddingPartyPhoto(item.id)}
+                    className="btn btn-ghost"
+                    style={{ marginTop: 12, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                  >
+                    {item.photoUrl ? "Foto ersetzen" : "Foto hochladen"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeWeddingPartyMember(item.id)}
+                    className="btn btn-ghost"
+                    style={{ marginTop: 8, padding: "8px 14px", fontSize: 12, width: "100%" }}
+                  >
+                    Eintrag löschen
                   </button>
                 </section>
               );
@@ -2192,6 +2242,17 @@ export function DesignStudio({
             </div>
           </section>
 
+          {/* Bei Vorlagen mit echter Kartengrafik (item.cardImageUrl, die
+              Düğün-"Blanko"-Designs) ist die gesamte Karte ein fest
+              gezeichnetes Bild — kein Platz fuer ein eigenes Foto, das
+              haette hier vorher nie eine sichtbare Wirkung gehabt (Nutzer-
+              Bugfix: "Bild ist nirgendwo zu sehen"). Ganze Sektion
+              ausgeblendet statt eines wirkungslosen Uploads. Fuer alle
+              anderen Vorlagen ist draft.image jetzt das Hero-Foto selbst
+              (siehe Hero-Aufruf weiter unten, photoUrl-Prioritaet
+              eigenes Foto > Foto-Hintergrund) — echte Wirkung, nicht nur
+              ein Formularfeld ohne sichtbares Ergebnis. */}
+          {!item.cardImageUrl && (
           <section className="studio-section">
             <h4>Foto &amp; Verzierungen</h4>
             <div className="customizer-form">
@@ -2213,62 +2274,69 @@ export function DesignStudio({
                     </button>
                   )}
                 </div>
-                {draft.image && (
-                  <div className="customizer-shapes">
-                    {PHOTO_SHAPES.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className={`customizer-shape-btn${s.id === draft.photoShape ? " is-active" : ""}`}
-                        onClick={() => updateDraft({ photoShape: s.id })}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <span className="customizer-hint">Max. 5 MB. Erscheint als Titelbild oben auf der Seite.</span>
               </div>
 
-              {/* Floral-Muster/Eck-Ornamente steuern nur das generische SVG-
-                  Overlay (siehe renderTitle-Zweig ohne item.cardImageUrl weiter
-                  unten) — bei den Vorlagen mit echter Kartengrafik (die 12
-                  aktiven Düğün-"Blanko"-Designs, Template.previewUrl gesetzt)
-                  ist die Verzierung fest Teil des Bildes, diese Regler haetten
-                  dort keine Wirkung. Vorher wurden sie trotzdem angezeigt
-                  (wirkungslos, verwirrend) — jetzt nur sichtbar, wenn es
-                  ueberhaupt etwas zum Umschalten gibt. Nutzer-Bugfix-Folge. */}
-              {(!item.cardImageUrl || item.photoBackground) && (
+              {/* Floral-/Eck-Ornament-Regler entfernt statt wirkungslos
+                  angezeigt: das alte kleine SVG-Overlay war fuer die
+                  schmale Karte gestaltet und passt nicht auf den neuen
+                  randlosen Foto-Hero (Belle-Umbau). Foto-Hintergrund
+                  (item.photoBackground, unser Stock-Foto pro Vorlage)
+                  bleibt als eigener Regler bestehen — greift nur, wenn
+                  kein eigenes Foto hochgeladen wurde (siehe Hero-Aufruf). */}
+              {item.photoBackground && (
                 <div className="customizer-field">
                   <label>Verzierungen</label>
                   <div className="customizer-toggles">
-                    {!item.cardImageUrl && (
-                      <>
-                        <label className="customizer-toggle">
-                          <input type="checkbox" checked={draft.showFloral} onChange={(e) => updateDraft({ showFloral: e.target.checked })} />
-                          <span className="customizer-switch" aria-hidden="true" />
-                          <span className="customizer-toggle-text">Floral-Muster</span>
-                        </label>
-                        <label className="customizer-toggle">
-                          <input type="checkbox" checked={draft.showOrnaments} onChange={(e) => updateDraft({ showOrnaments: e.target.checked })} />
-                          <span className="customizer-switch" aria-hidden="true" />
-                          <span className="customizer-toggle-text">Eck-Ornamente &amp; Streumuster</span>
-                        </label>
-                      </>
-                    )}
-                    {item.photoBackground && (
-                      <label className="customizer-toggle">
-                        <input
-                          type="checkbox"
-                          checked={draft.showPhotoBackground}
-                          onChange={(e) => updateDraft({ showPhotoBackground: e.target.checked })}
-                        />
-                        <span className="customizer-switch" aria-hidden="true" />
-                        <span className="customizer-toggle-text">Foto-Hintergrund</span>
-                      </label>
-                    )}
+                    <label className="customizer-toggle">
+                      <input
+                        type="checkbox"
+                        checked={draft.showPhotoBackground}
+                        onChange={(e) => updateDraft({ showPhotoBackground: e.target.checked })}
+                      />
+                      <span className="customizer-switch" aria-hidden="true" />
+                      <span className="customizer-toggle-text">Foto-Hintergrund (Stock-Foto, falls kein eigenes Foto hochgeladen ist)</span>
+                    </label>
                   </div>
                 </div>
               )}
+            </div>
+          </section>
+          )}
+
+          {/* Paar-Vorstellung + Kennenlerngeschichte — bewusst kein
+              Paket-Modul (siehe Draft-Typ-Kommentar), nur ein einfacher
+              Ein/Aus-Regler. Texte selbst werden wie Familiennamen/
+              Beschreibung direkt in der Vorschau angeklickt und bearbeitet,
+              kein separates Formularfeld hier. */}
+          <section className="studio-section">
+            <h4>Paar-Vorstellung &amp; Kennenlerngeschichte</h4>
+            <p className="studio-section-intro">
+              Eigene Texte — das Brautpaar schreibt sie selbst, direkt in der Vorschau anklickbar. Keine KI nötig.
+            </p>
+            <div className="customizer-form">
+              <div className="customizer-field">
+                <div className="customizer-toggles">
+                  <label className="customizer-toggle">
+                    <input
+                      type="checkbox"
+                      checked={draft.showCoupleIntro}
+                      onChange={(e) => updateDraft({ showCoupleIntro: e.target.checked })}
+                    />
+                    <span className="customizer-switch" aria-hidden="true" />
+                    <span className="customizer-toggle-text">Paar-Vorstellung (Fotos + Kurztext je Partner)</span>
+                  </label>
+                  <label className="customizer-toggle">
+                    <input
+                      type="checkbox"
+                      checked={draft.showLoveStory}
+                      onChange={(e) => updateDraft({ showLoveStory: e.target.checked })}
+                    />
+                    <span className="customizer-switch" aria-hidden="true" />
+                    <span className="customizer-toggle-text">Kennenlerngeschichte (freier Fließtext)</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </section>
 

@@ -1,9 +1,11 @@
 # Einladi – Design- & Motion-Spezifikation
 
-**Gültig für:** Alle Marketing-/Verkaufsseiten von einladi.de (Startseite, Preise, Vorlagen-Galerie-Übersicht, Kontakt, Impressum, Datenschutz). **Nicht gültig für:** den Gestalten-Editor (`/gestalten/[templateId]`) und die veröffentlichten Einladungsseiten der Brautpaare (`/e/[slug]`) — die laufen unverändert im Belle-artigen One-Page-Stil (siehe Branch `feature/belle-invitation-preview`), komplett getrennt von dieser Spezifikation.
+**Gültig für:** Alle Marketing-/Verkaufsseiten von einladi.de (Startseite, Preise, Vorlagen-Galerie-Übersicht, Kontakt, Impressum, Datenschutz) **sowie die Gestalten-Vorschau** (`/gestalten/[templateId]`) **und die veröffentlichten Einladungsseiten der Brautpaare** (`/e/[slug]`, siehe §2a). Beide nutzen dieselbe geteilte `CameraSection`-Komponente — Konsistenz zwischen Gestalten und echter Gäste-Seite (CLAUDE.md Regel 6).
 **Ablage:** `docs/MOTION.md`. In `CLAUDE.md` verlinken mit dem Satz: *"Vor jeder Arbeit an Startseite oder Galerie diese Datei vollständig lesen und einhalten."*
 
 > **Versionshinweis:** Diese Fassung ersetzt §0–§2 der vorherigen "Tinte & Kerzenlicht"-Richtung durch die neue "Editoriale Erlebniswelt" (Zera-Studio-artiger Kapitel-Aufbau, Branch `feature/homepage-zerasoftware`). §3–§7 (Galerie-Konzept, Ton-Regeln, Barrierefreiheits-/Performance-Grenzen, Envato-Asset-Regeln, Abnahme-Checkliste) gelten unverändert weiter — sie betreffen entweder die Vorlagen-Galerie speziell (bleibt in ihrer bestehenden Kartenoptik) oder sind produktweit gültige Grenzen, unabhängig vom visuellen Stil der Marketingseiten.
+>
+> **Nachtrag (Gestalten-Vorschau):** Die bisherige komplette Ausnahme für `/gestalten/[templateId]` ist aufgehoben — Nutzer-Entscheidung, damit die Einladungs-Vorschau beim Scrollen dasselbe "Cinematic Scroll"-Homepage-Gefühl bekommt wie die Startseite. Übertragen wurde ausschließlich **Technik 1** (Kamerafahrt scale/opacity, §2) auf Abschnittsebene der bestehenden Belle-Struktur (`src/components/invitation-sections/*`, `.iv-section`) — siehe §2a. Die übrigen Zera-Elemente (Kapitel-Kopf mit Nummer/Label, Paginierung, Vollbild-`min-height:100vh`-Kapitel, die anderen vier Bewegungstechniken) sind NICHT übertragen — die Belle-Struktur/-Optik selbst bleibt unverändert, nur die Scroll-Bewegung kommt hinzu.
 
 ---
 
@@ -86,6 +88,57 @@ diese Regel gehört in die Checkliste in §7.
 - **Übergänge zwischen Kapiteln:** scroll-gekoppelte Kamerafahrt statt Sichtbarkeits-Trigger — das ganze Kapitel (Kopf + Inhalt als Einheit, wie im ursprünglichen GSAP-Setup) skaliert kontinuierlich von `scale 1.08 → 1` und blendet von `opacity 0 → 1`, direkt an den tatsächlichen Scroll-Fortschritt gekoppelt. Es soll wirken, als bewege sich die Kamera nach vorn, nicht als schiebe sich der Inhalt nach oben. Kein `y`-Versatz in dieser Technik — nur `scale` und `opacity`, beide ausschließlich transform-/opacity-basiert (siehe §5).
 - Technisch: Motions `useScroll`/`useTransform` (`target` = Kapitel-`<section>`, `offset: ["start end", "start start"]`), **nicht** `whileInView`. Deckt den scrub-Charakter von GSAP ScrollTrigger technisch gleichwertig ab — CLAUDE.md legt Motion als feste Bibliothek für dieses Projekt fest, GSAP ist inzwischen keine Dependency mehr im Projekt.
 - Bewusst **ohne** Lenis: künstliches Über-Zeit-Glätten jedes Scroll-Impulses machte die Seite in einem früheren Test spürbar träge ("extrem langsam" laut Nutzer-Feedback) — native Scroll-Performance ist die validierte Entscheidung, nur die scale/opacity-Kamerafahrt selbst wird eingesetzt.
+
+---
+
+## 2a. Gestalten-Vorschau (`/gestalten/[templateId]`) & Gäste-Seite (`/e/[slug]`)
+
+Weder die Einladungs-Vorschau in `DesignStudio.tsx` noch die echte
+Gäste-Seite in `e/[slug]/page.tsx` sind ein Kapitel-Layout wie die
+Startseite — beide bleiben die bestehende, durchgehend scrollende Belle-
+Struktur (`src/components/invitation-sections/*`, `.iv-page`/`.iv-section`).
+Übernommen wird ausschließlich die scroll-gekoppelte Kamerafahrt
+(**Technik 1** aus §2), pro Abschnitt statt pro Vollbild-Kapitel — auf
+beiden Seiten identisch, über dieselbe geteilte Komponente:
+
+- Geteilte Komponente: `src/components/invitation-sections/CameraSection.tsx`
+  — kapselt exakt dieselbe `useScroll`/`useTransform`-Logik wie
+  `useCameraProgress()` in `HomeChapters.tsx` (`scale [1.08,1]`,
+  `opacity [0,1]`, `offset: ["start end", "start start"]`), zusätzlich mit
+  `useReducedMotion()`-Prüfung (siehe unten) — korrekt hydration-sicher
+  (siehe Bericht: zwei echte Bugs beim Gestalten-Einsatz gefunden und
+  behoben, `useSyncExternalStore`-Muster statt `setState`-im-Effect, sowie
+  konstante Wertebereiche statt Prop-Typwechsel).
+- Eingesetzt um (Gestalten, `DesignStudio.tsx`): Paar-Vorstellung,
+  Kennenlerngeschichte, sowie jeden Abschnitt aus `draft.sectionOrder`
+  (Ablaufplan, Countdown, Galerie, Zusagen, Gästebuch, Wunschliste,
+  Musikwünsche, Dresscode, Social Media, Menü, Dankeskarte, Audio-/Video-
+  Einladung, Sitzplan-Suche).
+- Eingesetzt um (Gäste-Seite, `e/[slug]/page.tsx`): "Der große Tag"-
+  Countdown-Band (in `EventHero.tsx`), Beschreibung, Kennenlerngeschichte,
+  Ort, Ablaufplan, Wetter, Check-in, Zusagen, Sitzplan-Suche, Menü,
+  Galerie, Gästebuch, Musikwünsche, Wunschliste, Dresscode, Social Media,
+  Audio-/Video-Einladung, Dankeskarte, Footer.
+- **Nicht** animiert (beide Seiten identisch): der Hero-Kopf (Titel/Namen/
+  Familienzeile/Beschreibung bzw. Anlass-Label) — der steht beim Laden
+  bereits im sichtbaren Bereich (siehe §2, "nichts hineinzuscrollen"),
+  plus die Google-Maps-/Kalender-Aktionsleiste direkt darunter (UI-Chrome,
+  kein inhaltlicher Abschnitt).
+- `prefers-reduced-motion: reduce`: `CameraSection` prüft `useReducedMotion()`
+  und lässt `scale`/`opacity` in diesem Fall komplett weg (kein `style`-
+  Override) — Abschnitte erscheinen direkt in Endposition, keine
+  Bewegungssequenz. `useCameraProgress()` in `HomeChapters.tsx` (Startseite)
+  nutzt jetzt dieselbe Technik (Wertebereich kollabiert auf `[1,1]` statt
+  die `style`-Prop-Form zu wechseln, erst nach dem Mount aktiv) — mit
+  Playwright + `emulateMedia({reducedMotion:"reduce"})` verifiziert: alle
+  Kapitel stehen sofort in Endposition (`opacity:1`, `transform:none`),
+  keine Hydration-Warnung. Die anderen vier Bewegungstechniken auf der
+  Startseite (Text-Fuell, Wort-Stagger, horizontaler Einschub, Pinning)
+  wurden dabei NICHT geprüft/angepasst — offen, ob sie dieselbe Lücke haben.
+- Bewusst NICHT mit übernommen: Kapitel-Nummerierung/-Label, Paginierung,
+  `min-height: 100vh`-Vollbild-Zwang, Pinning/Text-Fill/Stagger/Horizontal-
+  Einschub (Techniken 2–5) — beide Seiten bleiben ein normal scrollender,
+  editierbarer bzw. funktionaler Baukasten, kein Marketing-Kapitel-Erlebnis.
 
 ---
 

@@ -526,7 +526,7 @@ export async function toggleModule(eventId: string, moduleKey: string, formData:
 export async function saveDesign(eventId: string, formData: FormData) {
   const { event } = await requireOwnedEvent(eventId);
 
-  const { colorOverride, styleJson } = buildDesignUpdate(formData);
+  const { colorOverride, styleJson } = buildDesignUpdate(formData, event.styleJson);
   await prisma.event.update({ where: { id: eventId }, data: { colorOverride, styleJson } });
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath(`/e/${event.slug}`);

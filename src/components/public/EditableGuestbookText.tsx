@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState, type CSSProperties, type ElementType } from "react";
 import { SelectableElement } from "@/components/editor/SelectableElement";
+import { ElementToolbar } from "@/components/editor/ElementToolbar";
 import { InlineEditableText } from "@/components/public/InlineEditableText";
-import { elementOverrideStyle } from "@/lib/text-style";
+import { elementOverrideStyle, type TextElementStyle } from "@/lib/text-style";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
-import type { LiveDesignState } from "@/components/public/HeroCard";
+import type { LiveDesignState } from "@/lib/live-design-state";
 
 // Duenner Client-Wrapper wie EditableDescription.tsx (gleicher Grund: die
 // drei Gaestebuch-Texte werden von e/[slug]/page.tsx ausserhalb von
@@ -29,7 +30,9 @@ export function EditableGuestbookText({
   value,
   placeholder,
   style,
+  className,
   as = "div",
+  defaultColor = "#211C19",
 }: {
   eventId: string;
   field: "guestbookHeading" | "guestbookHint" | "guestbookButtonText";
@@ -37,10 +40,13 @@ export function EditableGuestbookText({
   value: string;
   placeholder: string;
   style: CSSProperties;
+  className?: string;
   as?: ElementType;
+  defaultColor?: string;
 }) {
   const [selected, setSelected] = useState(false);
   const [liveOverride, setLiveOverride] = useState<CSSProperties>({});
+  const [rawStyle, setRawStyle] = useState<TextElementStyle>({});
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -48,6 +54,7 @@ export function EditableGuestbookText({
       if (event.data?.type !== "einladi-style-preview") return;
       const state = event.data.state as LiveDesignState;
       setLiveOverride(elementOverrideStyle(state.elements, field));
+      setRawStyle(state.elements?.[field] ?? {});
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
@@ -60,9 +67,20 @@ export function EditableGuestbookText({
     window.parent.postMessage({ type: "einladi-element-selected", key: field }, window.location.origin);
   }
 
+  function changeStyle(patch: Partial<TextElementStyle>) {
+    setRawStyle({ ...rawStyle, ...patch });
+    window.parent.postMessage({ type: "einladi-style-patch", key: field, patch }, window.location.origin);
+  }
+
   return (
-    <SelectableElement kind="text" label={label} selected={selected} onSelect={select}>
-      <InlineEditableText eventId={eventId} field={field} value={value} as={as} placeholder={placeholder} onFocus={select} style={{ ...style, ...liveOverride }} />
+    <SelectableElement
+      kind="text"
+      label={label}
+      selected={selected}
+      onSelect={select}
+      toolbar={selected ? <ElementToolbar elementKey={field} style={rawStyle} defaultColor={defaultColor} onChange={changeStyle} /> : undefined}
+    >
+      <InlineEditableText eventId={eventId} field={field} value={value} as={as} placeholder={placeholder} onFocus={select} style={{ ...style, ...liveOverride }} className={className} />
     </SelectableElement>
   );
 }

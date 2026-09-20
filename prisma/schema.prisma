@@ -207,6 +207,18 @@ model Event {
   // eigenes Feld statt description zu ueberschreiben, beides soll
   // unabhaengig voneinander bestehen koennen.
   loveStoryText   String?
+  // Paar-Vorstellung ("Hello!"-Abschnitt, Belle-Vorbild) — zwei kurze
+  // Bio-Texte + Namen, gleiches simples Scalar-Feld-Muster wie loveStoryText
+  // (kein eigenes Modell noetig, nur EIN Eintrag pro Event, kein Array wie
+  // beim Ablaufplan). Kein Paket-Modul (wie loveStoryText), daher kein
+  // eventHasFeature-Gate noetig — sichtbar sobald mindestens eines gesetzt
+  // ist oder im Dashboard-Vorschaumodus. Bewusst (noch) kein eigenes Foto
+  // je Partner — Gestalten-Vorschau (DesignStudio.tsx) unterstuetzt aktuell
+  // ebenfalls keine Fotos hier (Farbflaeche als Fallback), Konsistenz.
+  coupleLeftName  String?
+  coupleLeftBio   String?
+  coupleRightName String?
+  coupleRightBio  String?
   // Ueberschreibt das Standard-Anlass-Label (sonst EventType.name, z.B.
   // "Hochzeit") mit freiem Text, z.B. "DÜĞÜN DAVETİYESİ" — leer = Standard.
   eventLabel      String?
@@ -273,6 +285,11 @@ model Event {
   // verweisen könnte (reine Anzeige der WishlistItem-Einträge unten).
   wishlistHeading String?
   wishlistHint    String?
+  // Analog zu wishlist* oben, fuer die Trauzeugen/Brautjungfern-Sektion —
+  // die Eintraege selbst liegen in WeddingPartyMember, nur Ueberschrift/
+  // Hinweistext der Sektion sind einzelne Event-Spalten wie ueberall sonst.
+  weddingPartyHeading String?
+  weddingPartyHint    String?
   // Analog zu guestbook* oben, fuer die Musikwuensche-Sektion (echtes
   // Gaeste-Formular, siehe submitMusicRequest in e/[slug]/page.tsx).
   musicHeading    String?
@@ -400,6 +417,7 @@ model Event {
   galleryItems      GalleryItem[]
   menuItems         MenuItem[]
   wishlistItems     WishlistItem[]
+  weddingPartyMembers WeddingPartyMember[]
   musicRequests     MusicRequest[]
   qrCodes           QRCode[]
   printOrders       PrintOrder[]
@@ -687,6 +705,7 @@ model Media {
   guestbookEntries GuestbookEntry[]
   galleryItem      GalleryItem?
   photoTags        PhotoTag[]
+  weddingPartyMemberFor WeddingPartyMember[]
 
   @@unique([anonymousDraftId, draftKind])
 }
@@ -782,6 +801,33 @@ model WishlistItem {
   sortOrder   Int          @default(0)
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+enum WeddingPartyRole {
+  TRAUZEUGE
+  BRAUTJUNGFER
+}
+
+// Trauzeugen & Brautjungfern mit Foto+Name — echte neue Funktion (kein
+// Vorlaeufer-Feature), gefunden in mehreren Konkurrenzvorlagen (z.B. "Twain
+// Love" Groomsmen & Bridesmaid). Gleiches Muster wie WishlistItem/MenuItem
+// oben: eigene Tabelle statt JSON-Bag, da jeder Eintrag mehrere eigene Felder
+// hat und per Klick-Editor einzeln verwaltet wird (siehe
+// WeddingPartyList.tsx/WeddingPartyMemberQuickEdit.tsx). photoId zeigt auf
+// Media (gleiches Foto-Speichermuster wie Event.coverImageId), bewusst
+// optional — ein Eintrag ohne Foto zeigt einen Farbplatzhalter (siehe
+// invitation-sections/WeddingParty.tsx, gleiches Foto-oder-Farbe-Prinzip
+// wie bei den anderen Baukasten-Komponenten).
+model WeddingPartyMember {
+  id        String           @id @default(cuid())
+  eventId   String
+  role      WeddingPartyRole
+  name      String
+  photoId   String?
+  sortOrder Int              @default(0)
+
+  event Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  photo Media? @relation(fields: [photoId], references: [id], onDelete: SetNull)
 }
 
 model MusicRequest {

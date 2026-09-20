@@ -67,6 +67,7 @@ const modules = [
   { key: 'gallery', name: 'Foto- & Videogalerie', category: 'Gäste', description: 'Gäste laden eigene Fotos/Videos hoch, die in einer gemeinsamen Galerie erscheinen.' },
   { key: 'photobook', name: 'Gästefotobuch', category: 'Gäste', description: 'Freigegebene Gäste-Fotos zu einem herunterladbaren PDF-Fotobuch zusammenstellen.' },
   { key: 'guestbook', name: 'Gästebuch', category: 'Gäste', description: 'Gäste hinterlassen Text- oder Videonachrichten für euch.' },
+  { key: 'wedding-party', name: 'Trauzeugen & Brautjungfern', category: 'Gäste', description: 'Stellt Trauzeugen und Brautjungfern mit Foto und Namen auf der Einladungsseite vor.' },
   { key: 'music-requests', name: 'Musikwünsche', category: 'Gäste', description: 'Gäste können Musikwünsche für die Feier einreichen.' },
   { key: 'thank-you-card', name: 'Digitale Dankeskarte', category: 'Premium', description: 'Digitale Dankeskarte, die ihr nach dem Event an eure Gäste verschicken könnt.' },
   { key: 'audio-invitation', name: 'Audio-Einladung', category: 'Premium', isPremium: true, description: 'Sprachnachricht als persönliche Einladung.' },
@@ -90,14 +91,14 @@ const packages = [
   {
     key: 'PREMIUM_PLUS', name: 'Premium Plus', priceCents: 14900,
     description: 'Eventseite, RSVP, Gästeliste, Sitzplan, QR-Codes, Gästebuch, Galerie, Fotobuch',
-    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery', 'photobook'],
+    features: ['countdown', 'location', 'weather', 'agenda', 'rsvp', 'guest-list', 'seating', 'guestbook', 'gallery', 'photobook', 'wedding-party'],
   },
   {
     key: 'VIP', name: 'VIP', priceCents: 29900,
     description: 'Alle Funktionen, individuelles Design, Video- & Audio-Einladung, persönlicher Support',
     features: [
       'countdown', 'location', 'weather', 'agenda', 'dresscode', 'social-media', 'rsvp', 'guest-list',
-      'seating', 'menu', 'wishlist', 'gallery', 'photobook', 'guestbook', 'music-requests',
+      'seating', 'menu', 'wishlist', 'gallery', 'photobook', 'guestbook', 'music-requests', 'wedding-party',
       'thank-you-card', 'audio-invitation', 'video-invitation',
     ],
   },
@@ -209,6 +210,28 @@ const templates: Array<{
     colors: { primary: '#3A2E2E', accent: '#C98E92', background: '#FBF3EC' },
     fonts: { display: 'Cormorant Garamond', body: 'Work Sans' },
     previewUrl: '/images/templates/dugun-blanko/dugun-15.jpg' },
+  // Drei neue Düğün-Vorlagen OHNE previewUrl (also ohne feste
+  // Kartengrafik) — bewusster Unterschied zu den 12 dugun-blanko-Karten
+  // oben: dort ist die gesamte Karte eine feste Illustration ohne Platz
+  // fuer ein eigenes Foto (siehe DesignStudio.tsx item.cardImageUrl-Zweig,
+  // "Bild nirgendwo zu sehen"-Bugfix). Diese drei nutzen stattdessen den
+  // bereits bestehenden, funktionierenden Zweig (SVG-Ornamente/CornerMotif
+  // + draft.image mit Formauswahl Polaroid/Rechteck/Kreis/Stern) — die
+  // gesamte Kategorie "Düğün" (Haupt-Vertriebskanal, siehe
+  // [[project_turkish_wedding_halls]]) hatte vorher KEINE einzige
+  // Foto-faehige Vorlage. Farb-/Schrift-Konvention wie die bestehenden
+  // Düğün-Paletten, inspiriert von Envato-Referenzmaterial (Foto + Eck-
+  // Ornament-Rahmen statt reiner Illustration) — nur als Gestaltungs-
+  // Vorbild verwendet, keine fremden Assets/Bilder uebernommen.
+  { slug: 'dugun-foto-elmas', name: 'Elmas Çerçeve', category: 'Düğün', layoutKey: 'dugun-foto-elmas',
+    colors: { primary: '#3A2E22', accent: '#C9A227', background: '#FAF3E4' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  { slug: 'dugun-foto-zumrut', name: 'Zümrüt Anı', category: 'Düğün', layoutKey: 'dugun-foto-zumrut',
+    colors: { primary: '#FAF3E0', accent: '#D4AF6A', background: '#0B2A1E' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
+  { slug: 'dugun-foto-yakut', name: 'Yakut Kadeh', category: 'Düğün', layoutKey: 'dugun-foto-yakut',
+    colors: { primary: '#5C1420', accent: '#C08A2E', background: '#F6ECD9' },
+    fonts: { display: 'Cormorant Garamond', body: 'Work Sans' } },
   // Erstes Template mit der EnvelopeReveal-Umschlag-Animation (siehe
   // src/components/marketing/EnvelopeReveal.tsx) — live sowohl in der
   // Galerie/Vorlagenauswahl (TemplatePreview.tsx) als auch auf der

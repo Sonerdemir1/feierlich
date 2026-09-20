@@ -25,6 +25,7 @@ export function SelectableElement({
   label,
   accentColor = "var(--gold, #B9975B)",
   style,
+  toolbar,
 }: {
   children: ReactNode;
   selected: boolean;
@@ -33,6 +34,12 @@ export function SelectableElement({
   label: string;
   accentColor?: string;
   style?: CSSProperties;
+  // Kontext-Toolbar am Element (davetli.com-Stil, siehe ElementToolbar.tsx)
+  // — optional, damit SelectableElement fuer Aufrufer ohne Stil-Steuerung
+  // (z.B. reine Datumsauswahl) unveraendert bleibt. Rendert nur, wenn
+  // selected UND uebergeben, absolut positioniert ueber dem Element —
+  // dieselbe "position:relative"-Huelle, die schon den Auswahl-Rahmen traegt.
+  toolbar?: ReactNode;
 }) {
   return (
     <div
@@ -94,6 +101,7 @@ export function SelectableElement({
           >
             ✎
           </button>
+          {toolbar}
         </>
       )}
     </div>

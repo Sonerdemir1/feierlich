@@ -74,6 +74,15 @@ export function defaultEventLabelForCategory(category: string): string {
 // Nachtfoto und Iznik-Fliesenmuster farblich zur jeweiligen Vorlage passen
 // statt immer denselben Ton zu haben.
 export const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
+  // Erste echte, eigene Fotos je Vorlage statt Wiederverwendung desselben
+  // Musters (siehe Plan-Phase E) — diese drei Düğün-Vorlagen hatten zuvor
+  // ueberhaupt kein Foto (nur den SVG-Ornament-Rahmen), obwohl sie extra
+  // fuer ein Foto gebaut wurden ("Foto + Eck-Ornament-Rahmen", siehe
+  // seed.ts-Kommentar). Lizenzfrei ueber das bestehende Envato-Elements-Abo
+  // bezogen (kommerzielle Lizenz), auf ~1400px Langkante verkleinert.
+  "dugun-foto-elmas": { src: "/images/templates/palace-ballroom-gold.jpg", tint: "250,243,228" },
+  "dugun-foto-zumrut": { src: "/images/templates/malachite-emerald-gold.jpg", tint: "11,42,30" },
+  "dugun-foto-yakut": { src: "/images/templates/red-roses-candlelight.jpg", tint: "246,236,217" },
   "kina-kirmizi": { src: "/images/templates/iznik-floral.jpg", tint: "122,20,40" },
   "kraliyet-moru": { src: "/images/templates/iznik-floral.jpg", tint: "46,26,71" },
   // Sünnet zeigt keine echten Zeremonie-Fotos (Kinder) — stattdessen dasselbe

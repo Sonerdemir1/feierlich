@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     else if (typeof value === "boolean" && value) formData.set(key, "on");
   }
 
-  const { colorOverride, styleJson } = buildDesignUpdate(formData);
+  const { colorOverride, styleJson } = buildDesignUpdate(formData, event.styleJson);
   await prisma.event.update({ where: { id }, data: { colorOverride, styleJson } });
   revalidatePath(`/dashboard/events/${id}`);
   revalidatePath(`/e/${event.slug}`);

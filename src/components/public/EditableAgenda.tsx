@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { AgendaList } from "@/components/editor/AgendaList";
 import type { AgendaItem } from "@/lib/agenda";
-import type { LiveDesignState } from "@/components/public/HeroCard";
+import type { LiveDesignState } from "@/lib/live-design-state";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
 
 // Identity-Praefix fuer den globalen Auswahl-Broadcast (siehe

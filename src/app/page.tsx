@@ -1,6 +1,7 @@
 import { getGalleryCategories } from "@/lib/gallery-templates-data";
 import { prisma } from "@/lib/prisma";
 import { packageSlug } from "@/lib/packages";
+import { getLocale } from "@/lib/i18n";
 import { HomeChapters } from "./HomeChapters";
 
 // Ohne dies versucht `next build`, diese Seite bei jedem Deploy statisch
@@ -18,11 +19,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   // im Gestalten-Bereich auf den Premium-Plus-Standard zurueck.
   const paket = typeof sp.paket === "string" ? sp.paket : undefined;
 
-  const [categories, packages, modules, photoVideoAddOn] = await Promise.all([
+  const [categories, packages, modules, photoVideoAddOn, locale] = await Promise.all([
     getGalleryCategories(),
     prisma.package.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.module.findMany(),
     prisma.addOn.findUnique({ where: { key: "photo-video-collection" } }),
+    getLocale(),
   ]);
   const moduleNameByKey = new Map(modules.map((m) => [m.key, m.name]));
 
@@ -42,6 +44,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       paket={paket}
       packages={packagesForClient}
       photoVideoAddOn={photoVideoAddOn ? { name: photoVideoAddOn.name, priceCents: photoVideoAddOn.priceCents } : null}
+      locale={locale}
     />
   );
 }

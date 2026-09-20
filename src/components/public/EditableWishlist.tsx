@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { WishlistList } from "@/components/editor/WishlistList";
 import type { WishlistItemData } from "@/lib/wishlist";
-import type { LiveDesignState } from "@/components/public/HeroCard";
+import type { LiveDesignState } from "@/lib/live-design-state";
 import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection";
 
 // Siehe Kommentar in EditableAgenda.tsx (gleiches Muster/gleicher Fund).

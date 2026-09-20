@@ -4,11 +4,7 @@
    Dashboard) und von den studio-Klassen bzw. den alten --terracotta/
    --ink-Marketing-Tokens (alte "Tinte & Kerzenlicht"-Palette, wird Seite
    fuer Seite abgeloest).
-   Genutzt von: /preise/vergleich. Die Startseiten-Vorschau unter
-   src/app/dev/zera-preview/ nutzt aktuell noch eine eigene, identische
-   Kopie dieser Basis-Klassen (Scratch-Route) — bei der spaeteren
-   Umstellung der echten Startseite auf diesen Stil auf diese Datei
-   konsolidieren. */
+   Genutzt von: src/app/HomeChapters.tsx (echte Startseite), /preise/vergleich. */
 .zc-page {
   --zc-bg: #f2eee6;
   --zc-ink: #1a1a1a;
@@ -16,6 +12,85 @@
   --zc-accent: #b89968;
   background: var(--zc-bg);
   color: var(--zc-ink);
+}
+
+/* Oberste Nav-Leiste — beim Umbau auf den Kapitel-Stil versehentlich
+   ersatzlos gestrichen (Nutzer-Regression, siehe Session-Historie).
+   Statischer Balken (keine sticky/fixed-Positionierung, wie zuvor),
+   liegt oberhalb von Kapitel 01. */
+.zc-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px clamp(24px, 6vw, 96px) 0;
+  font-family: var(--font-karla), system-ui, sans-serif;
+}
+.zc-nav-logo {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+  font-size: 21px;
+  color: var(--zc-ink);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.zc-nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.4vw, 30px);
+  flex-wrap: wrap;
+}
+.zc-nav-links a {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--zc-ink);
+  text-decoration: none;
+  opacity: 0.72;
+  transition: opacity 0.15s ease;
+  white-space: nowrap;
+}
+.zc-nav-links a:hover {
+  opacity: 1;
+}
+.zc-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.zc-nav-lang {
+  display: flex;
+  gap: 4px;
+}
+.zc-nav-lang-btn {
+  font-family: var(--font-karla), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 8px;
+  border: 1px solid rgba(26, 26, 26, 0.18);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--zc-muted);
+  cursor: pointer;
+}
+.zc-nav-lang-btn.is-active {
+  background: var(--zc-ink);
+  border-color: var(--zc-ink);
+  color: var(--zc-bg);
+  cursor: default;
+}
+@media (max-width: 720px) {
+  .zc-nav {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .zc-nav-links {
+    order: 3;
+    width: 100%;
+    gap: 18px;
+  }
 }
 
 .zc-chapter {

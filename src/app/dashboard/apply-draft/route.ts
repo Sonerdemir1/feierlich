@@ -5,6 +5,7 @@ import { gatedModuleKeys } from "@/app/dashboard/events/actions";
 import { defaultTextForCategory, defaultDescriptionForCategory } from "@/lib/gallery-templates";
 import { TEXT_ELEMENT_KEYS as ELEMENT_STYLE_KEYS, STYLE_FIELD_KEYS, DEFAULT_DRESSCODE_TEXT, DEFAULT_SOCIAL_MEDIA_TEXT } from "@/lib/text-style";
 import { WISHLIST_TYPES, defaultWishlistItems, type WishlistItemType } from "@/lib/wishlist";
+import { WEDDING_PARTY_ROLES, defaultWeddingPartyMembers, type WeddingPartyRole } from "@/lib/wedding-party";
 import { defaultAgendaItems } from "@/lib/agenda";
 import { putObject } from "@/lib/storage";
 import type { PhotoShape } from "@/lib/photo-shape";
@@ -53,7 +54,7 @@ const DEFAULT_EVENT_TYPE_KEY = "hochzeit"; // Zeitlos/Botanisch/Romantisch/State
 // vor — dafuer bleibt bewusst keine Zeile, damit der Vorlagen-Standard gilt.
 const MANAGED_MODULE_KEYS = new Set([
   "countdown", "rsvp", "seating", "gallery",
-  "agenda", "guestbook", "dresscode", "social-media", "menu", "wishlist",
+  "agenda", "guestbook", "dresscode", "social-media", "menu", "wishlist", "wedding-party",
   "music-requests", "thank-you-card", "audio-invitation", "video-invitation",
 ]);
 
@@ -64,6 +65,7 @@ const TEXT_ELEMENT_KEYS = new Set<string>(ELEMENT_STYLE_KEYS);
 const STYLE_FIELDS = new Set<string>(STYLE_FIELD_KEYS);
 const MAX_AGENDA_ITEMS = 30;
 const MAX_WISHLIST_ITEMS = 30;
+const MAX_WEDDING_PARTY_ITEMS = 30;
 
 function sanitizeStyle(raw: unknown): Record<string, unknown> | undefined {
   if (!raw || typeof raw !== "object") return undefined;
@@ -123,6 +125,23 @@ function sanitizeWishlistItems(raw: unknown): { id: string; type: WishlistItemTy
       url: typeof it.url === "string" && it.url.trim() ? it.url.slice(0, 500) : null,
     }))
     .filter((it) => it.title.trim().length > 0);
+}
+
+// Gleiches Vorsichtsprinzip, fuer Trauzeugen/Brautjungfern — photoUrl wird
+// hier NUR durchgereicht (data:-URL oder leer), der eigentliche Foto-Upload
+// passiert weiter unten NACH dem event.create() (siehe dortiger Kommentar
+// zum Titelbild-Upload, gleiches "erst NACH der echten eventId"-Prinzip).
+function sanitizeWeddingPartyItems(raw: unknown): { role: WeddingPartyRole; name: string; photoUrl: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((it): it is Record<string, unknown> => Boolean(it) && typeof it === "object")
+    .slice(0, MAX_WEDDING_PARTY_ITEMS)
+    .map((it) => ({
+      role: WEDDING_PARTY_ROLES.includes(it.role as WeddingPartyRole) ? (it.role as WeddingPartyRole) : "TRAUZEUGE",
+      name: (typeof it.name === "string" ? it.name : "").slice(0, 200),
+      photoUrl: typeof it.photoUrl === "string" && it.photoUrl.startsWith("data:") ? it.photoUrl : "",
+    }))
+    .filter((it) => it.name.trim().length > 0);
 }
 
 // Uebernimmt nur bekannte Element-/Stil-Schluessel aus dem ungeprueften
@@ -261,10 +280,18 @@ export async function POST(request: Request) {
     );
   }
 
+  function isUnchangedWeddingParty(items: { role: WeddingPartyRole; name: string; photoUrl: string }[]): boolean {
+    const def = defaultWeddingPartyMembers();
+    if (items.length !== def.length) return false;
+    return items.every((it, i) => it.role === def[i].role && it.name === def[i].name && !it.photoUrl);
+  }
+
   const sanitizedAgendaItems = sanitizeAgendaItems(draft.agendaItems);
   const agendaItems = isUnchangedAgenda(sanitizedAgendaItems) ? [] : sanitizedAgendaItems;
   const sanitizedWishlistItems = sanitizeWishlistItems(draft.wishlistItems);
   const wishlistItems = isUnchangedWishlist(sanitizedWishlistItems) ? [] : sanitizedWishlistItems;
+  const sanitizedWeddingPartyItems = sanitizeWeddingPartyItems(draft.weddingPartyItems);
+  const weddingPartyItems = isUnchangedWeddingParty(sanitizedWeddingPartyItems) ? [] : sanitizedWeddingPartyItems;
 
   // guestbook*/wishlist*/music* — reiner Einzeiler-Text, gleiches
   // "leer -> null (eingebauter Standardtext)"-Prinzip wie eventLabel oben.
@@ -290,11 +317,22 @@ export async function POST(request: Request) {
   // damit die Karte nie leer wirkt — bleibt er unveraendert, darf er NICHT
   // als echte Angabe des Kunden auf der oeffentlichen Einladungsseite landen.
   const description = textOrNullUnlessDefault(draft.descriptionText, defaultDescriptionForCategory(template.category));
+  // Bisher NICHT uebernommen (gefundene Luecke, siehe apply-draft-Bericht):
+  // ein im anonymen Entwurf getippter Kennenlern-/Paar-Vorstellungstext ging
+  // beim Signup bisher verloren, obwohl jedes andere Textfeld hier per
+  // textOrNull() uebernommen wird — gleiches Muster nachgezogen.
+  const loveStoryText = textOrNull(draft.loveStoryText);
+  const coupleLeftName = textOrNull(draft.coupleLeftName);
+  const coupleLeftBio = textOrNull(draft.coupleLeftBio);
+  const coupleRightName = textOrNull(draft.coupleRightName);
+  const coupleRightBio = textOrNull(draft.coupleRightBio);
   const guestbookHeading = textOrNull(draft.guestbookHeading);
   const guestbookHint = textOrNull(draft.guestbookHint);
   const guestbookButtonText = textOrNull(draft.guestbookButtonText);
   const wishlistHeading = textOrNull(draft.wishlistHeading);
   const wishlistHint = textOrNull(draft.wishlistHint);
+  const weddingPartyHeading = textOrNull(draft.weddingPartyHeading);
+  const weddingPartyHint = textOrNull(draft.weddingPartyHint);
   const musicHeading = textOrNull(draft.musicHeading);
   const musicHint = textOrNull(draft.musicHint);
   const musicButtonText = textOrNull(draft.musicButtonText);
@@ -348,6 +386,11 @@ export async function POST(request: Request) {
       templateId: template.id,
       eventLabel,
       description,
+      loveStoryText,
+      coupleLeftName,
+      coupleLeftBio,
+      coupleRightName,
+      coupleRightBio,
       familyLeft,
       familyRight,
       eventDate,
@@ -364,6 +407,8 @@ export async function POST(request: Request) {
       guestbookButtonText,
       wishlistHeading,
       wishlistHint,
+      weddingPartyHeading,
+      weddingPartyHint,
       musicHeading,
       musicHint,
       musicButtonText,
@@ -396,7 +441,18 @@ export async function POST(request: Request) {
       videoMessageHint,
       ownerId: session.user.id,
       wishlistItems: wishlistItems.length > 0 ? { create: wishlistItems.map((it, i) => ({ ...it, sortOrder: i })) } : undefined,
+      // Fotos werden hier NICHT mitgegeben (photoUrl ist eine data:-URL, kein
+      // photoId) — siehe Foto-Upload-Schleife weiter unten, gleiches "erst
+      // NACH der echten eventId"-Prinzip wie beim Titelbild.
+      weddingPartyMembers:
+        weddingPartyItems.length > 0
+          ? { create: weddingPartyItems.map((it, i) => ({ role: it.role, name: it.name, sortOrder: i })) }
+          : undefined,
     },
+    // Nur fuer den Foto-Upload weiter unten noetig (Zuordnung der frisch
+    // erzeugten WeddingPartyMember-Zeilen zu ihrer sortOrder, siehe dort) —
+    // sonst nirgends in dieser Route gebraucht.
+    include: { weddingPartyMembers: true },
   });
 
   // Bugfix: das im Gestalten-Editor hochgeladene Foto ging bislang beim
@@ -418,6 +474,36 @@ export async function POST(request: Request) {
       }
     } catch (err) {
       console.error(`[apply-draft] Foto-Upload fuer Event ${event.id} fehlgeschlagen:`, err);
+    }
+  }
+
+  // Trauzeugen/Brautjungfern-Fotos — gleiches Prinzip wie das Titelbild oben
+  // (data:-URL dekodieren, als echte Media-Zeile speichern), aber PRO
+  // Eintrag statt nur einmal. Zuordnung ueber sortOrder: beide Arrays
+  // (weddingPartyItems und die per include: {weddingPartyMembers:true}
+  // zurueckgegebenen, frisch erzeugten Zeilen) entstanden aus derselben
+  // .map((it,i)=>...)-Reihenfolge oben, hier zur Sicherheit nochmal explizit
+  // nach sortOrder sortiert statt sich auf die DB-Rueckgabereihenfolge zu
+  // verlassen. Ein Fehlschlag bei einzelnen Fotos darf weder die anderen
+  // Eintraege noch die Kontoerstellung selbst scheitern lassen.
+  if (weddingPartyItems.length > 0) {
+    const createdMembers = [...event.weddingPartyMembers].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (let i = 0; i < weddingPartyItems.length; i++) {
+      const draftItem = weddingPartyItems[i];
+      const createdMember = createdMembers[i];
+      if (!draftItem.photoUrl || !createdMember) continue;
+      try {
+        const parsed = parseDataUrl(draftItem.photoUrl);
+        if (parsed) {
+          const url = await putObject(`events/${event.id}/${crypto.randomUUID()}.png`, parsed.bytes, parsed.mimeType);
+          const media = await prisma.media.create({
+            data: { eventId: event.id, type: "IMAGE", url, mimeType: parsed.mimeType, sizeBytes: parsed.bytes.length, status: "APPROVED" },
+          });
+          await prisma.weddingPartyMember.update({ where: { id: createdMember.id }, data: { photoId: media.id } });
+        }
+      } catch (err) {
+        console.error(`[apply-draft] Trauzeugen/Brautjungfern-Foto-Upload fuer Event ${event.id} fehlgeschlagen:`, err);
+      }
     }
   }
 

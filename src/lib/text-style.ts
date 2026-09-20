@@ -22,6 +22,10 @@ export type TextElementKey =
   | "date"
   | "description"
   | "loveStoryText"
+  | "coupleLeftName"
+  | "coupleLeftBio"
+  | "coupleRightName"
+  | "coupleRightBio"
   | "eventLabel"
   | "family"
   | "location"
@@ -32,6 +36,8 @@ export type TextElementKey =
   | "guestbookSample"
   | "wishlistHeading"
   | "wishlistHint"
+  | "weddingPartyHeading"
+  | "weddingPartyHint"
   | "musicHeading"
   | "musicHint"
   | "musicButtonText"
@@ -75,12 +81,18 @@ export const TEXT_ELEMENT_KEYS: TextElementKey[] = [
   "location",
   "description",
   "loveStoryText",
+  "coupleLeftName",
+  "coupleLeftBio",
+  "coupleRightName",
+  "coupleRightBio",
   "guestbookHeading",
   "guestbookHint",
   "guestbookButtonText",
   "guestbookSample",
   "wishlistHeading",
   "wishlistHint",
+  "weddingPartyHeading",
+  "weddingPartyHint",
   "musicHeading",
   "musicHint",
   "musicButtonText",
@@ -185,6 +197,30 @@ export const ELEMENT_SIZE_PRESETS: Record<TextElementKey, SizePreset[]> = {
     { id: "lg", label: "Groß", px: 16 },
     { id: "xl", label: "Sehr groß", px: 18 },
   ],
+  coupleLeftName: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 14 },
+    { id: "lg", label: "Groß", px: 20 },
+    { id: "xl", label: "Sehr groß", px: 24 },
+  ],
+  coupleLeftBio: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 12 },
+    { id: "lg", label: "Groß", px: 15 },
+    { id: "xl", label: "Sehr groß", px: 17 },
+  ],
+  coupleRightName: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 14 },
+    { id: "lg", label: "Groß", px: 20 },
+    { id: "xl", label: "Sehr groß", px: 24 },
+  ],
+  coupleRightBio: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 12 },
+    { id: "lg", label: "Groß", px: 15 },
+    { id: "xl", label: "Sehr groß", px: 17 },
+  ],
   eventLabel: [
     { id: "md", label: "Standard", px: 0 },
     { id: "sm", label: "Klein", px: 9 },
@@ -240,6 +276,18 @@ export const ELEMENT_SIZE_PRESETS: Record<TextElementKey, SizePreset[]> = {
     { id: "xl", label: "Sehr groß", px: 28 },
   ],
   wishlistHint: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 11 },
+    { id: "lg", label: "Groß", px: 15 },
+    { id: "xl", label: "Sehr groß", px: 17 },
+  ],
+  weddingPartyHeading: [
+    { id: "md", label: "Standard", px: 0 },
+    { id: "sm", label: "Klein", px: 16 },
+    { id: "lg", label: "Groß", px: 24 },
+    { id: "xl", label: "Sehr groß", px: 28 },
+  ],
+  weddingPartyHint: [
     { id: "md", label: "Standard", px: 0 },
     { id: "sm", label: "Klein", px: 11 },
     { id: "lg", label: "Groß", px: 15 },
@@ -433,6 +481,10 @@ export const TEXT_ELEMENT_LABELS: Record<TextElementKey, string> = {
   date: "Datum & Uhrzeit",
   description: "Beschreibung",
   loveStoryText: "Kennenlerngeschichte",
+  coupleLeftName: "Name (links)",
+  coupleLeftBio: "Kurzvorstellung (links)",
+  coupleRightName: "Name (rechts)",
+  coupleRightBio: "Kurzvorstellung (rechts)",
   eventLabel: "Anlass-Label",
   family: "Familiennamen",
   location: "Ort / Location",
@@ -443,6 +495,8 @@ export const TEXT_ELEMENT_LABELS: Record<TextElementKey, string> = {
   guestbookSample: "Gästebuch-Beispielnachricht",
   wishlistHeading: "Wunschliste-Überschrift",
   wishlistHint: "Wunschliste-Hinweistext",
+  weddingPartyHeading: "Trauzeugen/Brautjungfern-Überschrift",
+  weddingPartyHint: "Trauzeugen/Brautjungfern-Hinweistext",
   musicHeading: "Musikwünsche-Überschrift",
   musicHint: "Musikwünsche-Hinweistext",
   musicButtonText: "Musikwünsche-Button",

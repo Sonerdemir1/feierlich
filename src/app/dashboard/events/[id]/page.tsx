@@ -43,6 +43,7 @@ import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import type { StyleElements } from "@/lib/text-style";
 import type { AgendaItem } from "@/lib/agenda";
 import type { WishlistItemData } from "@/lib/wishlist";
+import type { WeddingPartyMemberData } from "@/lib/wedding-party";
 import { CopyLinkButton } from "@/components/dashboard/CopyLinkButton";
 import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
@@ -50,6 +51,7 @@ import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { DesignEditor } from "@/components/dashboard/DesignEditor";
+import { activeSectionOrder } from "@/lib/section-order";
 import { EinladiKiChat } from "@/components/dashboard/EinladiKiChat";
 import { einladiKiConfigured } from "@/lib/einladi-ki";
 import { SocialGraphicPreview } from "@/components/dashboard/SocialGraphicPreview";
@@ -140,7 +142,7 @@ export default async function EventDetailPage({
   const noCount = event.guests.filter((g) => g.rsvp?.status === "NO").length;
   const unsureCount = event.guests.filter((g) => g.rsvp?.status === "PENDING").length;
 
-  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, menuItems, musicRequests, aiTextAttemptCount] =
+  const [allModules, eventModules, pendingGallery, pendingGuestbook, aiDesignAddOn, aiDesignAttemptCount, allAddOns, eventAddOns, viewsTrend, tables, wishlistItems, weddingPartyMembers, menuItems, musicRequests, aiTextAttemptCount] =
     await Promise.all([
       prisma.module.findMany({ orderBy: { sortOrder: "asc" } }),
       prisma.eventModule.findMany({ where: { eventId: id } }),
@@ -153,6 +155,7 @@ export default async function EventDetailPage({
       getViewsTrend(id),
       prisma.table.findMany({ where: { eventId: id }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.wishlistItem.findMany({ where: { eventId: id }, orderBy: [{ type: "asc" }, { sortOrder: "asc" }] }),
+      prisma.weddingPartyMember.findMany({ where: { eventId: id }, include: { photo: true }, orderBy: { sortOrder: "asc" } }),
       prisma.menuItem.findMany({ where: { eventId: id }, orderBy: [{ course: "asc" }, { sortOrder: "asc" }] }),
       prisma.musicRequest.findMany({ where: { eventId: id }, orderBy: { createdAt: "desc" } }),
       prisma.aiTextAttempt.count({ where: { eventId: id } }),
@@ -180,10 +183,14 @@ export default async function EventDetailPage({
   const templateColors: { primary: string; accent: string; background: string } = JSON.parse(event.template.colors);
   const activeColors = event.colorOverride ? { ...templateColors, ...JSON.parse(event.colorOverride) } : templateColors;
   const hasColorOverride = Boolean(event.colorOverride && event.colorOverride !== "{}");
-  const activeStyle: { fontId?: string; ornaments?: boolean; elements?: StyleElements } = event.styleJson
+  const activeStyle: { fontId?: string; ornaments?: boolean; elements?: StyleElements; sectionOrder?: string[] } = event.styleJson
     ? JSON.parse(event.styleJson)
     : {};
   const hasStyleOverride = Boolean(event.styleJson && event.styleJson !== "{}");
+  // Inline Ein-/Ausblenden + Umsortieren direkt am Element auf der echten
+  // Gaeste-Seite (ReorderableSection.tsx) — dieselbe Quelle/Fallback-Liste
+  // wie e/[slug]/page.tsx' activeOrder, damit beide Seiten nie auseinanderlaufen.
+  const initialSectionOrder = activeSectionOrder(activeStyle.sectionOrder);
   const activeAgendaItems: AgendaItem[] = event.agendaJson ? JSON.parse(event.agendaJson) : [];
   const activeWishlistItems: WishlistItemData[] = wishlistItems.map((w) => ({
     id: w.id,
@@ -191,6 +198,13 @@ export default async function EventDetailPage({
     title: w.title,
     description: w.description ?? "",
     url: w.url ?? "",
+  }));
+  const activeWeddingPartyItems: WeddingPartyMemberData[] = weddingPartyMembers.map((m) => ({
+    id: m.id,
+    role: m.role,
+    name: m.name,
+    photoUrl: m.photo?.url ?? "",
+    photoId: m.photoId ?? undefined,
   }));
 
   const allTemplates = await prisma.template.findMany({ where: { status: "ACTIVE" }, orderBy: { sortOrder: "asc" } });
@@ -397,6 +411,8 @@ export default async function EventDetailPage({
           initialLocationAddress={event.locationAddress ?? ""}
           initialAgendaItems={activeAgendaItems}
           initialWishlistItems={activeWishlistItems}
+          initialWeddingPartyItems={activeWeddingPartyItems}
+          initialSectionOrder={initialSectionOrder}
           hasOverride={hasColorOverride || hasStyleOverride}
           onReset={resetDesign.bind(null, event.id)}
           envelopeVideoUrl={event.envelopeVideo?.url ?? null}
