@@ -129,8 +129,14 @@ function CameraChapterShell({
 // kein eigenes nummeriertes Kapitel.
 function TextFillTransition({ text }: { text: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  // prefers-reduced-motion (MOTION.md §5) — gleiche Technik wie useCameraProgress
+  // oben: Wertebereich kollabiert auf eine Konstante statt die style-Prop-Form
+  // zu wechseln, erst nach dem Mount aktiv (kein Hydration-Mismatch).
+  const prefersReducedMotion = useReducedMotion();
+  const mounted = useMounted();
+  const skipMotion = mounted && prefersReducedMotion;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.9", "start 0.3"] });
-  const backgroundSize = useTransform(scrollYProgress, [0, 1], ["0% 100%", "100% 100%"]);
+  const backgroundSize = useTransform(scrollYProgress, [0, 1], skipMotion ? ["100% 100%", "100% 100%"] : ["0% 100%", "100% 100%"]);
   return (
     <div className="zdx-textfill-band" ref={ref}>
       <motion.p className="zdx-textfill-text" style={{ backgroundSize }}>
@@ -168,6 +174,17 @@ function StaggerHeading({
   className?: string;
   lines: StaggerWord[][];
 }) {
+  // prefers-reduced-motion (MOTION.md §5) — anders als bei der Kamerafahrt
+  // keine MotionValues hier, nur Variants-Objekte (whileInView-Ausloesung):
+  // hidden/visible einfach auf denselben Endzustand setzen statt echte
+  // Bewegung, keine Gefahr des bei CameraSection gefundenen Aufraeum-Bugs
+  // (der betraf nur den Wechsel der style-Prop-FORM zwischen MotionValue und
+  // normalem Objekt, nicht den Austausch zweier gleich geformter Variants).
+  const prefersReducedMotion = useReducedMotion();
+  const mounted = useMounted();
+  const skipMotion = mounted && prefersReducedMotion;
+  const containerVariants = skipMotion ? { hidden: { opacity: 1 }, visible: { opacity: 1 } } : staggerContainer;
+  const wordVariants = skipMotion ? { hidden: { y: "0%", opacity: 1 }, visible: { y: "0%", opacity: 1 } } : staggerWordVariant;
   return (
     <Tag className={className}>
       <motion.span
@@ -175,13 +192,13 @@ function StaggerHeading({
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.6 }}
-        variants={staggerContainer}
+        variants={containerVariants}
       >
         {lines.map((line, li) => (
           <span key={li} style={{ display: "block" }}>
             {line.map(normalizeWord).map((word, wi) => (
               <span className="zdx-stagger-word" key={`${li}-${wi}`}>
-                <motion.span variants={staggerWordVariant} className={word.accent ? "zc-accent-word" : undefined}>
+                <motion.span variants={wordVariants} className={word.accent ? "zc-accent-word" : undefined}>
                   {word.text}
                   {wi < line.length - 1 ? " " : ""}
                 </motion.span>
@@ -230,13 +247,18 @@ function SlideInHorizontal({
   className?: string;
   children: ReactNode;
 }) {
+  // prefers-reduced-motion (MOTION.md §5) — gleiches Prinzip wie StaggerHeading.
+  const prefersReducedMotion = useReducedMotion();
+  const mounted = useMounted();
+  const skipMotion = mounted && prefersReducedMotion;
+  const variants = skipMotion ? { hidden: { opacity: 1 }, visible: { opacity: 1 } } : slideInVariants[from];
   return (
     <motion.div
       className={className}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
-      variants={slideInVariants[from]}
+      variants={variants}
     >
       {children}
     </motion.div>
@@ -251,10 +273,17 @@ function SlideInHorizontal({
 // Medien-Elements — die "fehlende Kamerafahrt-Wirkung" aus Phase B.
 function usePinProgress() {
   const ref = useRef<HTMLDivElement>(null);
+  // prefers-reduced-motion (MOTION.md §5) — gleiche Technik wie useCameraProgress.
+  // Das position:sticky-Halten selbst (siehe Aufrufstelle) ist reines CSS-Layout,
+  // keine Bewegungssequenz — bleibt unangetastet, nur die Motion-Transforms
+  // kollabieren auf ihren Endzustand.
+  const prefersReducedMotion = useReducedMotion();
+  const mounted = useMounted();
+  const skipMotion = mounted && prefersReducedMotion;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const mediaScale = useTransform(scrollYProgress, [0, 1], [0.6, 1]);
-  const contentX = useTransform(scrollYProgress, [0, 0.6], ["-40%", "0%"]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.35], [0, 1]);
+  const mediaScale = useTransform(scrollYProgress, [0, 1], skipMotion ? [1, 1] : [0.6, 1]);
+  const contentX = useTransform(scrollYProgress, [0, 0.6], skipMotion ? ["0%", "0%"] : ["-40%", "0%"]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.35], skipMotion ? [1, 1] : [0, 1]);
   return { ref, mediaScale, contentX, contentOpacity };
 }
 

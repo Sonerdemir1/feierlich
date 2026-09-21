@@ -133,8 +133,14 @@ beiden Seiten identisch, über dieselbe geteilte Komponente:
   Playwright + `emulateMedia({reducedMotion:"reduce"})` verifiziert: alle
   Kapitel stehen sofort in Endposition (`opacity:1`, `transform:none`),
   keine Hydration-Warnung. Die anderen vier Bewegungstechniken auf der
-  Startseite (Text-Fuell, Wort-Stagger, horizontaler Einschub, Pinning)
-  wurden dabei NICHT geprüft/angepasst — offen, ob sie dieselbe Lücke haben.
+  Startseite (Text-Füll, Wort-Stagger, horizontaler Einschub, Pinning)
+  respektieren jetzt ebenfalls `prefers-reduced-motion` (gleiche
+  Wertebereich-Kollaps-Technik bei den scroll-gekoppelten Effekten Text-Füll/
+  Pinning; bei den `whileInView`-Techniken Wort-Stagger/horizontaler Einschub
+  wird stattdessen das `hidden`-Variant auf denselben Endzustand wie
+  `visible` gesetzt) — mit Playwright verifiziert: alle 17 gestaffelten
+  Wörter, der Text-Füll-Effekt und das Pin-Medienelement stehen sofort im
+  Endzustand, Normalmodus weiterhin unveraendert animiert.
 - Bewusst NICHT mit übernommen: Kapitel-Nummerierung/-Label, Paginierung,
   `min-height: 100vh`-Vollbild-Zwang, Pinning/Text-Fill/Stagger/Horizontal-
   Einschub (Techniken 2–5) — beide Seiten bleiben ein normal scrollender,
