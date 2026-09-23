@@ -533,7 +533,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           <div style={{ fontFamily: headingFont, fontSize: 20, marginBottom: 18 }}>Check-in — {event.title}</div>
           {result && (
             <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>
-              {result === "notfound" ? "Kein Gast mit diesem Namen gefunden." : `${decodeURIComponent(result)} ist eingecheckt.`}
+              {result === "notfound"
+                ? "Kein Gast mit diesem Namen gefunden."
+                : result === "ambiguous"
+                  ? "Mehrere Gäste mit diesem Namen gefunden — bitte vollständigen Namen eingeben."
+                  : `${decodeURIComponent(result)} ist eingecheckt.`}
             </p>
           )}
           <form action={checkInGuestByName.bind(null, event.id, event.slug)} style={{ display: "flex", gap: 8 }}>
@@ -1230,7 +1234,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             </form>
             {seatResult && (
               <p style={{ fontSize: 14, marginTop: 18, fontWeight: 600 }}>
-                {seatResult === "notfound" ? "Kein Sitzplatz gefunden." : `Euer Tisch: ${decodeURIComponent(seatResult)}`}
+                {seatResult === "notfound"
+                  ? "Kein Sitzplatz gefunden."
+                  : seatResult === "ambiguous"
+                    ? "Mehrere Gäste mit diesem Namen gefunden — bitte gib deinen vollständigen Namen ein (z. B. Vor- und Nachname)."
+                    : `Euer Tisch: ${decodeURIComponent(seatResult)}`}
               </p>
             )}
           </div>

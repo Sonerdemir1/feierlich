@@ -71,11 +71,20 @@ export async function findSeat(eventId: string, slug: string, formData: FormData
   const name = String(formData.get("seatName") ?? "").trim().slice(0, 80);
   if (!name) redirect(`/e/${slug}#sitzplatz`);
 
-  const guest = await prisma.guest.findFirst({
+  // `contains` statt exakter Treffer, damit Tippfehler/Teilnamen noch
+  // funktionieren — bei mehreren passenden Gaesten (z.B. "Anna" matcht
+  // sowohl "Anna" als auch "Anna-Lena") aber NIE einfach den ersten
+  // nehmen: das koennte den falschen Tisch zeigen. Stattdessen um einen
+  // vollstaendigeren Namen bitten. `take: 2` reicht, um "mehr als einer"
+  // festzustellen, ohne alle Treffer zu laden.
+  const matches = await prisma.guest.findMany({
     where: { eventId, firstName: { contains: name } },
     include: { seat: { include: { table: true } } },
+    take: 2,
   });
+  if (matches.length > 1) redirect(`/e/${slug}?seat=ambiguous#sitzplatz`);
 
+  const guest = matches[0];
   const result = guest?.seat ? encodeURIComponent(guest.seat.table.name) : "notfound";
   redirect(`/e/${slug}?seat=${result}#sitzplatz`);
 }
@@ -326,7 +335,13 @@ export async function checkInGuestByName(eventId: string, slug: string, formData
   const name = String(formData.get("checkinName") ?? "").trim().slice(0, 80);
   if (!name) redirect(`/e/${slug}?checkin=staff`);
 
-  const guest = await prisma.guest.findFirst({ where: { eventId, firstName: { contains: name } } });
+  // Gleiche Absicherung wie in findSeat() oben: bei mehreren passenden
+  // Gaesten nicht blind den ersten einchecken (koennte die falsche
+  // Person sein), sondern nach einem vollstaendigeren Namen fragen.
+  const matches = await prisma.guest.findMany({ where: { eventId, firstName: { contains: name } }, take: 2 });
+  if (matches.length > 1) redirect(`/e/${slug}?checkin=staff&result=ambiguous`);
+
+  const guest = matches[0];
   if (!guest) redirect(`/e/${slug}?checkin=staff&result=notfound`);
 
   await prisma.checkIn.upsert({ where: { guestId: guest.id }, update: {}, create: { eventId, guestId: guest.id } });
