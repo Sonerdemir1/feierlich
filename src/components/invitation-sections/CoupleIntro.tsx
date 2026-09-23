@@ -38,32 +38,50 @@ export function CoupleIntro({
           </h2>
         </div>
         <div className="iv-couple-row">
-          <div className="iv-couple-bio">
-            <EditableText
-              field={leftName}
-              editable={editable}
-              as="div"
-              label="Name (links)"
-              placeholder="Anna"
-              style={{ fontFamily, fontStyle, fontSize: 18, color: colors.primary, marginBottom: 6 }}
+          <div className="iv-couple-person">
+            <div
+              className="iv-couple-photo"
+              style={
+                leftPhotoUrl
+                  ? { backgroundImage: `url(${leftPhotoUrl})` }
+                  : { background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${colors.accent} 55%, #fff) 0%, ${colors.accent} 100%)` }
+              }
             />
-            <EditableText field={leftBio} editable={editable} as="p" label="Kurzvorstellung (links)" placeholder="Ein paar Worte über sie…" />
+            <div className="iv-couple-bio">
+              <EditableText
+                field={leftName}
+                editable={editable}
+                as="div"
+                label="Name (links)"
+                placeholder="Anna"
+                style={{ fontFamily, fontStyle, fontSize: 18, color: colors.primary, marginBottom: 6 }}
+              />
+              <EditableText field={leftBio} editable={editable} as="p" label="Kurzvorstellung (links)" placeholder="Ein paar Worte über sie…" />
+            </div>
           </div>
-          <div className="iv-couple-photo" style={leftPhotoUrl ? { backgroundImage: `url(${leftPhotoUrl})` } : { background: colors.accent }} />
           <span className="iv-couple-heart" aria-hidden="true">
             ♥
           </span>
-          <div className="iv-couple-photo" style={rightPhotoUrl ? { backgroundImage: `url(${rightPhotoUrl})` } : { background: colors.accent }} />
-          <div className="iv-couple-bio">
-            <EditableText
-              field={rightName}
-              editable={editable}
-              as="div"
-              label="Name (rechts)"
-              placeholder="Lukas"
-              style={{ fontFamily, fontStyle, fontSize: 18, color: colors.primary, marginBottom: 6 }}
+          <div className="iv-couple-person">
+            <div
+              className="iv-couple-photo"
+              style={
+                rightPhotoUrl
+                  ? { backgroundImage: `url(${rightPhotoUrl})` }
+                  : { background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${colors.accent} 55%, #fff) 0%, ${colors.accent} 100%)` }
+              }
             />
-            <EditableText field={rightBio} editable={editable} as="p" label="Kurzvorstellung (rechts)" placeholder="Ein paar Worte über ihn…" />
+            <div className="iv-couple-bio">
+              <EditableText
+                field={rightName}
+                editable={editable}
+                as="div"
+                label="Name (rechts)"
+                placeholder="Lukas"
+                style={{ fontFamily, fontStyle, fontSize: 18, color: colors.primary, marginBottom: 6 }}
+              />
+              <EditableText field={rightBio} editable={editable} as="p" label="Kurzvorstellung (rechts)" placeholder="Ein paar Worte über ihn…" />
+            </div>
           </div>
         </div>
       </div>

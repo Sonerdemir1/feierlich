@@ -3044,28 +3044,46 @@ footer a:hover {
   align-self: flex-start;
 }
 
-/* Paar-Vorstellung — zwei Portraits + Herz mittig, Bio-Text links/rechts. */
+/* Paar-Vorstellung — zwei Portraits + Herz mittig, Bio-Text unter je einem
+   Foto. Bewusst als zwei symmetrische "Person"-Bloecke statt einer
+   Bio-Foto-Herz-Foto-Bio-Einzelreihe: bei fuenf Elementen in einer Reihe
+   reicht die 720px-Inhaltsspalte nicht aus, wodurch nur das letzte Element
+   (die rechte Bio) umbricht und mittig statt neben ihrem Foto landet. Als
+   zwei in sich geschlossene Bloecke bleibt die Anordnung bei jeder Breite
+   symmetrisch, auch wenn sie untereinander umbrechen. */
 .iv-couple-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  gap: 28px;
+  gap: 40px;
   flex-wrap: wrap;
 }
+.iv-couple-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 200px;
+}
 .iv-couple-photo {
-  width: 130px;
-  height: 130px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   background-size: cover;
   background-position: center;
   flex-shrink: 0;
+  border: 4px solid var(--iv-surface, #fff);
+  box-shadow: var(--shadow-sm);
 }
 .iv-couple-heart {
+  align-self: center;
+  margin-top: 58px;
   font-size: 20px;
   color: var(--iv-accent);
+  flex-shrink: 0;
 }
 .iv-couple-bio {
-  max-width: 220px;
+  max-width: 200px;
   font-size: 13.5px;
   line-height: 1.7;
   color: var(--iv-ink-soft);
@@ -3349,11 +3367,20 @@ footer a:hover {
     gap: 14px;
   }
   .iv-couple-row {
-    gap: 18px;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .iv-couple-person {
+    width: 100%;
+    max-width: 260px;
   }
   .iv-couple-photo {
     width: 96px;
     height: 96px;
+  }
+  .iv-couple-heart {
+    margin-top: 0;
   }
   .iv-story-item {
     grid-template-columns: 56px 1fr;

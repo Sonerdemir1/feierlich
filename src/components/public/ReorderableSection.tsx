@@ -82,7 +82,15 @@ export function ReorderableSection({
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    // `order` MUSS auf diesem aeusseren div sitzen, nicht auf der inneren
+    // CameraSection: `main` (der Gaeste-Seite) ist der Flex-Container, und
+    // CSS `order` wirkt nur auf DIREKTE Flex-Kinder. Vorher stand `order`
+    // auf <CameraSection>, einer Enkel-Ebene — dort war es fuer das Layout
+    // komplett wirkungslos, alle 14 umsortierbaren Abschnitte hatten
+    // dadurch effektiv order:0 und rutschten vor Hero (order:1) und Paar-
+    // Vorstellung/Kennenlerngeschichte (order:2/4). Live mit Playwright
+    // nachgewiesen (getComputedStyle des tatsaechlichen Flex-Kindes).
+    <div style={{ position: "relative", order: liveOrderValue }}>
       {editMode && (
         <SectionInlineControls
           label={label}
@@ -93,7 +101,7 @@ export function ReorderableSection({
           onHide={hide}
         />
       )}
-      <CameraSection style={{ order: liveOrderValue }}>{children}</CameraSection>
+      <CameraSection>{children}</CameraSection>
     </div>
   );
 }

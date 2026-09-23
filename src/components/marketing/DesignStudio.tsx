@@ -31,6 +31,7 @@ import { CameraSection } from "@/components/invitation-sections/CameraSection";
 import { GalleryGrid } from "@/components/invitation-sections/GalleryGrid";
 import { WishesCarousel } from "@/components/invitation-sections/WishesCarousel";
 import { VideoAndRsvp } from "@/components/invitation-sections/VideoAndRsvp";
+import { Footer as InvitationFooter } from "@/components/invitation-sections/Footer";
 import type { TextField } from "@/components/invitation-sections/EditableText";
 import { AgendaItemQuickEdit } from "@/components/editor/AgendaItemQuickEdit";
 import { defaultAgendaItems, newAgendaItem, moveAgendaItem, type AgendaItem } from "@/lib/agenda";
@@ -1958,6 +1959,14 @@ export function DesignStudio({
                   );
                 });
               })()}
+
+              <InvitationFooter
+                photoUrl={draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined)}
+                colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+                fontFamily={font.cssVar}
+                fontStyle={font.italic ? "italic" : "normal"}
+                names={draft.text}
+              />
             </div>
 
             {(prevId || nextId) && (

@@ -16,6 +16,7 @@ import { BackgroundMusicToggle } from "@/components/marketing/BackgroundMusicTog
 import { HeroCard } from "@/components/public/HeroCard";
 import { EventHero } from "@/components/public/EventHero";
 import { CameraSection } from "@/components/invitation-sections/CameraSection";
+import { Footer as InvitationFooter } from "@/components/invitation-sections/Footer";
 import type { LiveDesignState } from "@/lib/live-design-state";
 import { fontOptionById } from "@/lib/fonts";
 import { recordEventView } from "@/lib/analytics";
@@ -655,82 +656,92 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </h2>
             </div>
             <div className="iv-couple-row">
-              <div className="iv-couple-bio">
-                {editMode ? (
-                  <EditableSectionText
-                    eventId={event.id}
-                    defaultColor={colors.primary}
-                    field="coupleLeftName"
-                    label="Name (links)"
-                    value={event.coupleLeftName ?? ""}
-                    placeholder="Anna"
-                    as="div"
-                    style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleLeftNameOverride }}
-                  />
-                ) : (
-                  event.coupleLeftName && (
-                    <div style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleLeftNameOverride }}>
-                      {event.coupleLeftName}
-                    </div>
-                  )
-                )}
-                {editMode ? (
-                  <EditableSectionText
-                    eventId={event.id}
-                    defaultColor={colors.primary}
-                    field="coupleLeftBio"
-                    label="Kurzvorstellung (links)"
-                    value={event.coupleLeftBio ?? ""}
-                    placeholder="Ein paar Worte über sie…"
-                    as="p"
-                    style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleLeftBioOverride }}
-                  />
-                ) : (
-                  event.coupleLeftBio && (
-                    <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleLeftBioOverride }}>{event.coupleLeftBio}</p>
-                  )
-                )}
+              <div className="iv-couple-person">
+                <div
+                  className="iv-couple-photo"
+                  style={{ background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${colors.accent} 55%, #fff) 0%, ${colors.accent} 100%)` }}
+                />
+                <div className="iv-couple-bio">
+                  {editMode ? (
+                    <EditableSectionText
+                      eventId={event.id}
+                      defaultColor={colors.primary}
+                      field="coupleLeftName"
+                      label="Name (links)"
+                      value={event.coupleLeftName ?? ""}
+                      placeholder="Anna"
+                      as="div"
+                      style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleLeftNameOverride }}
+                    />
+                  ) : (
+                    event.coupleLeftName && (
+                      <div style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleLeftNameOverride }}>
+                        {event.coupleLeftName}
+                      </div>
+                    )
+                  )}
+                  {editMode ? (
+                    <EditableSectionText
+                      eventId={event.id}
+                      defaultColor={colors.primary}
+                      field="coupleLeftBio"
+                      label="Kurzvorstellung (links)"
+                      value={event.coupleLeftBio ?? ""}
+                      placeholder="Ein paar Worte über sie…"
+                      as="p"
+                      style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleLeftBioOverride }}
+                    />
+                  ) : (
+                    event.coupleLeftBio && (
+                      <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleLeftBioOverride }}>{event.coupleLeftBio}</p>
+                    )
+                  )}
+                </div>
               </div>
-              <div className="iv-couple-photo" style={{ background: colors.accent }} />
               <span className="iv-couple-heart" aria-hidden="true">
                 ♥
               </span>
-              <div className="iv-couple-photo" style={{ background: colors.accent }} />
-              <div className="iv-couple-bio">
-                {editMode ? (
-                  <EditableSectionText
-                    eventId={event.id}
-                    defaultColor={colors.primary}
-                    field="coupleRightName"
-                    label="Name (rechts)"
-                    value={event.coupleRightName ?? ""}
-                    placeholder="Lukas"
-                    as="div"
-                    style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleRightNameOverride }}
-                  />
-                ) : (
-                  event.coupleRightName && (
-                    <div style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleRightNameOverride }}>
-                      {event.coupleRightName}
-                    </div>
-                  )
-                )}
-                {editMode ? (
-                  <EditableSectionText
-                    eventId={event.id}
-                    defaultColor={colors.primary}
-                    field="coupleRightBio"
-                    label="Kurzvorstellung (rechts)"
-                    value={event.coupleRightBio ?? ""}
-                    placeholder="Ein paar Worte über ihn…"
-                    as="p"
-                    style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleRightBioOverride }}
-                  />
-                ) : (
-                  event.coupleRightBio && (
-                    <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleRightBioOverride }}>{event.coupleRightBio}</p>
-                  )
-                )}
+              <div className="iv-couple-person">
+                <div
+                  className="iv-couple-photo"
+                  style={{ background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${colors.accent} 55%, #fff) 0%, ${colors.accent} 100%)` }}
+                />
+                <div className="iv-couple-bio">
+                  {editMode ? (
+                    <EditableSectionText
+                      eventId={event.id}
+                      defaultColor={colors.primary}
+                      field="coupleRightName"
+                      label="Name (rechts)"
+                      value={event.coupleRightName ?? ""}
+                      placeholder="Lukas"
+                      as="div"
+                      style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleRightNameOverride }}
+                    />
+                  ) : (
+                    event.coupleRightName && (
+                      <div style={{ fontFamily: headingFont, fontSize: 18, color: colors.primary, marginBottom: 6, ...coupleRightNameOverride }}>
+                        {event.coupleRightName}
+                      </div>
+                    )
+                  )}
+                  {editMode ? (
+                    <EditableSectionText
+                      eventId={event.id}
+                      defaultColor={colors.primary}
+                      field="coupleRightBio"
+                      label="Kurzvorstellung (rechts)"
+                      value={event.coupleRightBio ?? ""}
+                      placeholder="Ein paar Worte über ihn…"
+                      as="p"
+                      style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleRightBioOverride }}
+                    />
+                  ) : (
+                    event.coupleRightBio && (
+                      <p style={{ fontSize: 13.5, lineHeight: 1.6, opacity: 0.85, color: colors.primary, ...coupleRightBioOverride }}>{event.coupleRightBio}</p>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1142,7 +1153,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="sitzplatz" style={{ maxWidth: 420, margin: "0 auto", padding: "72px 28px" }}>
+        <section id="sitzplatz" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 420 }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "28px 26px", textAlign: "center" }}>
             {editMode ? (
               <div style={{ marginBottom: 8 }}>
@@ -1222,6 +1234,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </p>
             )}
           </div>
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -1235,7 +1248,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="menu" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px" }}>
+        <section id="menu" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 480 }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1290,6 +1304,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 </div>
               </div>
             ))}
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -1622,7 +1637,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="trauzeugen">
+        <section id="trauzeugen" className="iv-section" style={{ background: colors.background }}>
           <div className="iv-inner" style={{ maxWidth: 640 }}>
           <div className="iv-head">
           <span className="iv-eyebrow">An unserer Seite</span>
@@ -1683,7 +1698,11 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                             height: 84,
                             borderRadius: "50%",
                             margin: "0 auto 10px",
-                            background: m.photoUrl ? `url(${m.photoUrl}) center/cover` : `${colors.accent}33`,
+                            border: "3px solid var(--iv-surface, #fff)",
+                            boxShadow: "var(--shadow-sm)",
+                            background: m.photoUrl
+                              ? `url(${m.photoUrl}) center/cover`
+                              : `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${colors.accent} 55%, #fff) 0%, ${colors.accent} 100%)`,
                           }}
                         />
                         <div style={{ fontSize: 13.5, fontWeight: 600 }}>{m.name}</div>
@@ -1707,7 +1726,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="musikwuensche" style={{ maxWidth: 420, margin: "0 auto", padding: "72px 28px" }}>
+        <section id="musikwuensche" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 420 }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1812,6 +1832,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
               </form>
             )}
           </div>
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -1825,7 +1846,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="wunschliste" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px" }}>
+        <section id="wunschliste" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 480 }}>
           {editMode ? (
             <EditableSectionText
               eventId={event.id}
@@ -1892,6 +1914,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
                 </div>
               ))
           )}
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -1905,7 +1928,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="dresscode" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px", textAlign: "center" }}>
+        <section id="dresscode" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 480, textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1936,6 +1960,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           ) : (
             <div style={{ fontSize: 14, opacity: 0.85, ...dresscodeTextOverride }}>{event.dresscodeText}</div>
           )}
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -1949,7 +1974,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="social-media" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px", textAlign: "center" }}>
+        <section id="social-media" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 480, textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -1980,6 +2006,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           ) : (
             <div style={{ fontSize: 14, opacity: 0.85, ...socialMediaTextOverride }}>{event.socialMediaText}</div>
           )}
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -1993,7 +2020,8 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
           initialOrder={activeOrder}
           visibleKeys={visibleSectionKeys}
         >
-        <section id="audio-einladung" style={{ maxWidth: 480, margin: "0 auto", padding: "72px 28px", textAlign: "center" }}>
+        <section id="audio-einladung" className="iv-section" style={{ background: colors.background }}>
+        <div className="iv-inner" style={{ maxWidth: 480, textAlign: "center" }}>
           {editMode ? (
             <div style={{ marginBottom: 8 }}>
               <EditableSectionText
@@ -2031,6 +2059,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
             )
           )}
           <AudioMessagePlayer url={event.audioInvitation.url} accent={colors.accent} primary={colors.background} />
+        </div>
         </section>
         </ReorderableSection>
       )}
@@ -2146,9 +2175,15 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         </ReorderableSection>
       )}
 
-      <footer style={{ order: 999, textAlign: "center", padding: "24px 28px 40px", fontSize: 11, opacity: 0.5 }}>
-        Erstellt mit einladi
-      </footer>
+      <div style={{ order: 999 }}>
+        <InvitationFooter
+          photoUrl={event.coverImage?.url ?? photoBackground?.src ?? undefined}
+          colors={colors}
+          fontFamily={headingFont}
+          fontStyle="italic"
+          names={event.title}
+        />
+      </div>
     </main>
   );
 }

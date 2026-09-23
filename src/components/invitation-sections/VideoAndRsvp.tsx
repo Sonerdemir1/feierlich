@@ -96,7 +96,14 @@ export function VideoAndRsvp({
               {videoHint && (
                 <EditableText field={videoHint} editable={editable} as="p" label="Video-Einladung-Hinweistext" placeholder="" style={{ margin: "0 0 14px" }} className="iv-intro" />
               )}
-              <div className="iv-video-box" style={videoThumbnailUrl ? { backgroundImage: `url(${videoThumbnailUrl})` } : { background: colors.accent }}>
+              <div
+                className="iv-video-box"
+                style={
+                  videoThumbnailUrl
+                    ? { backgroundImage: `url(${videoThumbnailUrl})` }
+                    : { background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${colors.accent} 55%, #fff) 0%, ${colors.accent} 100%)` }
+                }
+              >
                 <div className="iv-video-play" aria-hidden="true">
                   ▶
                 </div>
