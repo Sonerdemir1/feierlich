@@ -922,7 +922,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
       )}
 
       {weather && (
-        <CameraSection>
+        <CameraSection style={{ order: 6 }}>
         <section style={{ maxWidth: 480, margin: "0 auto", padding: "56px 28px" }}>
           <div style={{ border: `1px solid ${colors.accent}55`, padding: "22px 26px", textAlign: "center" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: colors.accent, marginBottom: 10 }}>
