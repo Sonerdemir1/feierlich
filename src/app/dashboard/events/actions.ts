@@ -665,3 +665,32 @@ export async function updateEventDetails(eventId: string, formData: FormData) {
   revalidatePath(`/e/${event.slug}`);
   redirect(`/dashboard/events/${eventId}?detailsSaved=1`);
 }
+
+// Bisher gab es im ganzen Projekt (weder Kunden-Dashboard noch Admin-
+// Bereich) keine Moeglichkeit, ein Event wieder zu loeschen — gefunden bei
+// der Vollstaendigkeitspruefung vor dem Kunden-Launch. Fast alle Event-
+// Relationen im Schema haben bereits onDelete: Cascade (Guests, RSVPs,
+// Media, Gaestebuch, etc.) — EXCEPT Order (bewusst kein Cascade, damit
+// Zahlungs-/Rechnungsdaten auch nach dem Loeschen eines Events fuer die
+// Buchhaltung erhalten bleiben, wird beim Cascade-Delete nur auf
+// eventId: null gesetzt). Tatsaechliche Dateien in Storage (Fotos/Videos/
+// Audio) werden hier NICHT mitgeloescht — die DB-Zeilen verschwinden per
+// Cascade, die Dateien selbst blieben als verwaiste Objekte im Bucket
+// liegen (kein Kostenproblem in relevanter Groessenordnung, aber fuer eine
+// spaetere Aufraeum-Iteration vermerkt).
+export async function deleteEvent(eventId: string, formData: FormData) {
+  const { event } = await requireOwnedEvent(eventId);
+
+  // Tippfehler-Sicherung gegen versehentliches Loeschen (Tippen des exakten
+  // Event-Titels), zusaetzlich zum bestaetigenden Dialog im Client — bewusst
+  // serverseitig nochmal geprueft, nicht nur im Formular selbst, da ein
+  // <form action> auch ohne das clientseitige JS abgeschickt werden koennte.
+  const confirmTitle = String(formData.get("confirmTitle") ?? "").trim();
+  if (confirmTitle !== event.title) {
+    redirect(`/dashboard/events/${eventId}?error=delete-confirm-mismatch`);
+  }
+
+  await prisma.event.delete({ where: { id: eventId } });
+
+  redirect(`/dashboard?eventDeleted=1`);
+}

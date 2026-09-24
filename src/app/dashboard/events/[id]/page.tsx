@@ -49,6 +49,7 @@ import { getViewsTrend } from "@/lib/analytics";
 import { ViewsTrendChart } from "@/components/dashboard/ViewsTrendChart";
 import { RsvpBreakdownBar } from "@/components/dashboard/RsvpBreakdownBar";
 import { PlaceAutocompleteInput } from "@/components/dashboard/PlaceAutocompleteInput";
+import { DeleteEventButton } from "@/components/dashboard/DeleteEventButton";
 import { GOOGLE_MAPS_API_KEY } from "@/lib/google-maps";
 import { DesignEditor } from "@/components/dashboard/DesignEditor";
 import { activeSectionOrder } from "@/lib/section-order";
@@ -97,6 +98,7 @@ const uploadErrorLabel: Record<string, string> = {
   "audio-tts-no-description": "Bitte zuerst eine Beschreibung für euer Event eintragen — die wird vorgelesen.",
   "audio-tts-failed": "Die Sprachgenerierung ist gerade nicht möglich. Bitte später erneut versuchen.",
   "details-invalid": "Bitte Titel und Datum ausfüllen.",
+  "delete-confirm-mismatch": "Der eingegebene Titel stimmte nicht überein — Event wurde nicht gelöscht.",
 };
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -1278,6 +1280,14 @@ export default async function EventDetailPage({
             <span style={{ fontSize: 10.5, color: "var(--gold)", fontWeight: 700 }}>Ab Premium Plus</span>
           </div>
         )}
+      </div>
+
+      {/* Gefahrenzone — bislang gab es im ganzen Projekt (weder hier noch im
+          Admin-Bereich) keine Moeglichkeit, ein Event wieder zu loeschen,
+          gefunden bei der Vollstaendigkeitspruefung vor dem Kunden-Launch. */}
+      <div style={{ marginTop: 32 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>Gefahrenzone</div>
+        <DeleteEventButton eventId={event.id} eventTitle={event.title} />
       </div>
 
       {einladiKiConfigured && <EinladiKiChat eventId={event.id} />}
