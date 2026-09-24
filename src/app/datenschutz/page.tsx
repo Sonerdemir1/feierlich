@@ -112,7 +112,7 @@ export default function DatenschutzPage() {
             <br />
             Mit der „Allgemeinen KI-Verarbeitung“ dürfen hochgeladene Fotos/Videos automatisiert auf unangemessene
             Inhalte geprüft werden (Inhalts-Moderation). Rechtsgrundlage: Einwilligung, Art. 6 Abs. 1 lit. a DSGVO.
-            Die Verarbeitung erfolgt durch [KI-Anbieter einfügen], mit Servern in [Standort einfügen].
+            Die Verarbeitung erfolgt durch OpenAI, mit Servern in den USA.
             <br />
             <br />
             Die Einwilligung kann jederzeit über den Widerruf-Link, der direkt nach dem Hochladen angezeigt wird,

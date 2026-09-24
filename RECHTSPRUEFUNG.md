@@ -209,6 +209,16 @@ zwingend auszufüllen sind.
 
 ---
 
+**Update (2026-09-24):** Die beiden echten, unausgefüllten Platzhalter
+`[KI-Anbieter einfügen]`/`[Standort einfügen]` aus Fund 1a wurden durch den
+faktisch korrekten Text ersetzt ("OpenAI" / "den USA") — konsistent mit dem
+Absatz direkt darüber auf derselben Seite, der für andere KI-Funktionen
+bereits "OpenAI (USA)" nennt. Damit ist **nur** der peinliche, literal
+sichtbare Platzhalter-Text behoben — die im Dokument geforderte inhaltliche
+Prüfung durch einen Anwalt/Datenschutzbeauftragten (Wortlaut, Vollständigkeit,
+Rechtsgrundlage) steht weiterhin aus und wurde durch diese Änderung nicht
+ersetzt.
+
 ## Zusammenfassung nach Dringlichkeit
 
 | # | Text | Öffentlich erreichbar? | TODO-Markierung im Code? |
