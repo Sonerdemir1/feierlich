@@ -19,6 +19,7 @@ import {
   Manrope,
 } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
+import { CookieNotice } from "@/components/CookieNotice";
 import { getLocale } from "@/lib/i18n";
 import "./globals.css";
 
@@ -123,6 +124,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         {children}
         <PwaRegister />
+        <CookieNotice />
       </body>
     </html>
   );
