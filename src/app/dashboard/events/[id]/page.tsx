@@ -70,6 +70,15 @@ const menuCourseLabel: Record<string, string> = {
   DRINK: "Getränke",
 };
 
+// Bugfix: alle vier Kategorien zeigten denselben Platzhalter "z. B.
+// Lachsfilet" im Eingabefeld — bei "Getränke" offensichtlich falsch.
+const menuCoursePlaceholder: Record<string, string> = {
+  STARTER: "z. B. Lachsfilet",
+  MAIN: "z. B. Rinderfilet",
+  DESSERT: "z. B. Crème brûlée",
+  DRINK: "z. B. Hauswein rot/weiß",
+};
+
 const orderStatusLabel: Record<string, string> = {
   PENDING: "Ausstehend",
   PAID: "Bezahlt",
@@ -286,8 +295,8 @@ export default async function EventDetailPage({
           den Standardtext.
         </span>
       </label>
-      <div style={{ display: "flex", gap: 12 }}>
-        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <label style={{ flex: "1 1 150px", display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
           Familie (links, optional)
           <input
             type="text"
@@ -297,7 +306,7 @@ export default async function EventDetailPage({
             style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
           />
         </label>
-        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        <label style={{ flex: "1 1 150px", display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
           Familie (rechts, optional)
           <input
             type="text"
@@ -312,8 +321,8 @@ export default async function EventDetailPage({
         Zeigt einen Zwei-Familien-Block auf der Karte, nur wenn mindestens eines der beiden Felder ausgefüllt ist —
         beide leer lassen, um ihn auszublenden.
       </span>
-      <div style={{ display: "flex", gap: 12 }}>
-        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <label style={{ flex: "1 1 150px", display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
           Datum
           <input
             type="date"
@@ -323,7 +332,7 @@ export default async function EventDetailPage({
             style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
           />
         </label>
-        <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+        <label style={{ flex: "1 1 150px", display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
           Uhrzeit (optional)
           <input
             type="time"
@@ -914,7 +923,7 @@ export default async function EventDetailPage({
               </div>
               <form action={createMenuItem.bind(null, event.id)} style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 <input type="hidden" name="course" value={course} />
-                <input name="name" placeholder="z. B. Lachsfilet" required style={{ padding: "8px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5, flex: "1 1 180px", minWidth: 0 }} />
+                <input name="name" placeholder={menuCoursePlaceholder[course] ?? "z. B. Lachsfilet"} required style={{ padding: "8px 12px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 12.5, flex: "1 1 180px", minWidth: 0 }} />
                 <button type="submit" className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }}>
                   + Hinzufügen
                 </button>

@@ -73,7 +73,26 @@ export function WeddingPartyList({
                   </div>
                 </SelectableElement>
                 {selectedId === item.id && (
-                  <div className="customizer-card-wishlist-icons" style={{ justifyContent: "center", marginTop: 4 }}>
+                  // position:static ueberschreibt bewusst das
+                  // position:absolute der Basis-Klasse .customizer-card-
+                  // wishlist-icons (globals.css) — die ist fuer die
+                  // Wunschliste gedacht, wo die Icons INNERHALB einer breiten
+                  // Zeile oben rechts sitzen. Hier bei den schmalen 84px-
+                  // Trauzeugen-Eintraegen sollen sie stattdessen als normale,
+                  // zentrierte Zeile UNTER dem Foto/Namen erscheinen (siehe
+                  // justifyContent/marginTop) — mit position:absolute waeren
+                  // sie ohne einen extra positionierten Elternrahmen an einem
+                  // viel groesseren, weiter aussen liegenden Container
+                  // verankert und liefen ueber den Kartenrand hinaus (live im
+                  // eingebetteten Editor-iframe gefunden, ~15px Ueberlauf).
+                  // width:max-content: der umschliessende Eintrag ist nur
+                  // 84px breit (Avatar-Spalte), drei 34px-Buttons + Abstand
+                  // brauchen aber ~120px — ohne das wuerden sie in der
+                  // schmalen Spalte zusammengequetscht. Ragt die Zeile dabei
+                  // etwas ueber die 84px hinaus, schiebt das dank
+                  // flexWrap:"wrap" in der Gruppe darueber nur den naechsten
+                  // Eintrag in die naechste Zeile, kein Layout-Bruch.
+                  <div className="customizer-card-wishlist-icons" style={{ position: "static", justifyContent: "center", margin: "4px auto 0", width: "max-content" }}>
                     <button type="button" onClick={() => onMove(item.id, "up")} disabled={i === 0} title="Nach oben" aria-label="Nach oben verschieben">
                       ↑
                     </button>

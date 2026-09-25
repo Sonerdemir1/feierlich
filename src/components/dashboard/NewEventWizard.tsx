@@ -94,8 +94,8 @@ export function NewEventWizard({
               style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
             />
           </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <label style={{ flex: "1 1 150px", display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
               Datum
               <input
                 type="date"
@@ -106,7 +106,7 @@ export function NewEventWizard({
                 style={{ padding: "12px 14px", border: "1px solid var(--line)", background: "var(--ivory-2)", fontSize: 13.5 }}
               />
             </label>
-            <label style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
+            <label style={{ flex: "1 1 150px", display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--ink-soft)" }}>
               Uhrzeit (optional)
               <input
                 type="time"

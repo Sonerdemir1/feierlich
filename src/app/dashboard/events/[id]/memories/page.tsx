@@ -37,20 +37,27 @@ const guestbookVerdictColor: Record<string, string> = { unangemessen: "#B2543A",
 const guestbookVerdictRank: Record<string, number> = { unangemessen: 0, herzlich: 1, ok: 2 };
 
 function ModerationButtons({ approve, hide, del }: { approve: () => Promise<void>; hide: () => Promise<void>; del: () => Promise<void> }) {
+  // Karten in diesem Grid koennen bis auf 160px schmal werden
+  // (repeat(auto-fill, minmax(160px,1fr)), siehe Render-Stelle) — die drei
+  // Buttons nebeneinander brauchen bei "Freigeben"/"Ausblenden"/"Löschen"
+  // deutlich mehr als die dann verfuegbaren ~140px Innenbreite. Ohne
+  // flexWrap waeren sie ueber den Kartenrand hinausgelaufen statt
+  // umzubrechen — auf dem Handy (wo Kunden Gaeste-Fotos oft freigeben)
+  // waere das kaputt ausgesehen.
   return (
-    <div style={{ display: "flex", gap: 8 }}>
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
       <form action={approve}>
-        <button type="submit" style={{ fontSize: 11, color: "#5B7A4E", background: "none", border: "1px solid #5B7A4E55", padding: "4px 9px", cursor: "pointer" }}>
+        <button type="submit" style={{ fontSize: 11.5, color: "#5B7A4E", background: "none", border: "1px solid #5B7A4E55", padding: "6px 10px", cursor: "pointer" }}>
           Freigeben
         </button>
       </form>
       <form action={hide}>
-        <button type="submit" style={{ fontSize: 11, color: "#8A7F6E", background: "none", border: "1px solid var(--line)", padding: "4px 9px", cursor: "pointer" }}>
+        <button type="submit" style={{ fontSize: 11.5, color: "#8A7F6E", background: "none", border: "1px solid var(--line)", padding: "6px 10px", cursor: "pointer" }}>
           Ausblenden
         </button>
       </form>
       <form action={del}>
-        <button type="submit" style={{ fontSize: 11, color: "#B2543A", background: "none", border: "1px solid #B2543A55", padding: "4px 9px", cursor: "pointer" }}>
+        <button type="submit" style={{ fontSize: 11.5, color: "#B2543A", background: "none", border: "1px solid #B2543A55", padding: "6px 10px", cursor: "pointer" }}>
           Löschen
         </button>
       </form>

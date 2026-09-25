@@ -250,8 +250,22 @@
   background-position: center;
 }
 .zc-pedestal-frame {
+  /* box-shadow statt filter:drop-shadow — drop-shadow zwingt den Browser zu
+     einer eigenen, ungeclippten Raster-Oberflaeche pro Element. Diese Klasse
+     sitzt an 4 Stellen auf der Startseite jeweils unter einem per Framer
+     Motion animierten scale/opacity-Vorfahren (Kamera-Scroll-Effekt) — bei
+     mehreren gleichzeitig "heissen" gefilterten+transformierten Ebenen auf
+     der ueber 18000px langen Seite kam es zu leerem Rendering ab ca. Kapitel
+     05/06 (GPU-Kompositor-Speicher erschoepft, DOM/Styles blieben korrekt,
+     nur das Paint blieb leer). box-shadow ist paint-basiert, nicht
+     kompositions-basiert, und kostet unter einem animierten Vorfahren-
+     Transform deutlich weniger. Sichtbarer Unterschied minimal, da alle
+     Vorschau-Elemente rechteckig sind (drop-shadow folgt der Alphaform,
+     box-shadow dem Rechteck — hier ohne Unterschied).
+     Vorbild: .zc-pedestal-photo (Kapitel 01) nutzt bereits box-shadow, genau
+     dieses Kapitel zeigte auch nie den Rendering-Bug. */
   position: relative;
-  filter: drop-shadow(0 30px 50px rgba(26, 26, 26, 0.25));
+  box-shadow: 0 30px 50px rgba(26, 26, 26, 0.25);
 }
 
 .zc-footer-bar {

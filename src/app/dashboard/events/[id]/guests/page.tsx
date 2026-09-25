@@ -90,7 +90,50 @@ export default async function GuestListPage({
           Keine Gäste gefunden.
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
+        <>
+          {/* Handy: 9-Spalten-Tabelle waere nur per Seitwaertsscrollen nutzbar —
+              stattdessen eine Karte pro Gast, wichtigste Infos (Name, Status,
+              Personen) prominent oben, Rest darunter gestapelt. Tabelle bleibt
+              fuer Desktop/Tablet (ab 700px) die bessere Uebersicht bei vielen
+              Gaesten gleichzeitig. Serverkomponente ohne JS: beide Varianten
+              werden gerendert, CSS blendet je nach Breite eine davon aus. */}
+          <div className="guest-cards-mobile">
+            {guests.map((g) => {
+              const status = g.rsvp?.status ?? "PENDING";
+              return (
+                <div key={g.id} className="card" style={{ padding: "14px 16px", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14.5 }}>
+                      {g.firstName} {g.lastName ?? ""}
+                    </div>
+                    <span style={{ color: statusColor[status], fontWeight: 600, fontSize: 12, flexShrink: 0 }}>{statusLabel[status]}</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
+                    <div>{g.rsvp?.attendingCount ?? g.invitedCount} Person(en){g.rsvp?.menuChoice ? ` · Menü: ${g.rsvp.menuChoice}` : ""}</div>
+                    {(g.email ?? g.phone) && <div>{g.email ?? g.phone}</div>}
+                    {g.notes && <div>Notiz: {g.notes}</div>}
+                    <div>
+                      {g.firstOpenedAt
+                        ? `Geöffnet: ${new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit" }).format(g.firstOpenedAt)} (${g.openCount}×)`
+                        : "Noch nicht geöffnet"}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                    <Link href={`/dashboard/events/${id}/guests/${g.id}/edit`} style={{ fontSize: 12.5 }}>
+                      Bearbeiten
+                    </Link>
+                    <CopyLinkButton
+                      url={`https://${publicHost()}/e/${event.slug}?g=${g.inviteToken}`}
+                      className="btn btn-ghost"
+                      style={{ padding: "6px 10px", fontSize: 11.5 }}
+                    />
+                    <DeleteGuestButton eventId={id} guestId={g.id} guestName={g.firstName} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="guest-table-desktop" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid var(--line)", textAlign: "left" }}>
@@ -143,7 +186,8 @@ export default async function GuestListPage({
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );

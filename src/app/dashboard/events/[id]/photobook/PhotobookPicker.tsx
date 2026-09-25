@@ -157,21 +157,21 @@ export function PhotobookPicker({ photos, initialSelectedIds }: { photos: Photob
                 <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
                   <button
                     type="button"
+                    className="photobook-reorder-btn"
                     onClick={() => move(mediaId, "up")}
                     disabled={i === 0}
                     aria-label="Nach oben"
-                    style={{ width: 24, height: 24, border: "1px solid var(--line)", background: "#ffffff", cursor: i === 0 ? "default" : "pointer", opacity: i === 0 ? 0.35 : 1, fontSize: 11 }}
+                    style={{ border: "1px solid var(--line)", background: "#ffffff", cursor: i === 0 ? "default" : "pointer", opacity: i === 0 ? 0.35 : 1, fontSize: 11 }}
                   >
                     ↑
                   </button>
                   <button
                     type="button"
+                    className="photobook-reorder-btn"
                     onClick={() => move(mediaId, "down")}
                     disabled={i === selectedIds.length - 1}
                     aria-label="Nach unten"
                     style={{
-                      width: 24,
-                      height: 24,
                       border: "1px solid var(--line)",
                       background: "#ffffff",
                       cursor: i === selectedIds.length - 1 ? "default" : "pointer",
@@ -183,9 +183,10 @@ export function PhotobookPicker({ photos, initialSelectedIds }: { photos: Photob
                   </button>
                   <button
                     type="button"
+                    className="photobook-reorder-btn"
                     onClick={() => remove(mediaId)}
                     aria-label="Entfernen"
-                    style={{ width: 24, height: 24, border: "1px solid var(--line)", background: "#ffffff", cursor: "pointer", fontSize: 11, color: "var(--terracotta-dark)" }}
+                    style={{ border: "1px solid var(--line)", background: "#ffffff", cursor: "pointer", fontSize: 11, color: "var(--terracotta-dark)" }}
                   >
                     ✕
                   </button>

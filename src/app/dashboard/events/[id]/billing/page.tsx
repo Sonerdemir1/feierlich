@@ -26,10 +26,15 @@ export default async function BillingPage({
   const event = await prisma.event.findUnique({ where: { id } });
   if (!event || event.ownerId !== session.user.id) notFound();
 
-  const [packages, order] = await Promise.all([
+  const [packages, order, modules] = await Promise.all([
     prisma.package.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     prisma.order.findUnique({ where: { eventId: id }, include: { package: true } }),
+    prisma.module.findMany(),
   ]);
+  // Bugfix: die Funktionsliste je Paket zeigte bisher die rohen internen
+  // Feature-Keys ("countdown", "guest-list") statt lesbarer Bezeichnungen —
+  // gleiche Modul-Tabelle wie auf /preise/[key] fuer die echten Namen.
+  const moduleNameByKey = new Map(modules.map((m) => [m.key, m.name]));
 
   const cancelled = sp.cancelled === "1";
   const errorKey = typeof sp.error === "string" ? sp.error : undefined;
@@ -100,7 +105,7 @@ export default async function BillingPage({
               )}
               <ul style={{ fontSize: 11.5, color: "var(--ink-faint)", marginBottom: 16, paddingLeft: 16 }}>
                 {features.slice(0, 6).map((f) => (
-                  <li key={f}>{f}</li>
+                  <li key={f}>{moduleNameByKey.get(f) ?? f}</li>
                 ))}
               </ul>
               <form action={startCheckout.bind(null, event.id)} style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -116,7 +121,7 @@ export default async function BillingPage({
                   type="submit"
                   className={isCurrent ? "btn btn-ghost" : "btn btn-primary"}
                   disabled={isCurrent}
-                  style={{ padding: "9px 16px", fontSize: 12.5, width: "100%" }}
+                  style={{ padding: "13px 16px", fontSize: 13, width: "100%" }}
                 >
                   {isCurrent ? "Aktuelles Paket" : "Jetzt buchen"}
                 </button>

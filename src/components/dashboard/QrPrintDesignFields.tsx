@@ -170,7 +170,12 @@ export function QrPrintDesignFields({
           <img
             src={previewSrc}
             alt="Vorschau des Karten-Designs, vergrößert"
-            style={{ maxWidth: "min(90vw, 640px)", maxHeight: "90vh", width: "auto", background: "#fff", boxShadow: "0 8px 40px rgba(0,0,0,0.4)" }}
+            // maxHeight ueber dvh statt vh: Overlay ist position:fixed/inset:0,
+            // vh waere auf echten Mobil-Browsern gegen die Viewport-Hoehe
+            // hinter der Adressleiste berechnet statt gegen die sichtbare
+            // Flaeche (siehe .studio-panel-sticky.mobile-edit-sheet-open in
+            // globals.css fuer denselben Bugfix).
+            style={{ maxWidth: "min(90vw, 640px)", maxHeight: "90dvh", width: "auto", background: "#fff", boxShadow: "0 8px 40px rgba(0,0,0,0.4)" }}
           />
         </div>
       )}

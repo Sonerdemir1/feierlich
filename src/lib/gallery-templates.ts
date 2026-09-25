@@ -129,11 +129,22 @@ export function categoryLabel(category: string, locale: Locale): string {
   return category;
 }
 
-// Muss exakt zur gleichnamigen Funktion in TemplateGallery.tsx/DesignStudio.tsx
-// passen (erzeugen dieselben Anker-IDs) — bewusst dupliziert statt geteilt,
-// gleiches Muster wie die anderen lokalen `slugify`-Helfer im Projekt.
+// Tuerkische Buchstaben (ı, ğ, ş, ç, ö, ü) haben keine NFKD-Zerlegung in
+// Basisbuchstabe+Akzent wie z.B. "é" — normalize("NFKD") liess sie bisher
+// unveraendert durch, wodurch sie beim anschliessenden [^a-z0-9]-Ersetzen als
+// Sonderzeichen behandelt wurden ("Kına Gecesi" -> "cat-k-na-gecesi" statt
+// "cat-kina-gecesi"). Funktional unschaedlich (Pill-Link und Sektions-ID
+// nutzen dieselbe Funktion, bleiben also immer konsistent), aber unschoen in
+// URL/DOM. Explizite Zeichentabelle vor der generischen NFKD-Behandlung.
+const TURKISH_CHAR_MAP: Record<string, string> = {
+  ı: "i", İ: "i", ş: "s", Ş: "s", ğ: "g", Ğ: "g",
+  ç: "c", Ç: "c", ö: "o", Ö: "o", ü: "u", Ü: "u",
+};
 export function categorySlug(category: string): string {
   return category
+    .split("")
+    .map((ch) => TURKISH_CHAR_MAP[ch] ?? ch)
+    .join("")
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")

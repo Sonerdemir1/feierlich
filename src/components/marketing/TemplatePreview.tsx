@@ -400,6 +400,76 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
           <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#B9975B", marginTop: 8 }}>DÜĞÜN</div>
         </div>
       );
+    // Drei Düğün-Vorlagen mit echtem Foto (siehe PHOTO_BACKGROUND in
+    // gallery-templates.ts) — hatten hier lange keinen eigenen Fall und
+    // fielen dadurch auf den generischen "Vorschau folgt"-Platzhalter
+    // zurueck, obwohl fuer sie extra Fotos eingekauft wurden.
+    case "dugun-foto-elmas":
+      return (
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(250,243,228,0.15) 0%, rgba(58,46,34,0.55) 100%), url(/images/templates/palace-ballroom-gold.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ position: "absolute", inset: 6, border: "1px solid #C9A22799" }} />
+          <CornerMotif color="#C9A227" corner="tl" />
+          <CornerMotif color="#C9A227" corner="tr" />
+          <CornerMotif color="#C9A227" corner="bl" />
+          <CornerMotif color="#C9A227" corner="br" />
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#FAF3E4", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#C9A227", marginTop: 10, zIndex: 1 }}>DÜĞÜN</div>
+        </div>
+      );
+    case "dugun-foto-zumrut":
+      return (
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(11,42,30,0.35) 0%, rgba(11,42,30,0.8) 100%), url(/images/templates/malachite-emerald-gold.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ position: "absolute", inset: 6, border: "1px solid #D4AF6A99" }} />
+          <CornerMotif color="#D4AF6A" corner="tl" />
+          <CornerMotif color="#D4AF6A" corner="tr" />
+          <CornerMotif color="#D4AF6A" corner="bl" />
+          <CornerMotif color="#D4AF6A" corner="br" />
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#FAF3E0", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4AF6A", marginTop: 10, zIndex: 1 }}>DÜĞÜN</div>
+        </div>
+      );
+    case "dugun-foto-yakut":
+      return (
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(92,20,32,0.2) 0%, rgba(92,20,32,0.62) 100%), url(/images/templates/red-roses-candlelight.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          <div style={{ position: "absolute", inset: 6, border: "1px solid #C08A2E99" }} />
+          <CornerMotif color="#C08A2E" corner="tl" />
+          <CornerMotif color="#C08A2E" corner="tr" />
+          <CornerMotif color="#C08A2E" corner="bl" />
+          <CornerMotif color="#C08A2E" corner="br" />
+          <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#F6ECD9", zIndex: 1 }}>
+            Ayşe &amp; Emre
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#C08A2E", marginTop: 10, zIndex: 1 }}>DÜĞÜN</div>
+        </div>
+      );
     // Echte "Blanko"-Kartendesigns (Kunde hat die fertigen Bilder
     // bereitgestellt) — kein CSS-Nachbau: Kartenbild als Hintergrund,
     // Brautpaar-Text mittig darueber. Textfarbe je nach Kartenmotiv hell

@@ -93,7 +93,13 @@ export function EinladiKiChat({ eventId }: { eventId: string }) {
             width: 340,
             maxWidth: "calc(100vw - 40px)",
             height: 480,
-            maxHeight: "calc(100vh - 100px)",
+            // dvh statt vh: siehe .studio-panel-sticky.mobile-edit-sheet-open
+            // in globals.css — vh rechnet auf echten Mobil-Browsern gegen die
+            // Viewport-Hoehe hinter der eingeklappten Adressleiste, dvh
+            // gegen die tatsaechlich sichtbare Flaeche. Bei diesem fixierten
+            // Panel (bottom:20) sonst Risiko, dass der obere Teil (Header/
+            // Schliessen-Button) ausserhalb des sichtbaren Bereichs landet.
+            maxHeight: "calc(100dvh - 100px)",
             display: "flex",
             flexDirection: "column",
             marginBottom: 12,

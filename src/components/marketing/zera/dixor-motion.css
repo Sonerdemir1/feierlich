@@ -8,11 +8,19 @@
 .zdx-pin-wrapper {
   position: relative;
   height: 220vh;
+  /* dvh nach vh: siehe .studio-panel-sticky.mobile-edit-sheet-open in
+     globals.css fuer den Hintergrund (Adressleisten-Problem). Hier zusaetzlich
+     relevant, weil die Scroll-Distanz fuer das Pinning direkt aus dieser
+     Hoehe kommt — mit vh koennte sich die tatsaechliche Pin-Distanz aendern,
+     sobald die Adressleiste ein-/ausklappt, was zu einem ruckenden Ubergang
+     fuehren kann. */
+  height: 220dvh;
 }
 .zdx-pin-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -29,12 +37,18 @@
   flex: 1;
 }
 .zdx-pin-media {
+  /* Kein explizites will-change mehr: Framer Motion setzt das fuer jede
+     animierte scale/opacity-Property auf motion.*-Elementen bereits selbst
+     (motion-dom WillChange), zusaetzlich hier gesetzt verdoppelte nur die
+     erzwungene Layer-Promotion auf genau dem Element, das ohnehin schon
+     filter (siehe .zc-pedestal-frame) + animiertes scale traegt — Teil der
+     Ursache des leeren Renderings ab Kapitel 05/06, siehe zera.css. */
   transform-origin: center;
-  will-change: transform;
 }
 @media (max-width: 860px) {
   .zdx-pin-wrapper {
     height: 180vh;
+    height: 180dvh;
   }
   .zdx-pin-body {
     grid-template-columns: 1fr;

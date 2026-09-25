@@ -50,7 +50,24 @@ export function FontPicker({ value, onChange }: { value: string | undefined; onC
           ))}
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 220, overflowY: "auto", border: "1px solid var(--line)", padding: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          maxHeight: 220,
+          overflowY: "auto",
+          // Verhindert, dass ein Scroll bis zum Ende dieser Liste auf den
+          // umgebenden Container "durchschlaegt" (z.B. das mobile Bottom-
+          // Sheet in DesignStudio.tsx/DesignEditor.tsx) — sonst kann ein
+          // Wisch-Geste, die eigentlich diese Liste zu Ende scrollen soll,
+          // stattdessen das Sheet selbst bewegen ("verschachteltes Scrollen
+          // kaempft gegeneinander").
+          overscrollBehavior: "contain",
+          border: "1px solid var(--line)",
+          padding: 6,
+        }}
+      >
         <button
           type="button"
           onClick={() => onChange(undefined)}

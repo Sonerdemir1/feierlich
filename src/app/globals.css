@@ -423,6 +423,40 @@ a {
   color: var(--ivory);
 }
 
+/* Gästeliste (dashboard/events/[id]/guests/page.tsx): Karten auf dem Handy,
+   Tabelle ab 700px — siehe Kommentar an der Render-Stelle. */
+.guest-cards-mobile {
+  display: block;
+}
+.guest-table-desktop {
+  display: none;
+}
+@media (min-width: 700px) {
+  .guest-cards-mobile {
+    display: none;
+  }
+  .guest-table-desktop {
+    display: block;
+  }
+}
+
+/* iOS Safari zoomt beim Fokussieren eines Formularfelds automatisch in die
+   Seite hinein, wenn dessen Schriftgroesse unter 16px liegt — ein bekanntes,
+   fuer Nutzer stoerendes Verhalten (Seite springt beim Antippen eines Feldes
+   ploetzlich rein/raus). Viele Formulare im Projekt setzen 12.5-14px per
+   Inline-Style (zu viele Einzelstellen, um sie alle anzufassen) — dieser
+   globale, mobile-only Sicherheitsnetz-Fix ueberschreibt die Schriftgroesse
+   nur innerhalb der Eingabe SELBST (Darstellung anderswo/Label bleibt
+   unveraendert), nur unterhalb 480px Breite (echte Handys, nicht Tablet/
+   Desktop). !important noetig, da Inline-Styles sonst gewinnen. */
+@media (max-width: 480px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* KEIN `html { scroll-behavior: smooth }` mehr: war fuer das inzwischen
      ersetzte RevealAnimator/IntersectionObserver-System noetig (Zwischen-
@@ -1204,6 +1238,31 @@ a.card:hover {
   font-weight: 600;
   border-top: 1px solid var(--line);
 }
+/* Basis-Groesse fuer PhotobookPicker.tsx-Reorder-Buttons — analog
+   .element-toolbar-btn, Groesse aus CSS statt Inline-Style. */
+.photobook-reorder-btn {
+  width: 24px;
+  height: 24px;
+}
+/* Basis-Groessen fuer ElementToolbar.tsx (siehe Komponente: Groesse kommt
+   bewusst aus CSS statt Inline-Style, damit die mobile @media-Regel unten
+   sie vergroessern kann). */
+.element-toolbar-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+.element-toolbar-swatch {
+  width: 24px;
+  height: 24px;
+}
 @media (max-width: 900px) {
   .studio-page {
     padding: 20px 18px 96px;
@@ -1262,6 +1321,13 @@ a.card:hover {
     top: auto;
     z-index: 40;
     max-height: 75vh;
+    /* dvh nach vh als Progressive Enhancement: vh rechnet auf echten Mobil-
+       Browsern gegen die grosse Viewport-Hoehe (hinter der eingeklappten
+       Adressleiste) statt gegen die tatsaechlich sichtbare Flaeche — bei
+       ausgeklappter Adressleiste (Normalzustand direkt nach dem Laden)
+       deckte das Sheet dadurch fast den kompletten sichtbaren Bildschirm ab
+       statt der gewollten 75%. dvh folgt der echten sichtbaren Hoehe. */
+    max-height: 75dvh;
     background: var(--ivory);
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
@@ -1277,6 +1343,48 @@ a.card:hover {
      Schliessen des Sheets automatisch zurueck). */
   .studio-panel-sticky.mobile-edit-sheet-open .studio-panel-cta {
     display: none;
+  }
+  /* Verhindert, dass die Karte dahinter per Touch weiterscrollt, waehrend
+     das Bottom-Sheet offen ist (siehe hasSelection-Effekt in
+     DesignStudio.tsx/DesignEditor.tsx). */
+  body.mobile-sheet-scroll-lock {
+    overflow: hidden;
+  }
+  /* ElementToolbar.tsx: 28px/24px-Buttons dicht an dicht waren auf einem
+     echten Handy-Bildschirm schwer treffbar. 44px waere bei 9 Buttons in
+     einer Reihe zu breit fuer eine schmale Handy-Karte — 36px ist der
+     groesstmoegliche Kompromiss, der noch in eine Zeile passt; zusaetzlich
+     darf die Leiste bei sehr schmalen Karten umbrechen statt abgeschnitten
+     zu werden (kein weisspace:nowrap mehr auf Mobile). */
+  .element-toolbar {
+    flex-wrap: wrap;
+    max-width: calc(100vw - 32px);
+    justify-content: center;
+  }
+  .element-toolbar-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  .element-toolbar-swatch {
+    width: 32px;
+    height: 32px;
+  }
+  /* SelectableElement.tsx: isolierter Stift-Button, 26px war knapp unter
+     der empfohlenen Mindest-Tippflaeche. */
+  .selectable-element-edit-btn {
+    width: 38px !important;
+    height: 38px !important;
+    top: -18px !important;
+    right: -18px !important;
+  }
+  /* PhotobookPicker.tsx: Auf/Ab/Entfernen in der Foto-Reihenfolgenliste,
+     24px war knapp. Zeile hat genug Breite (voller Zeilenbreite statt
+     schwebend ueber der Karte), daher direkt auf 38px. */
+  .photobook-reorder-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 13px;
   }
 }
 
@@ -1628,6 +1736,40 @@ a.card:hover {
 .customizer-card-wishlist-icons button:disabled {
   opacity: 0.35;
   cursor: default;
+}
+/* Auf-/Ab-/Entfernen-Buttons bei Ablaufplan- und Wunschlisten-Eintraegen
+   (AgendaList.tsx/WishlistList.tsx/WeddingPartyList.tsx) waren mit 20-22px
+   und nur 2px Abstand schwer zu treffen und der "Entfernen"-Button lag
+   gefaehrlich nah an "Verschieben". Zusaetzlich haengt
+   .customizer-card-agenda-icons per "left:100%" rechts NEBEN der Zeile —
+   auf einer randnahen Karte landete das ausserhalb des sichtbaren Bereichs;
+   hier stattdessen wie bei den Wunschlisten-Icons INNERHALB der Zeile oben
+   rechts.
+   WICHTIG: dieser Block muss NACH den .customizer-card-agenda-icons/
+   .customizer-card-wishlist-icons-Basisregeln weiter oben in der Datei
+   stehen — bei gleicher Spezifitaet gewinnt bei CSS sonst die spaeter im
+   Quelltext stehende Regel unabhaengig von der @media-Bedingung (erst live
+   im echten, eingebetteten Editor-iframe bemerkt: die vorherige Position
+   dieses Blocks weiter oben in der Datei liess die Media-Query wirkungslos
+   bleiben, obwohl sie zutraf). Desktop bleibt unveraendert (dort per Maus
+   praezise treffbar). */
+@media (max-width: 900px) {
+  .customizer-card-agenda-icons {
+    left: auto;
+    right: 2px;
+    top: 4px;
+    margin-left: 0;
+  }
+  .customizer-card-agenda-icons button,
+  .customizer-card-wishlist-icons button {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+  .customizer-card-agenda-icons,
+  .customizer-card-wishlist-icons {
+    gap: 6px;
+  }
 }
 .customizer-card-wishlist-add {
   margin-top: 4px;
@@ -1985,6 +2127,8 @@ a.card:hover {
     top: auto;
     z-index: 40;
     max-height: 75vh;
+    /* dvh nach vh: siehe Kommentar bei .studio-panel-sticky.mobile-edit-sheet-open weiter oben. */
+    max-height: 75dvh;
     overflow-y: auto;
     background: var(--ivory);
     border-top: 1px solid var(--line);
@@ -2006,10 +2150,13 @@ a.card:hover {
   .editor-panel-sticky.mobile-edit-sheet-open .mobile-sheet-close {
     display: flex;
     position: absolute;
-    top: 10px;
-    right: 14px;
-    width: 30px;
-    height: 30px;
+    top: 8px;
+    right: 10px;
+    /* 44x44 statt vorher 30x30 — Apples/Googles empfohlene Mindest-
+       Tippflaeche fuer mobile Touch-Ziele, 30px ist auf einem echten
+       Handy-Bildschirm knifflig zu treffen. */
+    width: 44px;
+    height: 44px;
     align-items: center;
     justify-content: center;
     border-radius: 50%;

@@ -47,7 +47,16 @@ export function TemplatePicker({
             <div
               key={t.id}
               className="tpl"
+              role="button"
+              tabIndex={0}
+              aria-pressed={selected}
               onClick={() => onChange(t.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange(t.id);
+                }
+              }}
               style={{ cursor: "pointer", outline: selected ? "2px solid var(--terracotta)" : "none", outlineOffset: -1 }}
             >
               <TemplatePreview layoutKey={t.layoutKey} />

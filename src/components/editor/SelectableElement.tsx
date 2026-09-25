@@ -74,6 +74,7 @@ export function SelectableElement({
           />
           <button
             type="button"
+            className="selectable-element-edit-btn"
             onClick={(e) => {
               e.stopPropagation();
               onSelect();

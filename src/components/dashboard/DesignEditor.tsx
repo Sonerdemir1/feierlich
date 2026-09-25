@@ -178,6 +178,13 @@ export function DesignEditor({
   // fasst alle drei sich gegenseitig ausschliessenden Auswahl-States
   // zusammen, deselectAll() ist der "X schliessen"-Handler des Sheets.
   const hasSelection = Boolean(selectedKey || selectedAgendaItemId || selectedWishlistItemId || selectedWeddingPartyItemId);
+  // Body-Scroll-Sperre waehrend das mobile Bottom-Sheet offen ist — siehe
+  // gleichnamiger Effekt in DesignStudio.tsx (Marketing-Customizer), reine
+  // CSS-Klasse, wirkungslos ausserhalb der @media (max-width:900px)-Regel.
+  useEffect(() => {
+    document.body.classList.toggle("mobile-sheet-scroll-lock", hasSelection);
+    return () => document.body.classList.remove("mobile-sheet-scroll-lock");
+  }, [hasSelection]);
   function deselectAll() {
     setSelectedKey(undefined);
     setSelectedAgendaItemId(undefined);

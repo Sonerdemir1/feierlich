@@ -21,19 +21,14 @@ const ALIGN_OPTIONS: { id: TextAlign; label: string; glyph: string }[] = [
   { id: "justify", label: "Blocksatz", glyph: "☰" },
 ];
 
+// Groesse/Display kommen jetzt aus der CSS-Klasse ".element-toolbar-btn"
+// (globals.css) statt aus Inline-Styles — nur so kann eine mobile
+// @media-Regel die Tipp-Flaeche vergroessern (28px war auf einem echten
+// Handy-Bildschirm zu klein). Inline bleibt nur, was pro Button variiert
+// (aktiv/inaktiv-Farbe).
 const btnStyle = (active: boolean): CSSProperties => ({
-  width: 28,
-  height: 28,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  border: "none",
-  borderRadius: 4,
   background: active ? "var(--ink, #211C19)" : "transparent",
   color: active ? "#fff" : "var(--ink, #211C19)",
-  cursor: "pointer",
-  fontSize: 12.5,
-  flexShrink: 0,
 });
 
 const divider: CSSProperties = { width: 1, alignSelf: "stretch", background: "var(--line, #E4DDD0)", margin: "0 2px", flexShrink: 0 };
@@ -68,6 +63,7 @@ export function ElementToolbar({
       // wieder abwaehlen, bevor onChange greifen kann).
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
+      className="element-toolbar"
       style={{
         position: "absolute",
         bottom: "100%",
@@ -83,15 +79,15 @@ export function ElementToolbar({
         borderRadius: 8,
         boxShadow: "0 6px 20px rgba(0,0,0,0.16)",
         zIndex: 40,
-        whiteSpace: "nowrap",
       }}
     >
-      <button type="button" title="Kleiner" aria-label="Kleiner" disabled={stepIndex === 0} onClick={() => stepSize(-1)} style={{ ...btnStyle(false), opacity: stepIndex === 0 ? 0.35 : 1 }}>
+      <button type="button" className="element-toolbar-btn" title="Kleiner" aria-label="Kleiner" disabled={stepIndex === 0} onClick={() => stepSize(-1)} style={{ ...btnStyle(false), opacity: stepIndex === 0 ? 0.35 : 1 }}>
         −
       </button>
       <span style={{ fontSize: 10.5, color: "var(--ink-faint, #8A8072)", minWidth: 44, textAlign: "center" }}>{currentPreset.label}</span>
       <button
         type="button"
+        className="element-toolbar-btn"
         title="Größer"
         aria-label="Größer"
         disabled={stepIndex === STEP_ORDER.length - 1}
@@ -104,20 +100,20 @@ export function ElementToolbar({
       <div style={divider} />
 
       {ALIGN_OPTIONS.map((opt) => (
-        <button key={opt.id} type="button" title={opt.label} aria-label={opt.label} onClick={() => onChange({ align: opt.id === "center" ? undefined : opt.id })} style={btnStyle((style.align ?? "center") === opt.id)}>
+        <button key={opt.id} type="button" className="element-toolbar-btn" title={opt.label} aria-label={opt.label} onClick={() => onChange({ align: opt.id === "center" ? undefined : opt.id })} style={btnStyle((style.align ?? "center") === opt.id)}>
           {opt.glyph}
         </button>
       ))}
 
       <div style={divider} />
 
-      <button type="button" title="Fett" aria-label="Fett" onClick={() => onChange({ bold: !style.bold })} style={{ ...btnStyle(Boolean(style.bold)), fontWeight: 700 }}>
+      <button type="button" className="element-toolbar-btn" title="Fett" aria-label="Fett" onClick={() => onChange({ bold: !style.bold })} style={{ ...btnStyle(Boolean(style.bold)), fontWeight: 700 }}>
         F
       </button>
-      <button type="button" title="Unterstrichen" aria-label="Unterstrichen" onClick={() => onChange({ underline: !style.underline })} style={{ ...btnStyle(Boolean(style.underline)), textDecoration: "underline" }}>
+      <button type="button" className="element-toolbar-btn" title="Unterstrichen" aria-label="Unterstrichen" onClick={() => onChange({ underline: !style.underline })} style={{ ...btnStyle(Boolean(style.underline)), textDecoration: "underline" }}>
         U
       </button>
-      <button type="button" title="Kursiv" aria-label="Kursiv" onClick={() => onChange({ italic: !style.italic })} style={{ ...btnStyle(Boolean(style.italic)), fontStyle: "italic" }}>
+      <button type="button" className="element-toolbar-btn" title="Kursiv" aria-label="Kursiv" onClick={() => onChange({ italic: !style.italic })} style={{ ...btnStyle(Boolean(style.italic)), fontStyle: "italic" }}>
         K
       </button>
 
@@ -126,12 +122,11 @@ export function ElementToolbar({
       <div style={{ position: "relative" }}>
         <button
           type="button"
+          className="element-toolbar-swatch"
           title="Farbe"
           aria-label="Farbe"
           onClick={() => setOpenPanel(openPanel === "color" ? null : "color")}
           style={{
-            width: 24,
-            height: 24,
             borderRadius: "50%",
             border: `2px solid ${openPanel === "color" ? "var(--ink, #211C19)" : "var(--line, #E4DDD0)"}`,
             background: style.color ?? defaultColor,
@@ -151,7 +146,7 @@ export function ElementToolbar({
       </div>
 
       <div style={{ position: "relative" }}>
-        <button type="button" title="Schriftart" aria-label="Schriftart" onClick={() => setOpenPanel(openPanel === "font" ? null : "font")} style={btnStyle(openPanel === "font")}>
+        <button type="button" className="element-toolbar-btn" title="Schriftart" aria-label="Schriftart" onClick={() => setOpenPanel(openPanel === "font" ? null : "font")} style={btnStyle(openPanel === "font")}>
           Aa
         </button>
         {openPanel === "font" && (

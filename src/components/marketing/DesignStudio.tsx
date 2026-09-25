@@ -552,6 +552,16 @@ export function DesignStudio({
   // fasst alle drei sich gegenseitig ausschliessenden Auswahl-States
   // zusammen, deselectAll() ist der "X schliessen"-Handler des Sheets.
   const hasSelection = Boolean(selectedKey || selectedAgendaId || selectedWishlistId || selectedWeddingPartyId);
+  // Body-Scroll-Sperre waehrend das mobile Bottom-Sheet offen ist — sonst
+  // laesst sich die (oft lange) Karte dahinter per Touch weiterscrollen,
+  // waehrend man eigentlich im Sheet bedienen will. Reine CSS-Klasse statt
+  // Breakpoint-Check in JS: die Sperre greift nur innerhalb derselben
+  // @media (max-width:900px)-Regel wie das Sheet selbst (siehe globals.css),
+  // auf Desktop bleibt body.mobile-sheet-scroll-lock wirkungslos.
+  useEffect(() => {
+    document.body.classList.toggle("mobile-sheet-scroll-lock", hasSelection);
+    return () => document.body.classList.remove("mobile-sheet-scroll-lock");
+  }, [hasSelection]);
   function deselectAll() {
     setSelectedKey(undefined);
     setSelectedAgendaId(undefined);
