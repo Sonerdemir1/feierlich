@@ -14,7 +14,8 @@ import Link from "next/link";
 import { motion, useScroll, useTransform, useReducedMotion, type MotionValue } from "motion/react";
 import { GalleryPreview, GuestPagePreview, SharePreview } from "@/components/marketing/PhoneMockups";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
-import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { CuratedTemplates } from "@/components/marketing/CuratedTemplates";
 import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { homepageCopy } from "@/lib/translations/homepage";
 import type { Locale } from "@/lib/i18n";
@@ -282,8 +283,19 @@ function usePinProgress() {
   const skipMotion = mounted && prefersReducedMotion;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const mediaScale = useTransform(scrollYProgress, [0, 1], skipMotion ? [1, 1] : [0.6, 1]);
-  const contentX = useTransform(scrollYProgress, [0, 0.6], skipMotion ? ["0%", "0%"] : ["-40%", "0%"]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.35], skipMotion ? [1, 1] : [0, 1]);
+  // Bugfix: bei den zwei fruehzeitig "haltenden" Transforms (contentX/
+  // contentOpacity, deren Wertebereich schon vor Fortschritt 1 endet) mit
+  // einem impliziten 2-Punkte-Clamp fiel der Wert bei fortgesetztem
+  // Scrollen wieder auf den Ausgangszustand zurueck, statt zu halten —
+  // live vermessen: contentOpacity blendete den kompletten Editor-Kapitel-
+  // Inhalt (Ueberschrift, Text, Vorschau) wieder auf 0 aus, waehrend das
+  // Kapitel noch gepinnt/sichtbar war. Explizite 3-Punkte-Wertebereiche mit
+  // gleichem Endwert wirken wie ein manuelles Halte-Plateau und beheben das
+  // zuverlaessig (mediaScale ist davon nicht betroffen, deren Wertebereich
+  // deckt bereits den vollen Scroll-Fortschritt 0..1 ab, kein Halte-Plateau
+  // noetig).
+  const contentX = useTransform(scrollYProgress, [0, 0.6, 1], skipMotion ? ["0%", "0%", "0%"] : ["-40%", "0%", "0%"]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.35, 1], skipMotion ? [1, 1, 1] : [0, 1, 1]);
   return { ref, mediaScale, contentX, contentOpacity };
 }
 
@@ -311,6 +323,7 @@ export function HomeChapters({
   locale: Locale;
 }) {
   const t = homepageCopy[locale];
+  const totalTemplates = categories.reduce((sum, cat) => sum + cat.items.length, 0);
   const ch2 = useCameraProgress();
   const ch3 = useCameraProgress();
   const ch6 = useCameraProgress();
@@ -438,7 +451,17 @@ export function HomeChapters({
               {t.vorlagen.desc}
             </p>
           </div>
-          <TemplateGallery categories={categories} locale="de" paket={paket} />
+          {/* Kuratierte Auswahl statt kompletter Katalog (MOTION.md-
+              Leitsatz "kuratierte Abfolge, kein endloses Scrollen" —
+              vorher rendete dieses Kapitel alle {totalTemplates} Vorlagen
+              direkt eingebettet, ~7700px hoch). Voller Katalog jetzt unter
+              /vorlagen, siehe CTA unten. */}
+          <CuratedTemplates categories={categories} paket={paket} />
+          <div style={{ textAlign: "center", marginTop: 36 }}>
+            <Link href="/vorlagen" className="zc-btn zc-btn-primary">
+              Alle {totalTemplates} Vorlagen ansehen
+            </Link>
+          </div>
         </div>
         <div className="zc-footer-bar">
           <div className="zc-pagination">
@@ -575,9 +598,7 @@ export function HomeChapters({
             <div className="zc-pricing-addon">
               <div className="zc-pricing-card zc-pricing-card--highlight">
                 <div className="zc-compare-badge">{t.pricing.addOnBadge}</div>
-                <div className="zc-pricing-name" style={{ marginTop: 6 }}>
-                  {photoVideoAddOn.name}
-                </div>
+                <div className="zc-pricing-name">{photoVideoAddOn.name}</div>
                 <div className="zc-pricing-tag">{t.pricing.addOnTag}</div>
                 <div className="zc-pricing-amount">{eur.format(photoVideoAddOn.priceCents / 100)}</div>
                 <div className="zc-pricing-features">
@@ -594,6 +615,7 @@ export function HomeChapters({
             </div>
           )}
 
+          {photoVideoAddOn && <span className="zc-pricing-divider" aria-hidden="true" />}
           <div className="zc-centered-head" style={{ marginTop: photoVideoAddOn ? 8 : 0 }}>
             <span className="zc-eyebrow">{t.pricing.eyebrow2}</span>
             <h3 className="zc-heading" style={{ fontSize: "clamp(20px, 2.4vw, 28px)", marginBottom: 12 }}>
@@ -608,9 +630,7 @@ export function HomeChapters({
             {packages.map((pkg) => (
               <div className={`zc-pricing-card${pkg.highlight ? " zc-pricing-card--highlight" : ""}`} key={pkg.id}>
                 {pkg.highlight && <div className="zc-compare-badge">{t.pricing.popularBadge}</div>}
-                <div className="zc-pricing-name" style={pkg.highlight ? { marginTop: 6 } : undefined}>
-                  {pkg.name}
-                </div>
+                <div className="zc-pricing-name">{pkg.name}</div>
                 {pkg.description && <div className="zc-pricing-tag">{pkg.description}</div>}
                 <div className="zc-pricing-amount">{eur.format(pkg.priceCents / 100)}</div>
                 <div className="zc-pricing-features">
