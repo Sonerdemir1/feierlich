@@ -282,8 +282,19 @@ function usePinProgress() {
   const skipMotion = mounted && prefersReducedMotion;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const mediaScale = useTransform(scrollYProgress, [0, 1], skipMotion ? [1, 1] : [0.6, 1]);
-  const contentX = useTransform(scrollYProgress, [0, 0.6], skipMotion ? ["0%", "0%"] : ["-40%", "0%"]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.35], skipMotion ? [1, 1] : [0, 1]);
+  // Bugfix: bei den zwei fruehzeitig "haltenden" Transforms (contentX/
+  // contentOpacity, deren Wertebereich schon vor Fortschritt 1 endet) mit
+  // einem impliziten 2-Punkte-Clamp fiel der Wert bei fortgesetztem
+  // Scrollen wieder auf den Ausgangszustand zurueck, statt zu halten —
+  // live vermessen: contentOpacity blendete den kompletten Editor-Kapitel-
+  // Inhalt (Ueberschrift, Text, Vorschau) wieder auf 0 aus, waehrend das
+  // Kapitel noch gepinnt/sichtbar war. Explizite 3-Punkte-Wertebereiche mit
+  // gleichem Endwert wirken wie ein manuelles Halte-Plateau und beheben das
+  // zuverlaessig (mediaScale ist davon nicht betroffen, deren Wertebereich
+  // deckt bereits den vollen Scroll-Fortschritt 0..1 ab, kein Halte-Plateau
+  // noetig).
+  const contentX = useTransform(scrollYProgress, [0, 0.6, 1], skipMotion ? ["0%", "0%", "0%"] : ["-40%", "0%", "0%"]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.35, 1], skipMotion ? [1, 1, 1] : [0, 1, 1]);
   return { ref, mediaScale, contentX, contentOpacity };
 }
 
