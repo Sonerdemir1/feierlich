@@ -586,9 +586,7 @@ export function HomeChapters({
             <div className="zc-pricing-addon">
               <div className="zc-pricing-card zc-pricing-card--highlight">
                 <div className="zc-compare-badge">{t.pricing.addOnBadge}</div>
-                <div className="zc-pricing-name" style={{ marginTop: 6 }}>
-                  {photoVideoAddOn.name}
-                </div>
+                <div className="zc-pricing-name">{photoVideoAddOn.name}</div>
                 <div className="zc-pricing-tag">{t.pricing.addOnTag}</div>
                 <div className="zc-pricing-amount">{eur.format(photoVideoAddOn.priceCents / 100)}</div>
                 <div className="zc-pricing-features">
@@ -605,6 +603,7 @@ export function HomeChapters({
             </div>
           )}
 
+          {photoVideoAddOn && <span className="zc-pricing-divider" aria-hidden="true" />}
           <div className="zc-centered-head" style={{ marginTop: photoVideoAddOn ? 8 : 0 }}>
             <span className="zc-eyebrow">{t.pricing.eyebrow2}</span>
             <h3 className="zc-heading" style={{ fontSize: "clamp(20px, 2.4vw, 28px)", marginBottom: 12 }}>
@@ -619,9 +618,7 @@ export function HomeChapters({
             {packages.map((pkg) => (
               <div className={`zc-pricing-card${pkg.highlight ? " zc-pricing-card--highlight" : ""}`} key={pkg.id}>
                 {pkg.highlight && <div className="zc-compare-badge">{t.pricing.popularBadge}</div>}
-                <div className="zc-pricing-name" style={pkg.highlight ? { marginTop: 6 } : undefined}>
-                  {pkg.name}
-                </div>
+                <div className="zc-pricing-name">{pkg.name}</div>
                 {pkg.description && <div className="zc-pricing-tag">{pkg.description}</div>}
                 <div className="zc-pricing-amount">{eur.format(pkg.priceCents / 100)}</div>
                 <div className="zc-pricing-features">

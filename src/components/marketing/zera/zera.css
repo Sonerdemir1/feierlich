@@ -468,20 +468,20 @@
   box-shadow: 0 20px 40px -20px rgba(26, 26, 26, 0.4);
 }
 .zc-compare-badge {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--zc-accent);
-  color: var(--zc-ink);
+  /* MOTION.md §7 Punkt 4: eine schwebende, abgerundete "Most Popular"-
+     Ribbon-Pille ist eines der bekanntesten generischen SaaS-Preistabellen-
+     Motive. Statisches Karla-Eyebrow-Label (gleiche Sprache wie ueberall
+     sonst auf der Seite, siehe .zc-eyebrow) statt Badge-Pille. */
+  display: block;
   font-family: var(--font-karla), system-ui, sans-serif;
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  padding: 4px 10px;
-  white-space: nowrap;
-  border-radius: 2px;
+  color: var(--zc-accent);
+}
+.zc-pricing-card--highlight .zc-compare-badge {
+  color: var(--zc-accent);
 }
 .zc-compare-pkg-name {
   font-family: var(--font-fraunces), Georgia, serif;
@@ -748,6 +748,13 @@
   margin: 0 auto 44px;
   width: 100%;
 }
+.zc-pricing-divider {
+  display: block;
+  width: 64px;
+  height: 1px;
+  margin: 0 auto 36px;
+  background: var(--zc-accent);
+}
 .zc-pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -757,19 +764,28 @@
   width: 100%;
 }
 .zc-pricing-card {
+  /* MOTION.md §7 Punkt 4: die generische rundum-abgerundete Karte mit
+     leichtem Drop-Shadow ist das Standard-SaaS-Preistabellen-Muster —
+     eine duenne Gold-Regel oben statt Vollbox-Schatten liest sich als
+     redaktionelles Preisblatt. Struktur/Reihenfolge der Karte bleibt
+     unveraendert, damit die Vergleichbarkeit fuer Endkunden nicht leidet
+     (CLAUDE.md Business-Kontext: Bedienbarkeit vor Stil-Konsistenz). */
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 28px 22px 24px;
-  border-radius: 4px;
+  padding: 26px 22px 24px;
+  border-radius: 2px;
   background: #ffffff;
-  border: 1px solid rgba(26, 26, 26, 0.12);
-  box-shadow: 0 2px 4px rgba(26, 26, 26, 0.05);
+  border: none;
+  border-top: 2px solid var(--zc-accent);
+  border-bottom: 1px solid rgba(26, 26, 26, 0.12);
+  box-shadow: none;
   color: var(--zc-ink);
 }
 .zc-pricing-card--highlight {
   background: var(--zc-ink);
-  border: 1.5px solid var(--zc-accent);
+  border-top: 3px solid var(--zc-accent);
+  border-bottom: 1px solid var(--zc-accent);
   box-shadow: 0 24px 48px -24px rgba(26, 26, 26, 0.4);
   color: var(--zc-bg);
 }
