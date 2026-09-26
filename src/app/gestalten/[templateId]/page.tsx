@@ -12,7 +12,13 @@ export async function generateMetadata({ params }: PageProps<"/gestalten/[templa
   const { templateId } = await params;
   const categories = await getGalleryCategories();
   const item = categories.flatMap((c) => c.items).find((i) => i.id === templateId);
-  return { title: item ? `${item.name} gestalten – einladi` : "Design gestalten – einladi", robots: { index: false, follow: false } };
+  return {
+    title: item ? `${item.name} gestalten – einladi` : "Design gestalten – einladi",
+    robots: { index: false, follow: false },
+    // Gegenstueck zu vorlagen/page.tsx — Cross-Document View Transitions
+    // (MOTION.md §3) brauchen das Opt-in auf BEIDEN Seiten der Navigation.
+    other: { "view-transition": "same-origin" },
+  };
 }
 
 export default async function DesignStudioPage({ params, searchParams }: PageProps<"/gestalten/[templateId]">) {

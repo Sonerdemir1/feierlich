@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getGalleryCategories } from "@/lib/gallery-templates-data";
 import { VorlagenGallery } from "./VorlagenGallery";
 
@@ -8,6 +9,17 @@ import { VorlagenGallery } from "./VorlagenGallery";
 // dynamic statt statischem Prerendering: Template-Liste kommt live aus
 // Prisma, zur Build-Zeit auf Railway noch keine DB erreichbar).
 export const dynamic = "force-dynamic";
+
+// Cross-Document View Transitions API (MOTION.md §3 "View Transitions
+// API, die Karte waechst aus ihrer Position in die Detailansicht") —
+// der Browser verlangt das Opt-in auf BEIDEN Seiten einer Navigation,
+// siehe dieselbe Zeile in gestalten/[templateId]/page.tsx UND
+// TemplateGallery.tsx (erzwingt bei API-Unterstuetzung eine echte
+// Navigation statt Next-Client-Routing, weil die Cross-Document-API nur
+// bei echten Dokumentwechseln greift).
+export const metadata: Metadata = {
+  other: { "view-transition": "same-origin" },
+};
 
 export default async function VorlagenPage({ searchParams }: PageProps<"/vorlagen">) {
   const sp = await searchParams;

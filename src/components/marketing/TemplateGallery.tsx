@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
 import { categorySlug, categoryLabel, type GalleryCategory } from "@/lib/gallery-templates";
 import type { Locale } from "@/lib/i18n";
@@ -7,6 +10,7 @@ import type { Locale } from "@/lib/i18n";
 export type { GalleryCategory, GalleryTemplate } from "@/lib/gallery-templates";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+const MotionLink = motion.create(Link);
 
 // docs/MOTION.md §3 "Karten als physische Objekte": Rotation deterministisch
 // aus der Template-ID, nicht zufaellig pro Render — sonst springt sie bei
@@ -22,6 +26,85 @@ export function tiltForId(id: string): number {
   return Math.round((-1.8 + normalized * 3.6) * 100) / 100;
 }
 
+// MOTION.md §3 "Unterschiedliche Hoehen je nach Kartenformat (Hochkant,
+// Quadrat, Panorama). Ein Masonry-Layout, kein starres Grid." — es gibt
+// kein Format-Feld im Datenmodell (Template hat kein Aspect-Ratio-Feld,
+// siehe gallery-templates.ts GalleryTemplate-Typ), darum wie bei
+// tiltForId deterministisch aus der ID abgeleitet statt frei erfunden.
+// Mehrheit bleibt Hochkant (5/7, das tatsaechliche Einladungskarten-
+// Format), Quadrat/Panorama sind bewusste Ausreisser fuer den Masonry-
+// Rhythmus, nicht die Regel.
+function formatForId(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 17 + id.charCodeAt(i)) | 0;
+  const bucket = Math.abs(hash) % 10;
+  if (bucket < 6) return "5 / 7";
+  if (bucket < 9) return "1 / 1";
+  return "4 / 3";
+}
+
+const cardVariants = {
+  hidden: (i: number) => ({ opacity: 0, scale: 0.96, transition: { duration: 0.22, delay: i * 0.03 } }),
+  visible: (i: number) => ({ opacity: 1, scale: 1, transition: { duration: 0.28, delay: i * 0.04 } }),
+};
+
+// Cross-Document View Transitions API (siehe <meta name="view-transition">
+// in vorlagen/page.tsx UND gestalten/[templateId]/page.tsx — der Browser
+// verlangt das Opt-in auf BEIDEN Seiten einer Navigation). Next.js' <Link>
+// navigiert per Default clientseitig (kein echter Dokumentwechsel, die
+// Cross-Document-API greift dabei nicht) — wenn der Browser die API
+// unterstuetzt, wird stattdessen bewusst eine echte Navigation ausgeloest,
+// damit die Karte beim Oeffnen sichtbar in die Detailansicht uebergeht.
+// Kein motion-layoutId-Fallback: das wuerde voraussetzen, dass Ausgangs-
+// und Zielelement im selben React-Baum bestehen bleiben, was bei einem
+// echten Next.js-Routenwechsel zu /gestalten/[id] nicht der Fall ist
+// (eigene Seite, kein Modal/Parallel-Route) — der bereits vorhandene
+// Press-/Hover-Feedback der Karte selbst ist der reale Fallback fuer
+// Browser ohne API-Unterstuetzung.
+function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
+  if (typeof document !== "undefined" && "startViewTransition" in document) {
+    e.preventDefault();
+    window.location.href = href;
+  }
+}
+
+function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string }) {
+  const href = paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`;
+  return (
+    <MotionLink
+      href={href}
+      onClick={(e: MouseEvent<HTMLAnchorElement>) => handleOpenClick(e, href)}
+      className="tpl"
+      layout
+      custom={index}
+      initial="hidden"
+      animate="visible"
+      exit="hidden"
+      variants={cardVariants}
+      style={
+        {
+          "--tpl-rotate": `${tiltForId(item.id)}deg`,
+          "--tpl-aspect": formatForId(item.id),
+          "--tpl-accent": accentColor,
+        } as CSSProperties
+      }
+    >
+      <span className="tpl-open-hint">Design anpassen</span>
+      <div className="tpl-media">
+        <TemplatePreview layoutKey={item.layoutKey} />
+        <span className="tpl-flap" aria-hidden="true" />
+        <span className="tpl-frame" aria-hidden="true" />
+      </div>
+      <span className="tpl-label">
+        <span>{item.name}</span>
+        {item.priceCents > 0 && <span className="tpl-price">{eur.format(item.priceCents / 100)}</span>}
+      </span>
+    </MotionLink>
+  );
+}
+
+type GalleryCategoryItem = GalleryCategory["items"][number];
+
 // Reines Kachel-Raster ohne eigenen Client-State — Klick auf eine Vorlage
 // fuehrt auf die dedizierte Design-Studio-Seite (/gestalten/[id]) statt ein
 // Overlay auf der Startseite zu oeffnen. Der kleine, feste Overlay-Ausschnitt
@@ -31,6 +114,7 @@ export function TemplateGallery({
   categories,
   locale,
   paket,
+  accentColor,
 }: {
   categories: GalleryCategory[];
   locale: Locale;
@@ -39,6 +123,9 @@ export function TemplateGallery({
   // /gestalten/[id]?paket=... beim Öffnen direkt den richtigen
   // Funktionsumfang vorauswaehlt statt pauschal Premium Plus.
   paket?: string;
+  // Zweig-Farbe (Tuerkisch/Deutsch, siehe VorlagenGallery.tsx) fuer den
+  // Rahmen-Reveal beim Hover — faellt ohne Angabe auf --zc-accent zurueck.
+  accentColor?: string;
 }) {
   return (
     <>
@@ -56,23 +143,13 @@ export function TemplateGallery({
             <h3>{categoryLabel(category, locale)}</h3>
             <span className="cat-sub">{subtitle}</span>
           </div>
-          <div className="cat-grid">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`}
-                className="tpl"
-                style={{ "--tpl-rotate": `${tiltForId(item.id)}deg` } as CSSProperties}
-              >
-                <span className="tpl-open-hint">Design anpassen</span>
-                <TemplatePreview layoutKey={item.layoutKey} />
-                <span className="tpl-label">
-                  <span>{item.name}</span>
-                  {item.priceCents > 0 && <span className="tpl-price">{eur.format(item.priceCents / 100)}</span>}
-                </span>
-              </Link>
-            ))}
-          </div>
+          <AnimatePresence>
+            <div className="cat-grid vg-masonry">
+              {items.map((item, i) => (
+                <TemplateCard key={item.id} item={item} index={i} paket={paket} accentColor={accentColor} />
+              ))}
+            </div>
+          </AnimatePresence>
         </div>
       ))}
     </>
