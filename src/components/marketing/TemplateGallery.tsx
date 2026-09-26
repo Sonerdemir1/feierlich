@@ -12,7 +12,10 @@ const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" 
 // aus der Template-ID, nicht zufaellig pro Render — sonst springt sie bei
 // jedem Re-Render (Suspense, Refetch, ...). Kein externer Hash noetig, ein
 // simpler String-Hash reicht fuer eine stabile Pseudo-Zufallszahl.
-function tiltForId(id: string): number {
+// Exportiert, damit CuratedTemplates.tsx (Startseiten-Vorschau, Kapitel 04)
+// dieselbe deterministische Rotation wie die volle Galerie-Seite nutzt —
+// dieselbe Karte muss auf beiden Seiten identisch aussehen.
+export function tiltForId(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
   const normalized = (Math.abs(hash) % 1000) / 1000;

@@ -14,7 +14,8 @@ import Link from "next/link";
 import { motion, useScroll, useTransform, useReducedMotion, type MotionValue } from "motion/react";
 import { GalleryPreview, GuestPagePreview, SharePreview } from "@/components/marketing/PhoneMockups";
 import { EditorPreview } from "@/components/marketing/EditorPreview";
-import { TemplateGallery, type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { type GalleryCategory } from "@/components/marketing/TemplateGallery";
+import { CuratedTemplates } from "@/components/marketing/CuratedTemplates";
 import { LanguageSwitcher } from "@/components/marketing/LanguageSwitcher";
 import { homepageCopy } from "@/lib/translations/homepage";
 import type { Locale } from "@/lib/i18n";
@@ -322,6 +323,7 @@ export function HomeChapters({
   locale: Locale;
 }) {
   const t = homepageCopy[locale];
+  const totalTemplates = categories.reduce((sum, cat) => sum + cat.items.length, 0);
   const ch2 = useCameraProgress();
   const ch3 = useCameraProgress();
   const ch6 = useCameraProgress();
@@ -449,7 +451,17 @@ export function HomeChapters({
               {t.vorlagen.desc}
             </p>
           </div>
-          <TemplateGallery categories={categories} locale="de" paket={paket} />
+          {/* Kuratierte Auswahl statt kompletter Katalog (MOTION.md-
+              Leitsatz "kuratierte Abfolge, kein endloses Scrollen" —
+              vorher rendete dieses Kapitel alle {totalTemplates} Vorlagen
+              direkt eingebettet, ~7700px hoch). Voller Katalog jetzt unter
+              /vorlagen, siehe CTA unten. */}
+          <CuratedTemplates categories={categories} paket={paket} />
+          <div style={{ textAlign: "center", marginTop: 36 }}>
+            <Link href="/vorlagen" className="zc-btn zc-btn-primary">
+              Alle {totalTemplates} Vorlagen ansehen
+            </Link>
+          </div>
         </div>
         <div className="zc-footer-bar">
           <div className="zc-pagination">
