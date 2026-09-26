@@ -355,6 +355,15 @@
   gap: clamp(24px, 4vw, 56px);
   margin-top: 12px;
 }
+/* MOTION.md §7 Punkt 4: reines Zahl+Text-3-Spalten-Raster ohne jeden
+   visuellen Anker sah nach 08/15-SaaS-Vorlage aus (der Icon-in-Kreis-
+   Look, den zehntausende Landingpages nutzen). Duenne Gold-Linie pro
+   Spalte statt Kreis/Icon — liest sich als redaktionelles Inhaltsregister
+   statt als generischer Feature-Block. */
+.zc-steps > div {
+  border-top: 1px solid var(--zc-accent);
+  padding-top: 22px;
+}
 .zc-step-num {
   font-family: var(--font-fraunces), Georgia, serif;
   font-style: italic;
