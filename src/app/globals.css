@@ -999,8 +999,15 @@ a.card:hover {
   gap: 16px;
 }
 .tpl {
+  /* docs/MOTION.md §3 "Karten als physische Objekte": --tpl-rotate wird pro
+     Karte gesetzt (TemplateGallery.tsx, deterministisch aus der Vorlagen-ID),
+     wurde hier aber nie tatsaechlich als transform angewendet — die Karten
+     lagen dadurch alle schnurgerade im Raster statt "leicht gedreht" zu
+     liegen. Eigener, engerer Radius statt der App-weiten --radius (10px, von
+     Dashboard-Buttons u.ae. mitgenutzt): "Radius des eigenen Papierformats",
+     nicht der UI-Radius. */
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 3px;
   background: none;
   cursor: pointer;
   text-align: left;
@@ -1012,13 +1019,14 @@ a.card:hover {
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transform: rotate(var(--tpl-rotate, 0deg));
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.4s;
 }
 .tpl:hover,
 .tpl.is-open {
   border-color: var(--ink);
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  transform: rotate(var(--tpl-rotate, 0deg)) translateY(-8px) scale(1.02);
 }
 .tpl-open-hint {
   position: absolute;
