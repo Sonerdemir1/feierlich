@@ -1098,10 +1098,17 @@ export default async function EventDetailPage({
               color: "var(--ink)",
               fontWeight: 600,
               display: "flex",
+              flexWrap: "wrap",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: "2px 8px",
             }}
           >
+            {/* Bugfix: "Kennenlerngeschichte" ist ein einzelnes, nicht
+                trennbares Wort, das bei dieser Kartenbreite bereits allein
+                fast die komplette Breite braucht — ohne flexWrap/gap lief
+                der Titel beim Umbruch mit "Öffnen →" optisch zusammen
+                ("KennenlerngeschichteÖffnen"), live gefunden. */}
             <span>Kennenlerngeschichte (KI)</span>
             <span style={{ fontSize: 11, color: "var(--terracotta-dark)" }}>Öffnen →</span>
           </Link>
