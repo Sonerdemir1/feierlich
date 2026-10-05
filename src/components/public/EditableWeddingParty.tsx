@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { WeddingPartyList } from "@/components/editor/WeddingPartyList";
 import type { WeddingPartyMemberData } from "@/lib/wedding-party";
 import type { LiveDesignState } from "@/lib/live-design-state";
@@ -10,10 +10,24 @@ import { broadcastSelection, useSelectionBroadcast } from "@/lib/local-selection
 // keine eigene Persistenz, nur Anzeige + Melden von Auswahl/Wuenschen nach
 // oben per "einladi-wedding-party-request" — DesignEditor.tsx bleibt
 // alleinige Quelle fuer state.weddingPartyItems UND fuer den echten Foto-
-// Upload (der iframe hat keinen sinnvollen Zugriff auf einen eigenen
-// Datei-Dialog, der mit dem Speichern im Elternfenster zusammenspielt) —
-// ein Klick auf den Foto-Kreis waehlt hier deshalb nur den Eintrag aus,
-// genau wie ein Klick auf den Namen (siehe onPhotoClick={select} unten).
+// Upload.
+//
+// Bugfix (live vom Nutzer gemeldet: "Foto-Kacheln lassen sich nicht wie bei
+// einer Single-Boerse anklicken"): ein Klick auf den Foto-Kreis hat hier
+// bisher NUR den Eintrag ausgewaehlt (wie ein Klick auf den Namen), der
+// eigentliche Upload-Button lag dann in einem separaten Seitenpanel-Label
+// im Elternfenster — ein zweiter, nicht offensichtlicher Klick war noetig.
+// In der anonymen Gestalten-Vorschau (DesignStudio.tsx) reicht dagegen EIN
+// Klick auf den Kreis (siehe requestWeddingPartyPhoto dort), was genau den
+// vom Nutzer beschriebenen Bruch zwischen beiden Umgebungen verursacht hat
+// (CLAUDE.md Regel 6: beide sollen sich wie dasselbe Produkt anfuehlen).
+// Geloest OHNE den Datei-Dialog im Elternfenster per postMessage ausloesen
+// zu muessen (das wuerde an fehlender User-Activation-Weitergabe ueber die
+// Frame-Grenze scheitern) — der Datei-Dialog wird stattdessen direkt HIER
+// im iframe geoeffnet (echter, same-origin Klick, 100% zuverlaessig), und
+// die ausgewaehlte Datei (File-Objekt ist strukturiert klonbar) wird per
+// postMessage ans Elternfenster weitergereicht, das den bestehenden
+// uploadWeddingPartyPhoto()-Pfad unveraendert wiederverwendet.
 const PREFIX = "weddingparty:";
 
 export function EditableWeddingParty({
@@ -27,6 +41,8 @@ export function EditableWeddingParty({
 }) {
   const [items, setItems] = useState<WeddingPartyMemberData[]>(initialItems);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoTargetId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
@@ -52,17 +68,39 @@ export function EditableWeddingParty({
     window.parent.postMessage({ type: "einladi-wedding-party-request", action, ...extra }, window.location.origin);
   }
 
+  function requestPhoto(id: string) {
+    select(id);
+    photoTargetId.current = id;
+    fileInputRef.current?.click();
+  }
+
   return (
-    <WeddingPartyList
-      items={items}
-      selectedId={selectedId}
-      onSelect={select}
-      onAdd={(role) => request("add", { role })}
-      onRemove={(id) => request("remove", { itemId: id })}
-      onMove={(id, direction) => request("move", { itemId: id, direction })}
-      onPhotoClick={select}
-      baseStyle={baseStyle}
-      accentColor={accentColor}
-    />
+    <>
+      <WeddingPartyList
+        items={items}
+        selectedId={selectedId}
+        onSelect={select}
+        onAdd={(role) => request("add", { role })}
+        onRemove={(id) => request("remove", { itemId: id })}
+        onMove={(id, direction) => request("move", { itemId: id, direction })}
+        onPhotoClick={requestPhoto}
+        baseStyle={baseStyle}
+        accentColor={accentColor}
+      />
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          const itemId = photoTargetId.current;
+          if (file && itemId) {
+            window.parent.postMessage({ type: "einladi-wedding-party-photo-upload", itemId, file }, window.location.origin);
+          }
+          e.target.value = "";
+        }}
+      />
+    </>
   );
 }
