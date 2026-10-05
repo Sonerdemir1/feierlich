@@ -80,6 +80,18 @@ export default async function PackageComparisonPage() {
           Jede Funktion auf einen Blick — welches Paket enthält was.
         </p>
 
+        {/* Bugfix (Bug-Sweep): bei 375px zeigte der overflowX-Container nur die
+            "Basic"-Spalte sichtbar im Viewport, Premium/Premium Plus/VIP waren
+            nur per Wischen erreichbar — ohne jeden visuellen Hinweis, dass dort
+            noch mehr Spalten folgen (live mit Playwright nachgewiesen:
+            scrollWidth 727px vs. clientWidth 327px). Die Scroll-Funktion selbst
+            war korrekt, nur ohne Entdeckbarkeit — fuer eine Vergleichstabelle mit
+            vier Paketen fuer technisch unerfahrene Endkunden (CLAUDE.md
+            Bedienerfreundlichkeit) ein echtes Problem. Reiner CSS-Hinweistext,
+            nur unterhalb 700px sichtbar (siehe .vergleich-scroll-hint in
+            globals.css). */}
+        <p className="vergleich-scroll-hint">← Nach rechts wischen, um alle Pakete zu vergleichen →</p>
+
         {/* paddingTop: die "BELIEBTESTE WAHL"-Badge ragt per position:absolute mit
             top:-11px ueber ihren Kartenrahmen hinaus — ohne diesen Puffer schneidet
             der overflowX-Container sie am oberen Rand ab (setzt man overflow-x,
