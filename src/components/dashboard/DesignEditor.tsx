@@ -388,6 +388,28 @@ export function DesignEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- pushWeddingParty liest/schreibt ueber state per Closure, absichtlich bei jeder Aenderung neu registriert (naechster Abschnitt)
   }, [state.weddingPartyItems, selectedWeddingPartyItemId]);
 
+  // Bugfix: Foto-Klick auf eine Trauzeugen/Brautjungfern-Kachel im iframe
+  // (siehe EditableWeddingParty.tsx) oeffnet den Datei-Dialog jetzt direkt
+  // IM iframe (echter User-Klick, same-origin) und reicht die ausgewaehlte
+  // Datei per postMessage hierher weiter — derselbe uploadWeddingPartyPhoto()
+  // wie im Seitenpanel, nur ohne den bisher noetigen zweiten Klick dort.
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "einladi-wedding-party-photo-upload") return;
+      const { itemId, file } = event.data as { itemId: string; file: File };
+      if (!itemId || !file) return;
+      setSelectedKey(undefined);
+      setSelectedAgendaItemId(undefined);
+      setSelectedWishlistItemId(undefined);
+      setSelectedWeddingPartyItemId(itemId);
+      uploadWeddingPartyPhoto(itemId, file);
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uploadWeddingPartyPhoto liest/schreibt ueber state per Closure, absichtlich bei jeder Aenderung neu registriert (gleiches Muster wie die anderen Request-Effekte oben)
+  }, [state.weddingPartyItems]);
+
   // Titel/Untertitel/Beschreibung werden weiterhin direkt im iframe per
   // InlineEditableText gespeichert (siehe HeroCard.tsx) — die meldet sich
   // per postMessage zurueck, damit die umgebende Dashboard-Seite (Titel-

@@ -698,6 +698,21 @@ a.card:hover {
   margin-bottom: 20px;
   font-weight: 600;
 }
+/* Bugfix (Bug-Sweep): Hinweis auf die horizontal scrollbare Paket-
+   Vergleichstabelle (/preise/vergleich) — nur sichtbar, wo die Tabelle
+   tatsaechlich breiter als der Viewport ist (siehe table minWidth:640 dort). */
+.vergleich-scroll-hint {
+  display: none;
+  font-size: 12px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .vergleich-scroll-hint {
+    display: block;
+  }
+}
 .hero h1 {
   font-family: var(--font-display);
   font-weight: 700;
@@ -1288,6 +1303,11 @@ a.card:hover {
 .studio-canvas-col {
   display: flex;
   justify-content: center;
+  /* Echter Fix fuer das darunterliegende Mobile-Overflow-Problem sitzt in
+     der Grid-Spurdefinition (siehe @media max-width:900px .studio-grid,
+     minmax(0,1fr) statt 1fr) — min-width:0 hier zusaetzlich schadet nicht,
+     war allein aber nicht ausreichend. */
+  min-width: 0;
 }
 .studio-canvas {
   display: flex;
@@ -1295,6 +1315,7 @@ a.card:hover {
   align-items: center;
   gap: 16px;
   width: 100%;
+  min-width: 0;
 }
 .studio-panel-sticky {
   position: sticky;
@@ -1429,7 +1450,15 @@ a.card:hover {
     padding: 20px 18px 96px;
   }
   .studio-grid {
-    grid-template-columns: 1fr;
+    /* Bugfix (375px-Test): "1fr" allein unterdrueckt NICHT die automatische,
+       content-basierte Mindestgroesse der Spur (im Unterschied zu
+       minmax(0,1fr)) — die Spalte blieb dadurch bei ~534px haengen, obwohl
+       der Grid-Container selbst nur 339px breit war, und lief ueber den
+       Viewport-Rand hinaus (min-width:0/overflow:hidden auf dem Grid-Item
+       selbst reichten dagegen NICHT, siehe .studio-canvas-col — das Problem
+       sitzt in der Spurdefinition, nicht im Item). Live mit Playwright bei
+       375px verifiziert: gridTemplateColumns war "534.297px" statt "339px". */
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
   /* Karte ist jetzt die Hauptspalte — auf dem Handy stapelt sie sich einfach
@@ -3100,7 +3129,20 @@ footer a:hover {
    setzt (sollte praktisch nie vorkommen). */
 .iv-page {
   width: 100%;
-  max-width: none;
+  /* Bugfix (375px-Test): "max-width: none" war fuer die echte, volle
+     Gaeste-Seite (/e/[slug], Body = kompletter Viewport) gedacht, wo es
+     keinen Unterschied macht. Dieselbe .iv-page-Komponente steckt aber auch
+     eingebettet in der schmalen .studio-canvas-Spalte der anonymen
+     Gestalten-Vorschau (.studio-grid, 1-Spalten-Layout unter 900px) — dort
+     ist .studio-canvas ein Flex-Container mit align-items:center (keine
+     Stretch-Erzwingung), "width:100%" griff dadurch nicht zuverlaessig und
+     die Karte behielt ihre Content-Mindestbreite (~534px), lief auf dem
+     Handy ueber den Viewport-Rand hinaus und zog die ganze Seite in
+     horizontalen Scroll (live mit Playwright bei 375px nachgewiesen,
+     document.scrollWidth 574px statt 375px). "max-width:100%" deckelt die
+     Karte in beiden Kontexten korrekt, ohne auf der echten Gaeste-Seite
+     (dort bereits volle Breite) etwas zu aendern. */
+  max-width: 100%;
   --iv-ink: var(--ink);
   --iv-ink-soft: var(--ink-soft);
   --iv-accent: var(--gold);

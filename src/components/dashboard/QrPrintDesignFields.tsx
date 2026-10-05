@@ -60,8 +60,14 @@ export function QrPrintDesignFields({
   const downloadSrc = `${previewSrc}&download=1`;
 
   return (
-    <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10, flex: "1 1 320px" }}>
+    <div style={{ display: "flex", gap: 20, flexWrap: "wrap", width: "100%" }}>
+      {/* Bugfix (375px-Test): ohne minWidth:0 hier blieb dieser Block bei
+          seiner flex-basis (320px) oder mehr stehen, obwohl auf Mobile
+          weniger Platz zur Verfuegung stand — die vier Selects darunter
+          wrapten dadurch nie auf eine eigene Zeile, sondern liefen samt
+          Container ueber den Viewport-Rand hinaus (dokument-weiter
+          horizontaler Scroll, live mit Playwright bei 375px nachgewiesen). */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, rowGap: 10, flex: "1 1 320px", minWidth: 0 }}>
         <select value={tableId} onChange={(e) => setTableId(e.target.value)} style={selectStyle}>
           <option value="">Allgemeine Einladungsseite</option>
           {tables.map((t) => (
