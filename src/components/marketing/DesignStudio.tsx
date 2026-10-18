@@ -1773,97 +1773,92 @@ export function DesignStudio({
         <div className="studio-canvas-col">
           <div className="studio-canvas">
             <div className="iv-page">
-              {item.cardImageUrl && zone ? (
-                // Feste Kartengrafik-Vorlagen (Düğün-Kartenbilder) behalten
-                // vorerst ihre bisherige Optik, nur zentriert statt in der
-                // alten schmalen Karte — echter Belle-Hero fuer diese
-                // Vorlagen folgt in Plan-Phase F.
-                <div className="iv-section">
-                  <div className="iv-inner" style={{ maxWidth: 420 }}>
-                    <div style={{ position: "relative" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element -- feste Kartengrafik mit variablem Seitenverhaeltnis je Design */}
-                      <img src={item.cardImageUrl} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
-                      <div
-                        style={{
-                          position: "absolute",
-                          inset: `${zone.top}% ${zone.right}% ${zone.bottom}% ${zone.left}%`,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "space-evenly",
-                          textAlign: "center",
-                        }}
-                      >
-                        {renderEventLabel({ color: draft.accent, marginBottom: 0 })}
-                        {renderTitle({
-                          fontFamily: font.cssVar,
-                          fontStyle: font.italic ? "italic" : "normal",
-                          textTransform: font.uppercase ? "uppercase" : "none",
-                          fontSize: draft.fontSize,
-                          color: draft.primary,
-                        })}
-                        {renderDescription({ fontSize: 11, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 230, margin: "0 auto" })}
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                          {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 0 })}
-                          {renderLocation({ color: draft.primary })}
+              {(() => {
+                // Bugfix (Nutzer-Feedback: "wenn man auf Gestalten geht,
+                // muss das genauso die Oeffnung passieren" — betraf genau
+                // diesen Zweig): Vorlagen mit fester Kartengrafik
+                // (item.cardImageUrl, die 15 Duegduen-Blanko-Vorlagen)
+                // zeigten den Inhalt bisher IMMER direkt, ganz ohne
+                // Umschlag — waehrend /e/[slug] fuer dieselben Vorlagen
+                // laengst EnvelopeOpen/VideoEnvelope um HeroCard legt
+                // (siehe dortige Verzweigung). Jetzt: erst den Inhalt
+                // bestimmen (Kartengrafik oder Hero), dann IMMER denselben
+                // Umschlag-Wrapper aussen herum legen wie auf der echten
+                // Gaeste-Seite — Konsistenz zwischen Gestalten und /e/[slug]
+                // (CLAUDE.md Regel 6).
+                const content = item.cardImageUrl && zone ? (
+                  // Feste Kartengrafik-Vorlagen (Düğün-Kartenbilder) behalten
+                  // vorerst ihre bisherige Optik, nur zentriert statt in der
+                  // alten schmalen Karte — echter Belle-Hero fuer diese
+                  // Vorlagen folgt in Plan-Phase F.
+                  <div className="iv-section">
+                    <div className="iv-inner" style={{ maxWidth: 420 }}>
+                      <div style={{ position: "relative" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- feste Kartengrafik mit variablem Seitenverhaeltnis je Design */}
+                        <img src={item.cardImageUrl} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: `${zone.top}% ${zone.right}% ${zone.bottom}% ${zone.left}%`,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "space-evenly",
+                            textAlign: "center",
+                          }}
+                        >
+                          {renderEventLabel({ color: draft.accent, marginBottom: 0 })}
+                          {renderTitle({
+                            fontFamily: font.cssVar,
+                            fontStyle: font.italic ? "italic" : "normal",
+                            textTransform: font.uppercase ? "uppercase" : "none",
+                            fontSize: draft.fontSize,
+                            color: draft.primary,
+                          })}
+                          {renderDescription({ fontSize: 11, lineHeight: 1.6, opacity: 0.85, color: draft.primary, maxWidth: 230, margin: "0 auto" })}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            {renderDate({ color: draft.primary, marginTop: 0, marginBottom: 0 })}
+                            {renderLocation({ color: draft.primary })}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : draft.envelopeVideoUrl ? (
-                // Umschlag-Theater/-Video auch in der Gestalten-Vorschau
-                // (vorher: direkt den Inhalt zeigen, kein Umschlag ueberhaupt
-                // — Verstoss gegen CLAUDE.md Regel 6, da /e/[slug] fuer diese
-                // Vorlagen laengst EnvelopeOpen/VideoEnvelope nutzt, siehe
-                // dortige Verzweigung). Gleiche Logik wie dort: Video, falls
-                // hochgeladen, sonst das neue Siegel-Theater.
-                <VideoEnvelope videoUrl={draft.envelopeVideoUrl} primary={draft.primary}>
-                  <Hero
-                    photoUrl={draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined)}
-                    colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
-                    fontFamily={font.cssVar}
-                    fontStyle={font.italic ? "italic" : "normal"}
-                    eventLabel={tf("eventLabel", draft.eventLabel, (text) => updateDraft({ eventLabel: text }))}
-                    title={tf("title", draft.text, (text) => updateDraft({ text }))}
-                    location={{ display: draft.locationText, selected: selectedKey === "location", onSelect: () => selectKey("location") }}
-                    date={{ display: draftDateText(), selected: selectedKey === "date", onSelect: () => selectKey("date") }}
-                  />
-                  <div className="iv-section iv-section--tight" style={{ background: draft.background }}>
-                    <div className="iv-inner" style={{ maxWidth: 420 }}>
-                      {renderFamily({ color: draft.primary, justifyContent: "center" })}
-                      {renderDescription({ fontSize: 13.5, lineHeight: 1.6, textAlign: "center", color: draft.primary, margin: "18px auto 0" })}
+                ) : (
+                  <>
+                    {/* Nutzer-Bugfix-Folge ("Bild ist nirgendwo zu sehen"):
+                        eigenes hochgeladenes Foto (draft.image) hat jetzt
+                        Prioritaet als Hero-Titelbild — faellt nur auf das
+                        Vorlagen-Stock-Foto (item.photoBackground) zurueck,
+                        wenn kein eigenes Foto gesetzt ist. */}
+                    <Hero
+                      photoUrl={draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined)}
+                      colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+                      fontFamily={font.cssVar}
+                      fontStyle={font.italic ? "italic" : "normal"}
+                      eventLabel={tf("eventLabel", draft.eventLabel, (text) => updateDraft({ eventLabel: text }))}
+                      title={tf("title", draft.text, (text) => updateDraft({ text }))}
+                      location={{ display: draft.locationText, selected: selectedKey === "location", onSelect: () => selectKey("location") }}
+                      date={{ display: draftDateText(), selected: selectedKey === "date", onSelect: () => selectKey("date") }}
+                    />
+                    <div className="iv-section iv-section--tight" style={{ background: draft.background }}>
+                      <div className="iv-inner" style={{ maxWidth: 420 }}>
+                        {renderFamily({ color: draft.primary, justifyContent: "center" })}
+                        {renderDescription({ fontSize: 13.5, lineHeight: 1.6, textAlign: "center", color: draft.primary, margin: "18px auto 0" })}
+                      </div>
                     </div>
-                  </div>
-                </VideoEnvelope>
-              ) : (
-                <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary}>
-                  {/* Nutzer-Bugfix-Folge ("Bild ist nirgendwo zu sehen"):
-                      eigenes hochgeladenes Foto (draft.image) hat jetzt
-                      Prioritaet als Hero-Titelbild — faellt nur auf das
-                      Vorlagen-Stock-Foto (item.photoBackground) zurueck,
-                      wenn kein eigenes Foto gesetzt ist. Floral-/Eck-
-                      Ornament-Regler wurden entfernt (siehe "Foto &
-                      Verzierungen"-Sektion weiter unten) statt wirkungslos
-                      angezeigt zu bleiben. */}
-                  <Hero
-                    photoUrl={draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined)}
-                    colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
-                    fontFamily={font.cssVar}
-                    fontStyle={font.italic ? "italic" : "normal"}
-                    eventLabel={tf("eventLabel", draft.eventLabel, (text) => updateDraft({ eventLabel: text }))}
-                    title={tf("title", draft.text, (text) => updateDraft({ text }))}
-                    location={{ display: draft.locationText, selected: selectedKey === "location", onSelect: () => selectKey("location") }}
-                    date={{ display: draftDateText(), selected: selectedKey === "date", onSelect: () => selectKey("date") }}
-                  />
-                  <div className="iv-section iv-section--tight" style={{ background: draft.background }}>
-                    <div className="iv-inner" style={{ maxWidth: 420 }}>
-                      {renderFamily({ color: draft.primary, justifyContent: "center" })}
-                      {renderDescription({ fontSize: 13.5, lineHeight: 1.6, textAlign: "center", color: draft.primary, margin: "18px auto 0" })}
-                    </div>
-                  </div>
-                </EnvelopeOpen>
-              )}
+                  </>
+                );
+                return draft.envelopeVideoUrl ? (
+                  <VideoEnvelope videoUrl={draft.envelopeVideoUrl} primary={draft.primary}>
+                    {content}
+                  </VideoEnvelope>
+                ) : (
+                  <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary}>
+                    {content}
+                  </EnvelopeOpen>
+                );
+              })()}
 
               {/* Paar-Vorstellung — bewusst kein Paket-/Tier-Modul (siehe
                   Kommentar am Draft-Typ), einfacher Ein/Aus-Regler im Panel

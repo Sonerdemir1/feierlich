@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
-import { tiltForId, sealForBackground } from "@/components/marketing/TemplateGallery";
+import { tiltForId, sealForBackground, phoneBackgroundPhoto } from "@/components/marketing/TemplateGallery";
 import type { GalleryCategory } from "@/lib/gallery-templates";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
@@ -26,7 +26,9 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
   const items = curatedTemplates(categories);
   return (
     <div className="cat-grid">
-      {items.map((item) => (
+      {items.map((item) => {
+        const phonePhoto = phoneBackgroundPhoto(item);
+        return (
         <Link
           key={item.id}
           href={paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`}
@@ -41,7 +43,11 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
           <div className="tpl-flatlay">
             <div
               className="tpl-phone"
-              style={{ background: `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)` }}
+              style={{
+                backgroundImage: phonePhoto
+                  ? `linear-gradient(135deg, ${item.colors.background}d9, ${item.colors.accent}a6), url(${phonePhoto})`
+                  : `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)`,
+              }}
             >
               <span className="tpl-phone-notch" aria-hidden="true" />
               {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}
@@ -56,7 +62,8 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
             {item.priceCents > 0 && <span className="tpl-price">{eur.format(item.priceCents / 100)}</span>}
           </span>
         </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }

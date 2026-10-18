@@ -74,6 +74,19 @@ function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
 // In EnvelopeOpen.tsx (echte Umschlag-Komponente, andere Oberflaeche) bleibt
 // eine eigene, unabhaengige Kopie — kein gemeinsamer Import ueber die
 // Marketing/Komponenten-Grenze hinweg fuer eine 8-Zeilen-Funktion.
+// Bugfix (Nutzer-Feedback: "auf den Handys nur diesen Siegel drauf, gar
+// nicht so wie bei dieser Beispiel-Seite" — Referenz thedigitalyes.com,
+// deren Handy-Mockup eine echte fotografierte/texturierte Flaeche zeigt,
+// nicht nur ein Siegel auf einfarbigem Grund): nutzt das ohnehin schon
+// lizenzierte Vorlagenfoto (PHOTO_BACKGROUND) bzw. bei den 15 Duegduen-
+// Blanko-Vorlagen deren eigene Kartengrafik (cardImageUrl) als Flatlay-
+// Oberflaeche hinter dem Siegel — kein neuer Envato-Einkauf noetig, jede
+// Vorlage bekommt trotzdem eine zu ihr passende, einzigartige Flaeche
+// statt des vorherigen einfarbigen Verlaufs.
+export function phoneBackgroundPhoto(item: { cardImageUrl?: string | null; photoBackground?: { src: string } | null }): string | null {
+  return item.cardImageUrl ?? item.photoBackground?.src ?? null;
+}
+
 export function sealForBackground(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   const isLight = !m || (() => {
@@ -89,6 +102,7 @@ export function sealForBackground(hex: string): string {
 function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string }) {
   const href = paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`;
   const sealSrc = sealForBackground(item.colors.background);
+  const phonePhoto = phoneBackgroundPhoto(item);
   return (
     <MotionLink
       href={href}
@@ -116,7 +130,11 @@ function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCatego
       <div className="tpl-flatlay">
         <div
           className="tpl-phone"
-          style={{ background: `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)` }}
+          style={{
+            backgroundImage: phonePhoto
+              ? `linear-gradient(135deg, ${item.colors.background}d9, ${item.colors.accent}a6), url(${phonePhoto})`
+              : `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)`,
+          }}
         >
           <span className="tpl-phone-notch" aria-hidden="true" />
           {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}

@@ -990,18 +990,24 @@ a.card:hover {
 }
 
 .cat {
-  margin-bottom: 46px;
+  margin-bottom: 64px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+.cat:first-of-type {
+  padding-top: 0;
+  border-top: none;
 }
 .cat-head {
   display: flex;
   align-items: baseline;
   gap: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 .cat-head h3 {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 20px;
+  font-size: 28px;
   color: var(--vg-accent, var(--ink));
   transition: color 0.6s ease;
 }
@@ -1144,6 +1150,13 @@ a.card:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Bugfix "nur Siegel auf flacher Flaeche" — background-image traegt jetzt
+     ggf. das Vorlagenfoto/die Kartengrafik (siehe phoneBackgroundPhoto()
+     in TemplateGallery.tsx), cover/center croppt sie auf den schmalen
+     Handy-Ausschnitt. Bei reinem Farbverlauf (kein Foto vorhanden)
+     wirkungslos, da ein Gradient ohnehin auf die Elementgroesse skaliert. */
+  background-size: cover;
+  background-position: center;
 }
 .tpl-phone-notch {
   position: absolute;
@@ -1200,29 +1213,35 @@ a.card:hover {
    (CuratedTemplates.tsx, teilt sich .tpl/.tpl-prev/.cat-grid fuer
    identische Kartenoptik) bewusst beim einfacheren starren Raster
    bleibt — siehe Auftrag: volle Mechanik nur auf der Vollseite. */
+/* Dichte reduziert (Nutzer-Feedback: "zu viele einzelne Karten ... nicht
+   clean und elegant" — Referenz thedigitalyes.com zeigt 4 grosse Karten
+   pro Reihe bei ~1440px Breite mit viel Weissraum, nicht 4 eng gepackte
+   auf Desktop-Standardbreiten UND Tablet gleichzeitig). 3 statt 4 Spalten
+   als Standard, groesserer Spaltenabstand, mehr Abstand nach unten pro
+   Karte. */
 .vg-masonry {
   display: block;
-  columns: 4;
-  column-gap: 16px;
+  columns: 3;
+  column-gap: 28px;
 }
-@media (max-width: 1100px) {
+@media (min-width: 1500px) {
   .vg-masonry {
-    columns: 3;
+    columns: 4;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .vg-masonry {
     columns: 2;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .vg-masonry {
     columns: 1;
   }
 }
 .vg-masonry .tpl {
   break-inside: avoid;
-  margin-bottom: 16px;
+  margin-bottom: 28px;
 }
 .vg-masonry .tpl-prev {
   aspect-ratio: var(--tpl-aspect, 5 / 7);
