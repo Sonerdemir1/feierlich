@@ -68,8 +68,27 @@ function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
   }
 }
 
+// Relative Luminanz (W3C-Naeherung) — exportiert, damit CuratedTemplates.tsx
+// (Startseiten-Vorschau) dieselbe Siegel-Farbwahl trifft wie hier, analog zu
+// tiltForId oben (dieselbe Karte muss auf beiden Seiten identisch aussehen).
+// In EnvelopeOpen.tsx (echte Umschlag-Komponente, andere Oberflaeche) bleibt
+// eine eigene, unabhaengige Kopie — kein gemeinsamer Import ueber die
+// Marketing/Komponenten-Grenze hinweg fuer eine 8-Zeilen-Funktion.
+export function sealForBackground(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  const isLight = !m || (() => {
+    const n = parseInt(m[1], 16);
+    const r = (n >> 16) & 255;
+    const g = (n >> 8) & 255;
+    const b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
+  })();
+  return isLight ? "/assets/seals/wax-seal-dark.png" : "/assets/seals/wax-seal-light.png";
+}
+
 function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string }) {
   const href = paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`;
+  const sealSrc = sealForBackground(item.colors.background);
   return (
     <MotionLink
       href={href}
@@ -90,10 +109,26 @@ function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCatego
       }
     >
       <span className="tpl-open-hint">Design anpassen</span>
-      <div className="tpl-media">
-        <TemplatePreview layoutKey={item.layoutKey} />
-        <span className="tpl-flap" aria-hidden="true" />
-        <span className="tpl-frame" aria-hidden="true" />
+      {/* docs/MOTION.md §3 (Referenz-Studie thedigitalyes.com): Handy-
+          Mockup mit geschlossenem Umschlag + Wachssiegel links, geoeffnete
+          Karten-Vorschau rechts — Flatlay-Produktfoto-Komposition statt
+          einer einzelnen flachen Bildkachel. */}
+      <div className="tpl-flatlay">
+        <div
+          className="tpl-phone"
+          style={{ background: `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)` }}
+        >
+          <span className="tpl-phone-notch" aria-hidden="true" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}
+          <img className="tpl-phone-seal" src={sealSrc} alt="" />
+        </div>
+        <div className="tpl-card-slot">
+          <div className="tpl-media">
+            <TemplatePreview layoutKey={item.layoutKey} />
+            <span className="tpl-flap" aria-hidden="true" />
+            <span className="tpl-frame" aria-hidden="true" />
+          </div>
+        </div>
       </div>
       <span className="tpl-label">
         <span>{item.name}</span>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
-import { tiltForId } from "@/components/marketing/TemplateGallery";
+import { tiltForId, sealForBackground } from "@/components/marketing/TemplateGallery";
 import type { GalleryCategory } from "@/lib/gallery-templates";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
@@ -34,7 +34,23 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
           style={{ "--tpl-rotate": `${tiltForId(item.id)}deg` } as CSSProperties}
         >
           <span className="tpl-open-hint">Design anpassen</span>
-          <TemplatePreview layoutKey={item.layoutKey} />
+          {/* Dieselbe Handy-Mockup+Karte-Flatlay wie /vorlagen
+              (TemplateGallery.tsx) — docs/MOTION.md §3, CLAUDE.md Regel 6:
+              Startseiten-Vorschau und volle Galerie muessen sich wie
+              dasselbe Produkt anfuehlen. */}
+          <div className="tpl-flatlay">
+            <div
+              className="tpl-phone"
+              style={{ background: `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)` }}
+            >
+              <span className="tpl-phone-notch" aria-hidden="true" />
+              {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}
+              <img className="tpl-phone-seal" src={sealForBackground(item.colors.background)} alt="" />
+            </div>
+            <div className="tpl-card-slot">
+              <TemplatePreview layoutKey={item.layoutKey} />
+            </div>
+          </div>
           <span className="tpl-label">
             <span>{item.name}</span>
             {item.priceCents > 0 && <span className="tpl-price">{eur.format(item.priceCents / 100)}</span>}
