@@ -82,14 +82,25 @@
   cursor: default;
 }
 @media (max-width: 720px) {
+  /* Bugfix: .zc-nav-links bekam bisher order:3, aber .zc-nav-right (CTA-
+     Button + Sprachumschalter) hatte gar kein eigenes order gesetzt (Default
+     0, gleich wie das Logo) — dadurch landeten Logo + CTA-Button zusammen in
+     Zeile 1, die eigentliche Navigation erst darunter. Explizite Reihenfolge
+     jetzt: Logo allein oben, darunter die volle Navigation, CTA+Sprache als
+     letztes — Marke vor Navigation vor Aktion, statt Aktion vor Navigation. */
   .zc-nav {
     flex-wrap: wrap;
     row-gap: 12px;
   }
   .zc-nav-links {
-    order: 3;
+    order: 2;
     width: 100%;
     gap: 18px;
+  }
+  .zc-nav-right {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
