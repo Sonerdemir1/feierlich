@@ -94,6 +94,15 @@ export const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
   "gold-line": { src: "/images/templates/grand-hall-dramatic.jpg", tint: "33,28,25" },
   konfetti: { src: "/images/templates/party-balloons.jpg", tint: "255,244,227" },
   klarblau: { src: "/images/templates/modern-lounge-warm.jpg", tint: "22,35,59" },
+  // Zweite Foto-Beschaffungsrunde (Plan-Phase E, Fortsetzung) — schliesst
+  // die restlichen tuerkischen Kategorien (Kına Gecesi, Nişan, Sünnet) ab,
+  // die bisher nur je eine von drei Vorlagen mit Foto hatten. Tint jeweils
+  // die eigene "background"-Vorlagenfarbe aus seed.ts, als r,g,b.
+  "oya-lace": { src: "/images/templates/oya-lace.jpg", tint: "250,246,239" },
+  "nar-cicegi": { src: "/images/templates/nar-cicegi.jpg", tint: "247,227,217" },
+  "soz-guemuesue": { src: "/images/templates/soz-guemuesue.jpg", tint: "251,234,238" },
+  "gul-bahcesi": { src: "/images/templates/gul-bahcesi.jpg", tint: "251,239,234" },
+  masmavi: { src: "/images/templates/masmavi.jpg", tint: "234,241,248" },
 };
 
 export const CATEGORY_SUBTITLE: Record<string, string> = {
