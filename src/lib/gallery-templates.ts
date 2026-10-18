@@ -94,6 +94,40 @@ export const PHOTO_BACKGROUND: Record<string, { src: string; tint: string }> = {
   "gold-line": { src: "/images/templates/grand-hall-dramatic.jpg", tint: "33,28,25" },
   konfetti: { src: "/images/templates/party-balloons.jpg", tint: "255,244,227" },
   klarblau: { src: "/images/templates/modern-lounge-warm.jpg", tint: "22,35,59" },
+  // Zweite Foto-Beschaffungsrunde (Plan-Phase E, Fortsetzung) — schliesst
+  // die restlichen tuerkischen Kategorien (Kına Gecesi, Nişan, Sünnet) ab,
+  // die bisher nur je eine von drei Vorlagen mit Foto hatten. Tint jeweils
+  // die eigene "background"-Vorlagenfarbe aus seed.ts, als r,g,b.
+  "oya-lace": { src: "/images/templates/oya-lace.jpg", tint: "250,246,239" },
+  "nar-cicegi": { src: "/images/templates/nar-cicegi.jpg", tint: "247,227,217" },
+  "soz-guemuesue": { src: "/images/templates/soz-guemuesue.jpg", tint: "251,234,238" },
+  "gul-bahcesi": { src: "/images/templates/gul-bahcesi.jpg", tint: "251,239,234" },
+  masmavi: { src: "/images/templates/masmavi.jpg", tint: "234,241,248" },
+  // Dritte Foto-Beschaffungsrunde (Plan-Phase E, Abschluss) — die restlichen
+  // 20 deutschsprachigen Vorlagen (Zeitlos/Botanisch/Romantisch/Statement/
+  // Verspielt/Business Modern), die bisher auf den Farbverlauf-Fallback
+  // zurueckfielen. Tint jeweils die eigene "background"-Vorlagenfarbe aus
+  // seed.ts, als r,g,b.
+  "mono-editorial": { src: "/images/templates/mono-editorial.jpg", tint: "250,246,239" },
+  letterpress: { src: "/images/templates/letterpress.jpg", tint: "250,246,239" },
+  "papier-weiss": { src: "/images/templates/papier-weiss.jpg", tint: "255,255,255" },
+  sandstein: { src: "/images/templates/sandstein.jpg", tint: "239,231,216" },
+  "terracotta-bloom": { src: "/images/templates/terracotta-bloom.jpg", tint: "178,84,58" },
+  olivenzweig: { src: "/images/templates/olivenzweig.jpg", tint: "237,239,225" },
+  eukalyptus: { src: "/images/templates/eukalyptus.jpg", tint: "238,242,233" },
+  wildblume: { src: "/images/templates/wildblume.jpg", tint: "251,241,228" },
+  rosenquarz: { src: "/images/templates/rosenquarz.jpg", tint: "245,225,222" },
+  liebesbrief: { src: "/images/templates/liebesbrief.jpg", tint: "243,236,223" },
+  pfingstrose: { src: "/images/templates/pfingstrose.jpg", tint: "251,238,241" },
+  champagner: { src: "/images/templates/champagner.jpg", tint: "250,243,230" },
+  onyx: { src: "/images/templates/onyx.jpg", tint: "22,19,15" },
+  kupferglanz: { src: "/images/templates/kupferglanz.jpg", tint: "166,81,46" },
+  mitternacht: { src: "/images/templates/mitternacht.jpg", tint: "16,19,31" },
+  bordeaux: { src: "/images/templates/bordeaux.jpg", tint: "43,16,20" },
+  zuckerwatte: { src: "/images/templates/zuckerwatte.jpg", tint: "251,239,246" },
+  pastellwiese: { src: "/images/templates/pastellwiese.jpg", tint: "234,246,238" },
+  graphit: { src: "/images/templates/graphit.jpg", tint: "30,35,40" },
+  "minz-corporate": { src: "/images/templates/minz-corporate.jpg", tint: "240,247,244" },
 };
 
 export const CATEGORY_SUBTITLE: Record<string, string> = {

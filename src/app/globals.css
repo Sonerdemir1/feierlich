@@ -1055,7 +1055,7 @@ a.card:hover {
      nicht der UI-Radius. */
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: none;
+  background: #faf6ef;
   cursor: pointer;
   text-align: left;
   padding: 0;
@@ -1115,6 +1115,67 @@ a.card:hover {
    eigenes overflow:hidden, schneidet den Zoom also sauber am Kartenrand ab. */
 .tpl:hover .tpl-prev {
   transform: scale(1.07);
+}
+/* Handy-Mockup + Karten-Vorschau nebeneinander (docs/MOTION.md §3,
+   Referenz-Studie thedigitalyes.com/designs) — ersetzt die vorherige
+   einzelne Bildkachel. .tpl-card-slot umschliesst weiterhin .tpl-media/
+   .tpl-prev unveraendert (eigenes aspect-ratio, Hover-Zoom bleibt). */
+.tpl-flatlay {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 12px 0;
+}
+.tpl-phone {
+  position: relative;
+  flex: 0 0 34%;
+  aspect-ratio: 9 / 18.5;
+  border-radius: 13px;
+  border: 3px solid #1a1a1a;
+  /* Zwei Schattenebenen statt einer (wie bei den Karten selbst, §1 Material)
+     — simuliert ein auf der Flatlay-Flaeche liegendes echtes Geraet statt
+     eines flach aufgeklebten Icons: enger/dunkler Kontaktschatten direkt
+     unterm Geraet + weicher, weiter geworfener Schatten. */
+  box-shadow:
+    0 2px 3px -1px rgba(26, 20, 10, 0.3),
+    0 14px 22px -10px rgba(60, 40, 20, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tpl-phone-notch {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32%;
+  height: 5px;
+  border-radius: 3px;
+  background: #1a1a1a;
+}
+.tpl-phone-notch::after {
+  /* Kamera-Punkt neben der Notch — kleines Detail, das "echtes Geraet"
+     statt "generisches Rechteck mit Balken" verkauft. */
+  content: "";
+  position: absolute;
+  top: 0.5px;
+  left: calc(100% + 5px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #333;
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.25);
+}
+.tpl-phone-seal {
+  width: 44%;
+  height: auto;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+}
+.tpl-card-slot {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .tpl-label {
   padding: 11px 13px;
@@ -3040,48 +3101,80 @@ footer a:hover {
   border: none;
   background: none;
   cursor: pointer;
+  overflow: hidden;
+  border-radius: 6px;
 }
 .envelope-body {
   position: absolute;
   inset: 0;
+  z-index: 0;
   border-radius: 6px;
   border: 1px solid;
   box-shadow: var(--shadow-md);
 }
-.envelope-flap {
+/* Theater-Umbau (docs/MOTION.md §3, Referenz-Studie thedigitalyes.com):
+   zwei Tuerfluegel-Haelften statt einem Flap. clip-path haelt jede Haelfte
+   optisch auf ihrer Seite fest (die Form "reist" beim translateX mit, der
+   Spalt in der Mitte wird dadurch wirklich leer statt nur ueberdeckt). */
+.envelope-panel {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 54%;
-  transform-origin: top center;
-  transform: rotateX(0deg);
-  transition: transform 0.7s cubic-bezier(0.45, 0, 0.2, 1);
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
-  border-radius: 6px 6px 0 0;
+  inset: 0;
   z-index: 2;
+  border: 1px solid;
+  border-radius: 6px;
+  transition: transform 0.82s cubic-bezier(0.65, 0, 0.35, 1);
 }
-.envelope-box.is-opening .envelope-flap {
-  transform: rotateX(180deg);
+.envelope-panel-left {
+  clip-path: inset(0 50% 0 0);
+  box-shadow: inset -10px 0 16px -10px rgba(0, 0, 0, 0.35);
 }
-.envelope-seal {
+.envelope-panel-right {
+  clip-path: inset(0 0 0 50%);
+  box-shadow: inset 10px 0 16px -10px rgba(0, 0, 0, 0.35);
+}
+.envelope-box.is-opening .envelope-panel-left {
+  transform: translateX(-100%);
+}
+.envelope-box.is-opening .envelope-panel-right {
+  transform: translateX(100%);
+}
+/* Lichtschimmer im wachsenden Spalt — liegt zwischen Body (0) und den
+   Panels (2), wird also erst sichtbar, sobald sich die Panels wegbewegen. */
+.envelope-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(50vw, 260px);
+  height: min(50vw, 260px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 1;
+  opacity: 0;
+  filter: blur(14px);
+  pointer-events: none;
+}
+.envelope-box.is-opening .envelope-glow {
+  animation: envelope-glow-pulse 0.82s ease forwards;
+}
+/* Echtes fotografiertes Wachssiegel (public/assets/seals/) statt des
+   frueheren generischen Herz-Icons — bleibt bis zum letzten Drittel der
+   Oeffnungs-Bewegung sichtbar (transition-delay 0.54s von 0.82s Gesamt-
+   dauer), erst dann verblasst es. */
+.envelope-seal-img {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: clamp(34px, 6vw, 56px);
-  height: clamp(34px, 6vw, 56px);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: clamp(48px, 9vw, 88px);
+  height: auto;
   z-index: 3;
-  box-shadow: var(--shadow-sm);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+  transition: opacity 0.28s ease 0.54s, transform 0.28s ease 0.54s;
+  pointer-events: none;
 }
-.envelope-box.is-opening .envelope-seal {
+.envelope-box.is-opening .envelope-seal-img {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.4);
+  transform: translate(-50%, -50%) scale(0.55);
 }
 .envelope-hint {
   text-align: center;
@@ -3110,8 +3203,14 @@ footer a:hover {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 0.95; }
 }
+@keyframes envelope-glow-pulse {
+  0% { opacity: 0; }
+  45% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .envelope-flap, .envelope-seal, .envelope-content { transition: none; }
+  .envelope-panel, .envelope-seal-img, .envelope-content { transition: none; }
+  .envelope-box.is-opening .envelope-glow { animation: none; }
   .envelope-hint { animation: none; }
 }
 

@@ -110,9 +110,18 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "mono-editorial":
       return (
-        <div className="tpl-prev" style={{ background: "#FAF6EF", padding: 16 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(250,246,239,0.25) 0%, rgba(250,246,239,0.55) 55%, rgba(250,246,239,0.85) 100%), url(/images/templates/mono-editorial.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            padding: 16,
+          }}
+        >
           <div style={{ width: "100%", height: 2, background: "#B2543A", marginBottom: 12 }} />
-          <div style={{ fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em" }}>ANNA &amp; LUKAS</div>
+          <div style={{ fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", color: "#211C19" }}>ANNA &amp; LUKAS</div>
           <div style={{ width: "100%", height: 2, background: "#B2543A", marginTop: 12 }} />
         </div>
       );
@@ -120,7 +129,13 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       return (
         <div
           className="tpl-prev"
-          style={{ background: "#FAF6EF", boxShadow: "inset 0 0 0 1px #E4D9C8, inset 0 2px 8px rgba(0,0,0,0.05)" }}
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(250,246,239,0.25) 0%, rgba(250,246,239,0.55) 55%, rgba(250,246,239,0.85) 100%), url(/images/templates/letterpress.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            boxShadow: "inset 0 0 0 1px #E4D9C8",
+          }}
         >
           <div
             style={{
@@ -134,6 +149,7 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
               fontFamily: "var(--font-display)",
               fontSize: 13,
               color: "#211C19",
+              background: "rgba(250,246,239,0.7)",
             }}
           >
             A·L
@@ -159,21 +175,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "terracotta-bloom":
       return (
-        <div className="tpl-prev" style={{ background: "#B2543A" }}>
-          <svg
-            width="52"
-            height="52"
-            viewBox="0 0 60 60"
-            style={{ position: "absolute", top: -10, right: -10, opacity: 0.5 }}
-            fill="none"
-            stroke="#F0D9CC"
-            strokeWidth="1.2"
-          >
-            <circle cx="30" cy="30" r="6" />
-            <circle cx="30" cy="16" r="6" />
-            <circle cx="42" cy="24" r="6" />
-            <circle cx="18" cy="24" r="6" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(178,84,58,0.45) 0%, rgba(178,84,58,0.75) 55%, rgba(178,84,58,0.93) 100%), url(/images/templates/terracotta-bloom.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#FAF6EF" }}>
             Anna &amp; Lukas
           </div>
@@ -181,21 +191,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "olivenzweig":
       return (
-        <div className="tpl-prev" style={{ background: "#EDEFE1" }}>
-          <svg
-            width="140"
-            height="70"
-            viewBox="0 0 140 70"
-            style={{ position: "absolute", bottom: 0, left: 0, opacity: 0.6 }}
-            fill="none"
-            stroke="#7C8560"
-            strokeWidth="1.2"
-          >
-            <path d="M0 60 Q40 40 80 45 T140 25" />
-            <ellipse cx="30" cy="49" rx="6" ry="3" transform="rotate(-20 30 49)" />
-            <ellipse cx="60" cy="43" rx="6" ry="3" transform="rotate(-10 60 43)" />
-            <ellipse cx="95" cy="33" rx="6" ry="3" transform="rotate(-25 95 33)" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(237,239,225,0.25) 0%, rgba(237,239,225,0.55) 55%, rgba(237,239,225,0.85) 100%), url(/images/templates/olivenzweig.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#4E5A38" }}>
             Anna &amp; Lukas
           </div>
@@ -229,9 +233,17 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "rosenquarz":
       return (
-        <div className="tpl-prev" style={{ background: "#F5E1DE", padding: 16 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(245,225,222,0.25) 0%, rgba(245,225,222,0.55) 55%, rgba(245,225,222,0.85) 100%), url(/images/templates/rosenquarz.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            padding: 16,
+          }}
+        >
           <div style={{ position: "absolute", top: 9, left: 9, right: 9, bottom: 9, border: "1px solid #C98E88" }} />
-          <div style={{ position: "absolute", top: 13, left: 13, right: 13, bottom: 13, border: "1px solid #C98E88" }} />
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#8B4A45" }}>
             Anna &amp; Lukas
           </div>
@@ -239,7 +251,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "liebesbrief":
       return (
-        <div className="tpl-prev" style={{ background: "#F3ECDF" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(243,236,223,0.25) 0%, rgba(243,236,223,0.55) 55%, rgba(243,236,223,0.85) 100%), url(/images/templates/liebesbrief.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div
             style={{
               width: 26,
@@ -290,7 +310,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "onyx":
       return (
-        <div className="tpl-prev" style={{ background: "#16130F" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(22,19,15,0.45) 0%, rgba(22,19,15,0.75) 55%, rgba(22,19,15,0.93) 100%), url(/images/templates/onyx.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ width: "100%", height: 1, background: "#F4EEE4", marginBottom: 14 }} />
           <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#B9975B", marginBottom: 10 }} />
           <div style={{ fontSize: 11, letterSpacing: "0.14em", color: "#F4EEE4" }}>ANNA &amp; LUKAS</div>
@@ -299,29 +327,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "kupferglanz":
       return (
-        <div className="tpl-prev" style={{ background: "#A6512E" }}>
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 10 10"
-            style={{ position: "absolute", top: 10, left: 10 }}
-            fill="#A6512E"
-            stroke="#F0D9CC"
-            strokeWidth="1"
-          >
-            <rect x="1" y="1" width="8" height="8" transform="rotate(45 5 5)" />
-          </svg>
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 10 10"
-            style={{ position: "absolute", bottom: 10, right: 10 }}
-            fill="#A6512E"
-            stroke="#F0D9CC"
-            strokeWidth="1"
-          >
-            <rect x="1" y="1" width="8" height="8" transform="rotate(45 5 5)" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(166,81,46,0.45) 0%, rgba(166,81,46,0.75) 55%, rgba(166,81,46,0.93) 100%), url(/images/templates/kupferglanz.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#FAF6EF" }}>
             Anna &amp; Lukas
           </div>
@@ -353,35 +367,36 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "oya-lace":
       return (
-        <div className="tpl-prev" style={{ background: "#FAF6EF" }}>
-          <svg width="140" height="14" viewBox="0 0 140 14" style={{ position: "absolute", top: 10 }} fill="none" stroke="#C98E88" strokeWidth="1">
-            {[8, 24, 40, 56, 72, 88, 104, 120, 136].map((x) => (
-              <circle key={x} cx={x} cy={7} r={5} />
-            ))}
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(250,246,239,0.2) 0%, rgba(250,246,239,0.5) 55%, rgba(250,246,239,0.85) 100%), url(/images/templates/oya-lace.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 20, color: "#7A2E3A" }}>
             Ayşe &amp; Emre
           </div>
-          <svg width="140" height="14" viewBox="0 0 140 14" style={{ position: "absolute", bottom: 10 }} fill="none" stroke="#C98E88" strokeWidth="1">
-            {[8, 24, 40, 56, 72, 88, 104, 120, 136].map((x) => (
-              <circle key={x} cx={x} cy={7} r={5} />
-            ))}
-          </svg>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#C98E88", marginTop: 8 }}>KINA GECESİ</div>
         </div>
       );
     case "nar-cicegi":
       return (
-        <div className="tpl-prev" style={{ background: "#F7E3D9" }}>
-          <svg width="30" height="34" viewBox="0 0 30 34" style={{ marginBottom: 10 }} fill="none" stroke="#C9605C" strokeWidth="1.3">
-            <path d="M15 6C9 6 5 11 5 18c0 7 4.5 11 10 11s10-4 10-11c0-7-4-12-10-12z" />
-            <path d="M11 4l2 3M15 3v4M19 4l-2 3" />
-            <circle cx="11" cy="17" r="1.1" fill="#C9605C" stroke="none" />
-            <circle cx="15" cy="21" r="1.1" fill="#C9605C" stroke="none" />
-            <circle cx="18" cy="16" r="1.1" fill="#C9605C" stroke="none" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(247,227,217,0.2) 0%, rgba(247,227,217,0.5) 55%, rgba(247,227,217,0.85) 100%), url(/images/templates/nar-cicegi.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 19, color: "#7A2E3A" }}>
             Ayşe &amp; Emre
           </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#C9605C", marginTop: 8 }}>KINA GECESİ</div>
         </div>
       );
     case "hochzeit-elegant-gold":
@@ -555,13 +570,19 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "soz-guemuesue":
       return (
-        <div className="tpl-prev" style={{ background: "#FBEAEE" }}>
-          <svg width="40" height="40" viewBox="0 0 40 40" style={{ marginBottom: 8 }} fill="none" stroke="#D4A574" strokeWidth="1.4">
-            <path d="M20 4 L36 20 L20 36 L4 20 Z" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(251,234,238,0.2) 0%, rgba(251,234,238,0.5) 55%, rgba(251,234,238,0.85) 100%), url(/images/templates/soz-guemuesue.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#5C1A2E" }}>
             Ayşe &amp; Emre
           </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#D4A574", marginTop: 8 }}>NİŞAN</div>
         </div>
       );
     case "sehzade-mavisi":
@@ -595,34 +616,54 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "masmavi":
       return (
-        <div className="tpl-prev" style={{ background: "#EAF1F8" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(234,241,248,0.2) 0%, rgba(234,241,248,0.5) 55%, rgba(234,241,248,0.85) 100%), url(/images/templates/masmavi.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ position: "absolute", top: 9, left: 9, right: 9, bottom: 9, border: "1px solid #8FA8C9" }} />
           <NazarBoncugu x={12} y={116} size={22} opacity={0.85} />
           <NazarBoncugu x={126} y={12} size={18} opacity={0.7} />
-          <CornerMotif color="#8FA8C9" corner="tl" />
-          <CornerMotif color="#8FA8C9" corner="br" />
-          <svg width="22" height="17" viewBox="0 0 32 24" style={{ marginBottom: 8, zIndex: 1, position: "relative" }} fill="none" stroke="#1B3A5C" strokeWidth="1.3">
-            <path d="M2 20 L2 11 L8 16 L16 6 L24 16 L30 11 L30 20 Z" />
-          </svg>
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#1B3A5C", zIndex: 1, position: "relative" }}>
             Kaan
+          </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#1B3A5C", marginTop: 8, zIndex: 1, position: "relative" }}>
+            SÜNNET
           </div>
         </div>
       );
     case "gul-bahcesi":
       return (
-        <div className="tpl-prev" style={{ background: "#FBEFEA" }}>
-          <svg width="30" height="30" viewBox="0 0 30 30" style={{ marginBottom: 8 }} fill="none" stroke="#E8A6B0" strokeWidth="1.3">
-            <circle cx="15" cy="15" r="12" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(251,239,234,0.2) 0%, rgba(251,239,234,0.5) 55%, rgba(251,239,234,0.85) 100%), url(/images/templates/gul-bahcesi.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#6B2737" }}>
             Ayşe &amp; Emre
           </div>
+          <div style={{ fontSize: 9, letterSpacing: "0.14em", color: "#E8A6B0", marginTop: 8 }}>NİŞAN</div>
         </div>
       );
     case "papier-weiss":
       return (
-        <div className="tpl-prev" style={{ background: "#FFFFFF" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.6) 55%, rgba(255,255,255,0.88) 100%), url(/images/templates/papier-weiss.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ width: 24, height: 1, background: "#7C7267", margin: "0 auto 10px" }} />
           <div style={{ fontSize: 11, letterSpacing: "0.16em", color: "#211C19" }}>ANNA &amp; LUKAS</div>
           <div style={{ width: 24, height: 1, background: "#7C7267", margin: "10px auto 0" }} />
@@ -630,7 +671,16 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "sandstein":
       return (
-        <div className="tpl-prev" style={{ background: "#EFE7D8", padding: 16 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(239,231,216,0.25) 0%, rgba(239,231,216,0.55) 55%, rgba(239,231,216,0.85) 100%), url(/images/templates/sandstein.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            padding: 16,
+          }}
+        >
           <div style={{ width: "100%", height: 2, background: "#A6875B", marginBottom: 12 }} />
           <div style={{ fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", color: "#3A332C" }}>ANNA &amp; LUKAS</div>
           <div style={{ width: "100%", height: 2, background: "#A6875B", marginTop: 12 }} />
@@ -638,12 +688,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "eukalyptus":
       return (
-        <div className="tpl-prev" style={{ background: "#EEF2E9" }}>
-          <svg width="120" height="60" viewBox="0 0 120 60" style={{ position: "absolute", top: 6, right: 6, opacity: 0.6 }} fill="#6B8F71" stroke="none">
-            <ellipse cx="14" cy="14" rx="9" ry="5" transform="rotate(30 14 14)" />
-            <ellipse cx="34" cy="10" rx="9" ry="5" transform="rotate(10 34 10)" />
-            <ellipse cx="54" cy="16" rx="9" ry="5" transform="rotate(-15 54 16)" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(238,242,233,0.25) 0%, rgba(238,242,233,0.55) 55%, rgba(238,242,233,0.85) 100%), url(/images/templates/eukalyptus.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#2F4739" }}>
             Anna &amp; Lukas
           </div>
@@ -651,14 +704,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "wildblume":
       return (
-        <div className="tpl-prev" style={{ background: "#FBF1E4" }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" style={{ position: "absolute", top: 12, left: 14 }} fill="#C97B4A">
-            <circle cx="8" cy="8" r="3" />
-            <circle cx="8" cy="2" r="2.4" />
-            <circle cx="14" cy="8" r="2.4" />
-            <circle cx="8" cy="14" r="2.4" />
-            <circle cx="2" cy="8" r="2.4" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(251,241,228,0.25) 0%, rgba(251,241,228,0.55) 55%, rgba(251,241,228,0.85) 100%), url(/images/templates/wildblume.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#5C3A21" }}>
             Anna &amp; Lukas
           </div>
@@ -666,11 +720,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "pfingstrose":
       return (
-        <div className="tpl-prev" style={{ background: "#FBEEF1" }}>
-          <svg width="34" height="34" viewBox="0 0 34 34" style={{ marginBottom: 8 }} fill="none" stroke="#E4A0AE" strokeWidth="1.3">
-            <circle cx="17" cy="17" r="14" />
-            <circle cx="17" cy="17" r="8" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(251,238,241,0.25) 0%, rgba(251,238,241,0.55) 55%, rgba(251,238,241,0.85) 100%), url(/images/templates/pfingstrose.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 17, color: "#7A3B4A" }}>
             Anna &amp; Lukas
           </div>
@@ -678,7 +736,16 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "champagner":
       return (
-        <div className="tpl-prev" style={{ background: "#FAF3E6", padding: 16 }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(250,243,230,0.25) 0%, rgba(250,243,230,0.55) 55%, rgba(250,243,230,0.85) 100%), url(/images/templates/champagner.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            padding: 16,
+          }}
+        >
           <div style={{ position: "absolute", top: 9, left: 9, right: 9, bottom: 9, border: "1px solid #D9C8A8" }} />
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#6B5842" }}>
             Anna &amp; Lukas
@@ -687,10 +754,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "mitternacht":
       return (
-        <div className="tpl-prev" style={{ background: "#10131F" }}>
-          <svg width="60" height="60" viewBox="0 0 60 60" style={{ position: "absolute", top: -14, right: -14, opacity: 0.5 }} fill="none" stroke="#7C93C4" strokeWidth="1">
-            <circle cx="30" cy="30" r="18" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(16,19,31,0.45) 0%, rgba(16,19,31,0.75) 55%, rgba(16,19,31,0.93) 100%), url(/images/templates/mitternacht.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ fontFamily: "var(--font-display)", fontSize: 17, color: "#EDEFF5" }}>
             Anna &amp; Lukas
           </div>
@@ -698,7 +770,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "bordeaux":
       return (
-        <div className="tpl-prev" style={{ background: "#2B1014" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(43,16,20,0.45) 0%, rgba(43,16,20,0.75) 55%, rgba(43,16,20,0.93) 100%), url(/images/templates/bordeaux.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#C9605C", marginBottom: 10 }} />
           <div style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 18, color: "#F4E9E6" }}>
             Anna &amp; Lukas
@@ -724,14 +804,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "zuckerwatte":
       return (
-        <div className="tpl-prev" style={{ background: "linear-gradient(160deg, #FFD1E8 0%, #C9A6FF 100%)" }}>
-          <svg width="90" height="76" viewBox="0 0 90 76" style={{ marginBottom: 8 }}>
-            <circle cx="26" cy="26" r="17" fill="#FFB6D9" opacity="0.9" />
-            <circle cx="46" cy="16" r="15" fill="#FFFFFF" opacity="0.85" />
-            <circle cx="60" cy="28" r="16" fill="#FFB6D9" opacity="0.9" />
-            <circle cx="40" cy="32" r="14" fill="#FFFFFF" opacity="0.8" />
-            <path d="M45 40 L45 68" stroke="#B98BE0" strokeWidth="3" strokeLinecap="round" />
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(251,239,246,0.2) 0%, rgba(251,239,246,0.5) 55%, rgba(251,239,246,0.82) 100%), url(/images/templates/zuckerwatte.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div
             style={{
               fontFamily: "var(--font-display)",
@@ -747,31 +828,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "pastellwiese":
       return (
-        <div className="tpl-prev" style={{ background: "linear-gradient(180deg, #BEE7F7 0%, #EAF6EE 62%)" }}>
-          <svg width="26" height="26" viewBox="0 0 26 26" style={{ position: "absolute", top: 12, right: 14 }}>
-            <circle cx="13" cy="13" r="7" fill="#FFD23F" />
-            {[0, 45, 90, 135].map((r) => (
-              <rect key={r} x="12" y="0" width="2" height="7" fill="#FFD23F" transform={`rotate(${r} 13 13)`} />
-            ))}
-          </svg>
-          <svg width="160" height="40" viewBox="0 0 160 40" style={{ position: "absolute", bottom: 0, left: 0 }}>
-            <rect x="0" y="28" width="160" height="12" fill="#7FC490" />
-            {[
-              [16, "#FF7A9C"],
-              [42, "#FFD23F"],
-              [70, "#FF9F5B"],
-              [98, "#FFFFFF"],
-              [126, "#FF7A9C"],
-              [148, "#FFD23F"],
-            ].map(([cx, color], i) => (
-              <g key={i} transform={`translate(${cx}, 22)`}>
-                {[0, 72, 144, 216, 288].map((r) => (
-                  <ellipse key={r} cx="0" cy="-5" rx="3" ry="5" fill={color as string} transform={`rotate(${r})`} />
-                ))}
-                <circle cx="0" cy="0" r="2.5" fill="#6B4A2E" />
-              </g>
-            ))}
-          </svg>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(234,246,238,0.15) 0%, rgba(234,246,238,0.45) 55%, rgba(234,246,238,0.8) 100%), url(/images/templates/pastellwiese.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div
             style={{
               fontFamily: "var(--font-display)",
@@ -804,7 +869,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "graphit":
       return (
-        <div className="tpl-prev" style={{ background: "#1E2328" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(30,35,40,0.45) 0%, rgba(30,35,40,0.75) 55%, rgba(30,35,40,0.93) 100%), url(/images/templates/graphit.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ width: "100%", height: 1, background: "#9AA5B1", marginBottom: 14 }} />
           <div style={{ fontSize: 11, letterSpacing: "0.14em", color: "#FFFFFF" }}>JAHRESEMPFANG 2026</div>
           <div style={{ width: "100%", height: 1, background: "#9AA5B1", marginTop: 14 }} />
@@ -812,7 +885,15 @@ export function TemplatePreview({ layoutKey }: { layoutKey: string }) {
       );
     case "minz-corporate":
       return (
-        <div className="tpl-prev" style={{ background: "#F0F7F4" }}>
+        <div
+          className="tpl-prev"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(240,247,244,0.25) 0%, rgba(240,247,244,0.55) 55%, rgba(240,247,244,0.85) 100%), url(/images/templates/minz-corporate.jpg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           <div style={{ width: 26, height: 26, borderRadius: "50%", background: "#2E9E7B", margin: "0 auto 10px" }} />
           <div style={{ fontSize: 11, letterSpacing: "0.1em", color: "#1D2B28" }}>JAHRESEMPFANG 2026</div>
         </div>

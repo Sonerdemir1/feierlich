@@ -161,9 +161,49 @@ Die Galerie ist der Ort, an dem heute der Eindruck kippt. Sie darf kein Raster g
 
 ### Vorschau statt Hover-Effekt
 
-Beim Antippen (mobil) bzw. bei `hover` mit 120 ms Verzögerung (Desktop) hebt sich die Karte an – `translateY -8px`, `scale 1.02`, 400 ms – und **spielt ihre eigene 3-Sekunden-Mikro-Animation ab**: Umschlag öffnet sich einen Spalt, Ornament zeichnet an, Namen erscheinen. Das ist das Verkaufsargument. Eine statische Vorschau verkauft eine animierte Karte nicht.
+> **Versionshinweis (Referenz-Studie thedigitalyes.com):** Der Nutzer war mit
+> der bisherigen Umgebung explizit unzufrieden ("wirkt noch billig") und hat
+> auf thedigitalyes.com verwiesen — live geprüft, inkl. echter Interaktiv-Demo
+> (`/demo/stained-glass`) und vollem Katalog (`/designs`, 35 Designs). Wichtige
+> Korrektur der eigenen Annahme: dort sind es KEINE Einzelauftrags-
+> Illustrationen pro Paar, sondern ein fertiger Design-Katalog (einmal gebaut,
+> für jedes Paar wiederverwendet, nur Daten/Fotos ausgetauscht) — vom
+> Geschäftsmodell her also sehr nah an unserem eigenen. Die folgenden zwei
+> Unterabschnitte ersetzen die bisherige Beschreibung vollständig.
 
-Technisch: vorgerendertes, stummes `<video>` in WebM/AV1, maximal 400 KB, `preload="none"`, erst laden, wenn die Karte im Viewport ist. Poster-Bild als WebP.
+**Katalog-Kachel = Handy-Mockup + Karten-Vorschau nebeneinander, nicht eine
+flache Kachel.** Jede Vorlagen-Kachel zeigt zwei Elemente nebeneinander auf
+warmem, leicht schattiertem Creme-Hintergrund (Flatlay-Produktfoto-Optik):
+links ein fotorealistisches Handy-Mockup (Gehäuse + Notch, CSS/SVG, kein
+echtes Foto nötig) mit dem GESCHLOSSENEN Umschlag — Material-Textur der
+Vorlage plus mittig ein echtes Wachssiegel-Grafikelement mit Monogramm-
+Andeutung; rechts daneben eine schmalere, eigenständige Karten-Vorschau mit
+dem GEÖFFNETEN Zustand (Rahmen im selben Material-Thema, Namen in großer
+Schreibschrift, Kapitälchen-Details darunter). Beide Elemente auf gemeinsamem
+weichem Schlagschatten (Lichtquelle oben links), leicht überlappend. Kein
+Video nötig für diesen Effekt — ist eine reine Foto-/Layout-Komposition.
+
+**Umschlag-Öffnung = kleines Theaterstück, nicht Fade/Flap.** Beim Antippen
+(mobil) bzw. `hover` mit 120 ms Verzögerung (Desktop): zwei Umschlag-Hälften
+schieben sich wie Türflügel auseinander (`transform: translateX`, je Hälfte
+nach links/rechts, `clip-path` oder zwei echte Panel-Elemente), mit einem
+warmen Licht-Schimmer im wachsenden Spalt dazwischen (radialer Glow,
+`opacity`-Fade, Farbe aus `accent`), das sichtbare Wachssiegel in der Mitte
+bleibt bis zuletzt sichtbar und verblasst erst im letzten Drittel der
+Bewegung. Dauer insgesamt ~700-900 ms, dann Übergang zur vollen Karte (Namen,
+Datum, Ort). Gilt für JEDE Vorlage einheitlich (prozedural, aus
+Vorlagenfarben/-foto gespeist) — keine Einzelauftrags-Illustration pro
+Vorlage nötig, das wäre bei 54 Vorlagen ein eigenes, großes Kostenthema und
+ist hier bewusst NICHT der Weg.
+
+**Asset-Pipeline:** Wachssiegel-Grafik(en) und Material-Texturen (Perlmutt,
+Spitze, Samt o. ä., mind. eine helle/cremefarbene UND eine dunkle/farbige
+Variante für helle bzw. Jewel-Tone-Vorlagen) kommen aus dem bestehenden
+Envato-Elements-Abo (bereits bezahlt), abgelegt unter
+`/public/assets/seals/` bzw. `/public/assets/textures/`, registriert in
+`docs/asset-register.md` (siehe §6). Bevorzugt fertige PNG/JPG-Formate
+(transparent wo möglich), keine PSD-Mockups, die erst in Photoshop bearbeitet
+werden müssten — das Abo bietet beides, PSD wird hier bewusst vermieden.
 
 Beim Öffnen einer Vorlage: View Transitions API, die Karte wächst aus ihrer Position in die Detailansicht. Fallback für Browser ohne Unterstützung: `motion` Layout-Animation über `layoutId`.
 
