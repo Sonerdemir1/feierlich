@@ -5,6 +5,8 @@ import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
+import { EnvelopeOpen } from "@/components/marketing/EnvelopeOpen";
+import { VideoEnvelope } from "@/components/marketing/VideoEnvelope";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { cardTextZone } from "@/lib/card-frames";
 import { categoryLabel, type GalleryTemplate } from "@/lib/gallery-templates";
@@ -1809,8 +1811,33 @@ export function DesignStudio({
                     </div>
                   </div>
                 </div>
+              ) : draft.envelopeVideoUrl ? (
+                // Umschlag-Theater/-Video auch in der Gestalten-Vorschau
+                // (vorher: direkt den Inhalt zeigen, kein Umschlag ueberhaupt
+                // — Verstoss gegen CLAUDE.md Regel 6, da /e/[slug] fuer diese
+                // Vorlagen laengst EnvelopeOpen/VideoEnvelope nutzt, siehe
+                // dortige Verzweigung). Gleiche Logik wie dort: Video, falls
+                // hochgeladen, sonst das neue Siegel-Theater.
+                <VideoEnvelope videoUrl={draft.envelopeVideoUrl} primary={draft.primary}>
+                  <Hero
+                    photoUrl={draft.image ?? (item.photoBackground && draft.showPhotoBackground ? item.photoBackground.src : undefined)}
+                    colors={{ primary: draft.primary, accent: draft.accent, background: draft.background }}
+                    fontFamily={font.cssVar}
+                    fontStyle={font.italic ? "italic" : "normal"}
+                    eventLabel={tf("eventLabel", draft.eventLabel, (text) => updateDraft({ eventLabel: text }))}
+                    title={tf("title", draft.text, (text) => updateDraft({ text }))}
+                    location={{ display: draft.locationText, selected: selectedKey === "location", onSelect: () => selectKey("location") }}
+                    date={{ display: draftDateText(), selected: selectedKey === "date", onSelect: () => selectKey("date") }}
+                  />
+                  <div className="iv-section iv-section--tight" style={{ background: draft.background }}>
+                    <div className="iv-inner" style={{ maxWidth: 420 }}>
+                      {renderFamily({ color: draft.primary, justifyContent: "center" })}
+                      {renderDescription({ fontSize: 13.5, lineHeight: 1.6, textAlign: "center", color: draft.primary, margin: "18px auto 0" })}
+                    </div>
+                  </div>
+                </VideoEnvelope>
               ) : (
-                <>
+                <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary}>
                   {/* Nutzer-Bugfix-Folge ("Bild ist nirgendwo zu sehen"):
                       eigenes hochgeladenes Foto (draft.image) hat jetzt
                       Prioritaet als Hero-Titelbild — faellt nur auf das
@@ -1835,7 +1862,7 @@ export function DesignStudio({
                       {renderDescription({ fontSize: 13.5, lineHeight: 1.6, textAlign: "center", color: draft.primary, margin: "18px auto 0" })}
                     </div>
                   </div>
-                </>
+                </EnvelopeOpen>
               )}
 
               {/* Paar-Vorstellung — bewusst kein Paket-/Tier-Modul (siehe
