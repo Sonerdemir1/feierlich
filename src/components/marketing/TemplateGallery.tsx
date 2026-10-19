@@ -74,6 +74,81 @@ function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
 // In EnvelopeOpen.tsx (echte Umschlag-Komponente, andere Oberflaeche) bleibt
 // eine eigene, unabhaengige Kopie — kein gemeinsamer Import ueber die
 // Marketing/Komponenten-Grenze hinweg fuer eine 8-Zeilen-Funktion.
+// Redesign Nr. 2 (Nutzer-Feedback, woertlich: "allein der Umschlag ist ja
+// schon haesslich... sieht aus wie eine billige, cleane Wand... oben das
+// Dreieck ist nur ein bisschen dunkler"): die erste Fassung hier nutzte
+// noch das Vorlagenfoto/die Kartengrafik als Handy-Flaeche (siehe Git-
+// Historie) — sichtbar besser als reine Farbe, aber immer noch kein
+// "Stoff"-Eindruck. Jetzt: eine von 7 KI-generierten Umschlag-Material-
+// Aufnahmen (gefaltete Seide/Samt/Leinen + Wachssiegel, siehe
+// public/assets/envelope-materials/ und docs/asset-register.md) wird
+// anhand der Vorlagenfarbe ausgewaehlt — dieselbe Funktion versorgt sowohl
+// das Handy-Mockup (hier/CuratedTemplates.tsx) als auch den echten
+// Umschlag selbst (EnvelopeOpen.tsx), damit Katalog-Vorschau und
+// tatsaechliche Oeffnung zueinander passen (CLAUDE.md Regel 6).
+const ENVELOPE_MATERIALS = {
+  "ivory-gold": "/assets/envelope-materials/ivory-gold.jpg",
+  "emerald-gold": "/assets/envelope-materials/emerald-gold.jpg",
+  "bordeaux-gold": "/assets/envelope-materials/bordeaux-gold.jpg",
+  "navy-gold": "/assets/envelope-materials/navy-gold.jpg",
+  "blush-rosegold": "/assets/envelope-materials/blush-rosegold.jpg",
+  "terracotta-botanical": "/assets/envelope-materials/terracotta-botanical.jpg",
+  "onyx-gold": "/assets/envelope-materials/onyx-gold.jpg",
+} as const;
+
+function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const r = ((n >> 16) & 255) / 255;
+  const g = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h: number;
+  if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return { h: h * 60, s, l };
+}
+
+// Bugfix (live getestet: "Lacivert Kemer" — Navy im Namen — bekam dasselbe
+// Material wie drei andere, komplett andersfarbige Vorlagen): HSL-Saettigung
+// allein ist bei fast-weissen/fast-schwarzen Farben irrefuehrend — ein
+// cremefarbener Hintergrund wie #F5EDDC errechnet ueber die Standard-HSL-
+// Formel ~56% Saettigung, obwohl er optisch neutral wirkt, und gewann so
+// faelschlich gegen die tatsaechlich bunte Navy-Primaerfarbe. effectiveS
+// daempft die Saettigung mit dem Abstand von der Mitte (l=0.5) — Farben
+// nahe Weiss/Schwarz zaehlen kaum noch, auch wenn ihr roher s-Wert hoch ist.
+function effectiveSaturation(c: { s: number; l: number }): number {
+  return c.s * (1 - Math.abs(c.l - 0.5) * 2);
+}
+
+// Nimmt die Farbe mit der hoeheren (effektiven) Saettigung aus Hintergrund/
+// Primaer als "Identitaetsfarbe" der Vorlage — viele Duegduen-Vorlagen haben
+// einen cremefarben-neutralen Hintergrund, die eigentliche Signalfarbe
+// (Bordeaux, Lacivert, Zuemrut...) steckt im primary-Text, nicht im
+// Hintergrund.
+export function envelopeMaterialFor(colors: { background: string; accent?: string; primary: string }): string {
+  const bg = hexToHsl(colors.background);
+  const pr = hexToHsl(colors.primary);
+  const pick = bg && pr ? (effectiveSaturation(bg) >= effectiveSaturation(pr) ? bg : pr) : (bg ?? pr);
+  if (!pick) return ENVELOPE_MATERIALS["ivory-gold"];
+  const { h, l } = pick;
+  const s = effectiveSaturation(pick);
+  if (s < 0.14) return l > 0.55 ? ENVELOPE_MATERIALS["ivory-gold"] : ENVELOPE_MATERIALS["onyx-gold"];
+  if (h >= 340 || h < 14) return ENVELOPE_MATERIALS["bordeaux-gold"];
+  if (h < 42) return ENVELOPE_MATERIALS["terracotta-botanical"];
+  if (h < 68) return ENVELOPE_MATERIALS["ivory-gold"];
+  if (h < 168) return l > 0.5 ? ENVELOPE_MATERIALS["terracotta-botanical"] : ENVELOPE_MATERIALS["emerald-gold"];
+  if (h < 258) return ENVELOPE_MATERIALS["navy-gold"];
+  return ENVELOPE_MATERIALS["blush-rosegold"];
+}
+
 export function sealForBackground(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   const isLight = !m || (() => {
@@ -89,6 +164,7 @@ export function sealForBackground(hex: string): string {
 function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string }) {
   const href = paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`;
   const sealSrc = sealForBackground(item.colors.background);
+  const materialPhoto = envelopeMaterialFor(item.colors);
   return (
     <MotionLink
       href={href}
@@ -116,7 +192,7 @@ function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCatego
       <div className="tpl-flatlay">
         <div
           className="tpl-phone"
-          style={{ background: `linear-gradient(135deg, ${item.colors.background}, ${item.colors.accent}33)` }}
+          style={{ backgroundImage: `linear-gradient(135deg, ${item.colors.background}40, ${item.colors.accent}26), url(${materialPhoto})` }}
         >
           <span className="tpl-phone-notch" aria-hidden="true" />
           {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}

@@ -990,18 +990,24 @@ a.card:hover {
 }
 
 .cat {
-  margin-bottom: 46px;
+  margin-bottom: 64px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+.cat:first-of-type {
+  padding-top: 0;
+  border-top: none;
 }
 .cat-head {
   display: flex;
   align-items: baseline;
   gap: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 .cat-head h3 {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 20px;
+  font-size: 28px;
   color: var(--vg-accent, var(--ink));
   transition: color 0.6s ease;
 }
@@ -1144,11 +1150,58 @@ a.card:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Bugfix "nur Siegel auf flacher Flaeche" — background-image traegt jetzt
+     eines der generierten Umschlag-Material-Fotos (envelopeMaterialFor() in
+     TemplateGallery.tsx). Position 72% statt center aus demselben Grund wie
+     .envelope-body in EnvelopeOpen.tsx: das Foto hat selbst ein Siegel in
+     der Mitte eingebacken, das sich sonst mit .tpl-phone-seal ueberlagern
+     wuerde. */
+  background-size: cover;
+  background-position: center 72%;
+  background-repeat: no-repeat;
+}
+/* Material-Aufwertung (Nutzer-Feedback: Referenz thedigitalyes.com wirkt
+   "wie Stoff", wir "voll billig" — flacher Zweifarben-Verlauf/Foto allein
+   hat keine Lichtwirkung). Simuliert Studio-Licht auf einer gefalteten
+   Flaeche rein per CSS, ohne neues Bild-Asset: diagonaler Glanzstreifen
+   (wie Licht, das schraeg auf eine Stoff-/Papierfalte faellt) + weicher
+   runder Lichthof hinter dem Siegel (wie ein Scheinwerfer von oben) +
+   eine feine vertikale Knickline in der Mitte (deutet die reale Zwei-
+   Fluegel-Umschlag-Faltung an, die EnvelopeOpen.tsx beim Oeffnen zeigt —
+   hier nur als ruhendes Andeutungs-Detail, keine Animation). Alles per
+   mix-blend-mode auf der Foto-/Verlaufs-Ebene, nicht ersetzend. */
+.tpl-phone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 60% 42% at 50% 40%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(118deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 26%, rgba(255, 255, 255, 0) 60%, rgba(255, 255, 255, 0.22) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 80%, rgba(0, 0, 0, 0.22) 100%);
+  mix-blend-mode: overlay;
+}
+.tpl-phone::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 4%, rgba(0, 0, 0, 0.16) 50%, rgba(0, 0, 0, 0) 96%);
+}
+.tpl-phone-seal {
+  position: relative;
+  z-index: 2;
 }
 .tpl-phone-notch {
   position: absolute;
   top: 5px;
   left: 50%;
+  z-index: 2;
   transform: translateX(-50%);
   width: 32%;
   height: 5px;
@@ -1200,29 +1253,35 @@ a.card:hover {
    (CuratedTemplates.tsx, teilt sich .tpl/.tpl-prev/.cat-grid fuer
    identische Kartenoptik) bewusst beim einfacheren starren Raster
    bleibt — siehe Auftrag: volle Mechanik nur auf der Vollseite. */
+/* Dichte reduziert (Nutzer-Feedback: "zu viele einzelne Karten ... nicht
+   clean und elegant" — Referenz thedigitalyes.com zeigt 4 grosse Karten
+   pro Reihe bei ~1440px Breite mit viel Weissraum, nicht 4 eng gepackte
+   auf Desktop-Standardbreiten UND Tablet gleichzeitig). 3 statt 4 Spalten
+   als Standard, groesserer Spaltenabstand, mehr Abstand nach unten pro
+   Karte. */
 .vg-masonry {
   display: block;
-  columns: 4;
-  column-gap: 16px;
+  columns: 3;
+  column-gap: 28px;
 }
-@media (max-width: 1100px) {
+@media (min-width: 1500px) {
   .vg-masonry {
-    columns: 3;
+    columns: 4;
   }
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .vg-masonry {
     columns: 2;
   }
 }
-@media (max-width: 480px) {
+@media (max-width: 560px) {
   .vg-masonry {
     columns: 1;
   }
 }
 .vg-masonry .tpl {
   break-inside: avoid;
-  margin-bottom: 16px;
+  margin-bottom: 28px;
 }
 .vg-masonry .tpl-prev {
   aspect-ratio: var(--tpl-aspect, 5 / 7);
@@ -3111,35 +3170,54 @@ footer a:hover {
   border-radius: 6px;
   border: 1px solid;
   box-shadow: var(--shadow-md);
+  /* background-position bewusst NICHT center: die generierten Material-
+     Fotos haben selbst ein Wachssiegel in der Bildmitte eingebacken (Teil
+     des KI-Prompts) — das wuerde sich mit unserem eigenen, animierbaren
+     .envelope-seal-img ueberlagern/verdoppeln. 72% zeigt stattdessen den
+     unteren Falten-Bereich der Flaeche, ohne das Foto-Siegel. */
+  background-size: cover;
+  background-position: center 72%;
+  background-repeat: no-repeat;
 }
-/* Theater-Umbau (docs/MOTION.md §3, Referenz-Studie thedigitalyes.com):
-   zwei Tuerfluegel-Haelften statt einem Flap. clip-path haelt jede Haelfte
-   optisch auf ihrer Seite fest (die Form "reist" beim translateX mit, der
-   Spalt in der Mitte wird dadurch wirklich leer statt nur ueberdeckt). */
-.envelope-panel {
+/* Redesign Nr. 2 (Nutzer-Feedback: "das darf nicht wie Schiebetueren
+   aufgehen, das muss wie ein echter Umschlag aufgehen") — ersetzt die
+   vorherigen zwei seitlich auseinanderschiebenden Tuerfluegel durch eine
+   oben angeschlagene Dreiecks-Lasche (clip-path-Dreieck, transform-origin:
+   top), die per echtem 3D-rotateX nach hinten wegklappt. Dieselbe bewaehrte
+   Technik wie .motion-flap im Startseiten-Hero weiter oben in dieser Datei
+   (siehe dortigen Kommentar) — .envelope-wrap liefert das noetige
+   perspective bereits. Timing/Reihenfolge folgt der Referenz-Recherche zu
+   thedigitalyes.com (deren Standard-Effekt, 90% aller Einladungen laut
+   eigenem Blog): zuerst "bricht" das Siegel (Pop: skalieren+rotieren+
+   verblassen, 0s Verzoegerung), kurz danach klappt die Lasche auf (0.12s
+   Verzoegerung), waehrenddessen blendet der Inhalt schon ueberlappend ein
+   (0.42s Verzoegerung) — kein harter Schnitt zwischen Umschlag und Inhalt. */
+.envelope-flap {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 54%;
   z-index: 2;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
   border: 1px solid;
-  border-radius: 6px;
-  transition: transform 0.82s cubic-bezier(0.65, 0, 0.35, 1);
+  /* Gleiche Begruendung wie bei .envelope-body (siehe dortigen Kommentar):
+     oberer Bildausschnitt statt center, damit das eingebackene Foto-Siegel
+     nicht in der Lasche auftaucht. */
+  background-size: cover;
+  background-position: center 18%;
+  background-repeat: no-repeat;
+  transform-origin: top center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  box-shadow: 0 16px 22px -10px rgba(0, 0, 0, 0.32);
+  transition: transform 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
 }
-.envelope-panel-left {
-  clip-path: inset(0 50% 0 0);
-  box-shadow: inset -10px 0 16px -10px rgba(0, 0, 0, 0.35);
+.envelope-box.is-opening .envelope-flap {
+  transform: rotateX(-168deg);
 }
-.envelope-panel-right {
-  clip-path: inset(0 0 0 50%);
-  box-shadow: inset 10px 0 16px -10px rgba(0, 0, 0, 0.35);
-}
-.envelope-box.is-opening .envelope-panel-left {
-  transform: translateX(-100%);
-}
-.envelope-box.is-opening .envelope-panel-right {
-  transform: translateX(100%);
-}
-/* Lichtschimmer im wachsenden Spalt — liegt zwischen Body (0) und den
-   Panels (2), wird also erst sichtbar, sobald sich die Panels wegbewegen. */
+/* Lichtschimmer unter der Lasche — liegt zwischen Body (0) und Lasche (2),
+   wird sichtbar, sobald die Lasche sich hebt ("Licht faellt von innen"). */
 .envelope-glow {
   position: absolute;
   top: 50%;
@@ -3154,12 +3232,12 @@ footer a:hover {
   pointer-events: none;
 }
 .envelope-box.is-opening .envelope-glow {
-  animation: envelope-glow-pulse 0.82s ease forwards;
+  animation: envelope-glow-pulse 0.9s ease 0.12s forwards;
 }
-/* Echtes fotografiertes Wachssiegel (public/assets/seals/) statt des
-   frueheren generischen Herz-Icons — bleibt bis zum letzten Drittel der
-   Oeffnungs-Bewegung sichtbar (transition-delay 0.54s von 0.82s Gesamt-
-   dauer), erst dann verblasst es. */
+/* Echtes fotografiertes Wachssiegel (public/assets/seals/) — "bricht" beim
+   Oeffnen: skaliert mit leichtem Ueberschwung auf 0 runter, dreht sich
+   leicht, verblasst. Keine Verzoegerung — das Siegel ist der allererste
+   sichtbare Beat der Oeffnung, bevor die Lasche ueberhaupt anfaengt. */
 .envelope-seal-img {
   position: absolute;
   top: 50%;
@@ -3169,12 +3247,12 @@ footer a:hover {
   height: auto;
   z-index: 3;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
-  transition: opacity 0.28s ease 0.54s, transform 0.28s ease 0.54s;
+  transition: opacity 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
 }
 .envelope-box.is-opening .envelope-seal-img {
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.55);
+  transform: translate(-50%, -50%) scale(0) rotate(-14deg);
 }
 .envelope-hint {
   text-align: center;
@@ -3188,7 +3266,7 @@ footer a:hover {
 .envelope-content {
   opacity: 0;
   transform: translateY(10px) scale(0.97);
-  transition: opacity 0.5s ease 0.32s, transform 0.5s ease 0.32s;
+  transition: opacity 0.52s ease 0.42s, transform 0.52s ease 0.42s;
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -3209,7 +3287,7 @@ footer a:hover {
   100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .envelope-panel, .envelope-seal-img, .envelope-content { transition: none; }
+  .envelope-flap, .envelope-seal-img, .envelope-content { transition: none; }
   .envelope-box.is-opening .envelope-glow { animation: none; }
   .envelope-hint { animation: none; }
 }
