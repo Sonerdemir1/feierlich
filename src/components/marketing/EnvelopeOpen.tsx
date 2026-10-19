@@ -100,7 +100,25 @@ export function EnvelopeOpen({
           </div>
         </>
       )}
-      <div className="envelope-content">{children}</div>
+      {/* Redesign Nr. 5 (Nutzer-Feedback, woertlich: "die Karten passen ja
+          nicht wirklich dazu... wenn du da ein dunkelblau nimmst, dann
+          muss die Karte auch dazu passen"): kraeftige Umschlag-Materialien
+          (Marineblau-Samt etc.) trafen bisher hart auf die oft cremefarbene
+          Kartenflaeche. .envelope-handoff liegt als Overlay (hoeherer
+          z-index, mix-blend-mode statt Hintergrund) UEBER dem Karteninhalt
+          und faerbt nur die obersten ~160px direkt am Oeffnungs-Nahtpunkt
+          in material.tint ein, dann blendet es aus — eine Hintergrundfarbe
+          auf .envelope-content selbst waere von Heros eigenem opaken
+          Hintergrund komplett verdeckt gewesen. Kein Eingriff in die Karte
+          selbst, nur ein weicher Farb-Handoff an der Naht. */}
+      <div className="envelope-content">
+        <div
+          className="envelope-handoff"
+          style={{ background: `linear-gradient(${material.tint}, ${material.tint}00)` }}
+          aria-hidden="true"
+        />
+        {children}
+      </div>
     </div>
   );
 }

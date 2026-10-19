@@ -96,14 +96,24 @@ function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
 // eingebackene Siegel jedes Fotos (public/assets/envelope-materials/
 // seals/) ersetzt das generische Icon — 7 echte, unterschiedliche Siegel
 // statt 2 generischer Varianten.
+// `tint` = Signalfarbe der Material-Familie (Nutzer-Feedback, woertlich:
+// "die Karten passen ja nicht wirklich dazu... wenn du da ein dunkelblau
+// nimmst, dann muss die Karte auch dazu passen"): das Umschlag-Material
+// kann kraeftig sein (Marineblau-Samt etc.), waehrend die Karte dahinter
+// oft einen neutralen cremefarbenen Hintergrund hat (eigene Design-
+// Entscheidung der Vorlage) — ohne Uebergang wirkt das wie ein Bruch.
+// EnvelopeOpen.tsx nutzt `tint`, um direkt am Oeffnungs-Nahtpunkt einen
+// weichen Farbverlauf in derselben Familie einzublenden, der in die Karte
+// hineinlaeuft — kein Umbau der Kartenfarben selbst (die bleiben die
+// eigentliche Vorlagen-Gestaltung), nur ein optischer Handoff.
 const ENVELOPE_MATERIALS = {
-  "ivory-gold": { photo: "/assets/envelope-materials/ivory-gold.jpg", seal: "/assets/envelope-materials/seals/ivory-gold.jpg" },
-  "emerald-gold": { photo: "/assets/envelope-materials/emerald-gold.jpg", seal: "/assets/envelope-materials/seals/emerald-gold.jpg" },
-  "bordeaux-gold": { photo: "/assets/envelope-materials/bordeaux-gold.jpg", seal: "/assets/envelope-materials/seals/bordeaux-gold.jpg" },
-  "navy-gold": { photo: "/assets/envelope-materials/navy-gold.jpg", seal: "/assets/envelope-materials/seals/navy-gold.jpg" },
-  "blush-rosegold": { photo: "/assets/envelope-materials/blush-rosegold.jpg", seal: "/assets/envelope-materials/seals/blush-rosegold.jpg" },
-  "terracotta-botanical": { photo: "/assets/envelope-materials/terracotta-botanical.jpg", seal: "/assets/envelope-materials/seals/terracotta-botanical.jpg" },
-  "onyx-gold": { photo: "/assets/envelope-materials/onyx-gold.jpg", seal: "/assets/envelope-materials/seals/onyx-gold.jpg" },
+  "ivory-gold": { photo: "/assets/envelope-materials/ivory-gold.jpg", seal: "/assets/envelope-materials/seals/ivory-gold.jpg", tint: "#C9A227" },
+  "emerald-gold": { photo: "/assets/envelope-materials/emerald-gold.jpg", seal: "/assets/envelope-materials/seals/emerald-gold.jpg", tint: "#1B5E3C" },
+  "bordeaux-gold": { photo: "/assets/envelope-materials/bordeaux-gold.jpg", seal: "/assets/envelope-materials/seals/bordeaux-gold.jpg", tint: "#6B1420" },
+  "navy-gold": { photo: "/assets/envelope-materials/navy-gold.jpg", seal: "/assets/envelope-materials/seals/navy-gold.jpg", tint: "#16213E" },
+  "blush-rosegold": { photo: "/assets/envelope-materials/blush-rosegold.jpg", seal: "/assets/envelope-materials/seals/blush-rosegold.jpg", tint: "#C98E92" },
+  "terracotta-botanical": { photo: "/assets/envelope-materials/terracotta-botanical.jpg", seal: "/assets/envelope-materials/seals/terracotta-botanical.jpg", tint: "#B2543A" },
+  "onyx-gold": { photo: "/assets/envelope-materials/onyx-gold.jpg", seal: "/assets/envelope-materials/seals/onyx-gold.jpg", tint: "#2A241C" },
 } as const;
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
@@ -143,7 +153,7 @@ function effectiveSaturation(c: { s: number; l: number }): number {
 // einen cremefarben-neutralen Hintergrund, die eigentliche Signalfarbe
 // (Bordeaux, Lacivert, Zuemrut...) steckt im primary-Text, nicht im
 // Hintergrund.
-export function envelopeMaterialFor(colors: { background: string; accent?: string; primary: string }): { photo: string; seal: string } {
+export function envelopeMaterialFor(colors: { background: string; accent?: string; primary: string }): { photo: string; seal: string; tint: string } {
   const bg = hexToHsl(colors.background);
   const pr = hexToHsl(colors.primary);
   const pick = bg && pr ? (effectiveSaturation(bg) >= effectiveSaturation(pr) ? bg : pr) : (bg ?? pr);

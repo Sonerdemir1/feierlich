@@ -3334,15 +3334,36 @@ footer a:hover {
   opacity: 0;
   transform: translateY(10px) scale(0.97);
   transition: opacity 0.52s ease 0.42s, transform 0.52s ease 0.42s;
+  /* Bewusst "relative" statt "static" im offenen Zustand (siehe unten) —
+     verhaelt sich fuer den normalen Dokumentfluss identisch, dient aber
+     zusaetzlich als Positionierungs-Kontext fuer .envelope-handoff. */
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 .envelope-wrap.is-open .envelope-content {
-  position: static;
+  position: relative;
   opacity: 1;
   transform: none;
   pointer-events: auto;
+}
+/* Farb-Handoff vom Umschlag-Material in die Karte (siehe Kommentar in
+   EnvelopeOpen.tsx) — liegt UEBER dem Karteninhalt (hoher z-index) statt
+   dahinter, damit es nicht von Heros eigenem opaken Hintergrund verdeckt
+   wird. mix-blend-mode:multiply faerbt das Material darunter ein statt es
+   zu uebermalen, Hoehe/Ausblendung per Inline-Gradient (siehe dort).
+   pointer-events:none, damit Klicks/Textbearbeitung darunter unveraendert
+   funktionieren. */
+.envelope-handoff {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  z-index: 4;
+  mix-blend-mode: multiply;
+  opacity: 0.4;
+  pointer-events: none;
 }
 @keyframes envelope-hint-pulse {
   0%, 100% { opacity: 0.55; }
