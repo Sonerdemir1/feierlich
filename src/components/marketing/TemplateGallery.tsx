@@ -106,14 +106,21 @@ function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
 // weichen Farbverlauf in derselben Familie einzublenden, der in die Karte
 // hineinlaeuft — kein Umbau der Kartenfarben selbst (die bleiben die
 // eigentliche Vorlagen-Gestaltung), nur ein optischer Handoff.
+// bordeaux-gold/onyx-gold nutzen jetzt echte Envato-Fotos (aus der
+// Download-Historie des Nutzers, bereits lizenziert, vorher nie
+// eingebaut) statt des KI-generierten Fotos als Flaeche — Nutzer-
+// Feedback, woertlich: "definitiv Envato mit einbeziehen und da Sachen
+// herunterladen, ich habe da so viel Geld gezahlt, das muss sich lohnen".
+// Das KI-generierte Siegel bleibt (siehe seals/*, funktioniert bereits
+// gut als eigenstaendige, animierbare Ebene unabhaengig vom Flaechenfoto).
 const ENVELOPE_MATERIALS = {
   "ivory-gold": { photo: "/assets/envelope-materials/ivory-gold.jpg", seal: "/assets/envelope-materials/seals/ivory-gold.jpg", tint: "#C9A227" },
   "emerald-gold": { photo: "/assets/envelope-materials/emerald-gold.jpg", seal: "/assets/envelope-materials/seals/emerald-gold.jpg", tint: "#1B5E3C" },
-  "bordeaux-gold": { photo: "/assets/envelope-materials/bordeaux-gold.jpg", seal: "/assets/envelope-materials/seals/bordeaux-gold.jpg", tint: "#6B1420" },
+  "bordeaux-gold": { photo: "/assets/envelope-materials/bordeaux-gold-real.jpg", seal: "/assets/envelope-materials/seals/bordeaux-gold.jpg", tint: "#6B1420" },
   "navy-gold": { photo: "/assets/envelope-materials/navy-gold.jpg", seal: "/assets/envelope-materials/seals/navy-gold.jpg", tint: "#16213E" },
   "blush-rosegold": { photo: "/assets/envelope-materials/blush-rosegold.jpg", seal: "/assets/envelope-materials/seals/blush-rosegold.jpg", tint: "#C98E92" },
   "terracotta-botanical": { photo: "/assets/envelope-materials/terracotta-botanical.jpg", seal: "/assets/envelope-materials/seals/terracotta-botanical.jpg", tint: "#B2543A" },
-  "onyx-gold": { photo: "/assets/envelope-materials/onyx-gold.jpg", seal: "/assets/envelope-materials/seals/onyx-gold.jpg", tint: "#2A241C" },
+  "onyx-gold": { photo: "/assets/envelope-materials/onyx-gold-real.jpg", seal: "/assets/envelope-materials/seals/onyx-gold.jpg", tint: "#2A241C" },
 } as const;
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
