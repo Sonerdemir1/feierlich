@@ -1772,6 +1772,19 @@ export function DesignStudio({
       <div className="studio-grid">
         <div className="studio-canvas-col">
           <div className="studio-canvas">
+            {/* Nutzer-Feedback (woertlich: "wenn man auf Gestalten und so
+                geht, dass man halt ein Smartphone sieht und das da drinnen
+                so einbaut... wie man halt das im Endergebnis aussehen
+                wird" — Referenz thedigitalyes.com/demo): die Vorschau war
+                bisher eine freistehende Karte ohne Geraete-Kontext. Jetzt
+                in einen echten Handy-Rahmen eingebettet, NUR hier in der
+                anonymen Gestalten-Vorschau — /e/[slug] (echte Gaeste-Seite,
+                teilt sich .iv-page) bleibt bewusst unveraendert, dort IST
+                der Besucher schon auf seinem echten Handy, ein zweiter
+                simulierter Rahmen waere falsch. */}
+            <div className="studio-phone-frame">
+              <span className="studio-phone-notch" aria-hidden="true" />
+              <div className="studio-phone-screen">
             <div className="iv-page">
               {(() => {
                 // Bugfix (Nutzer-Feedback: "wenn man auf Gestalten geht,
@@ -1999,6 +2012,8 @@ export function DesignStudio({
                 fontStyle={font.italic ? "italic" : "normal"}
                 names={draft.text}
               />
+            </div>
+              </div>
             </div>
 
             {(prevId || nextId) && (
