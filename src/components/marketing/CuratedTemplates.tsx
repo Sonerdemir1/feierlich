@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { TemplatePreview } from "@/components/marketing/TemplatePreview";
-import { tiltForId, sealForBackground, envelopeMaterialFor } from "@/components/marketing/TemplateGallery";
+import { tiltForId, envelopeMaterialFor } from "@/components/marketing/TemplateGallery";
 import type { GalleryCategory } from "@/lib/gallery-templates";
 
 const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
@@ -27,7 +27,7 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
   return (
     <div className="cat-grid">
       {items.map((item) => {
-        const materialPhoto = envelopeMaterialFor(item.colors);
+        const material = envelopeMaterialFor(item.colors);
         return (
         <Link
           key={item.id}
@@ -43,11 +43,11 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
           <div className="tpl-flatlay">
             <div
               className="tpl-phone"
-              style={{ backgroundImage: `linear-gradient(135deg, ${item.colors.background}40, ${item.colors.accent}26), url(${materialPhoto})` }}
+              style={{ backgroundImage: `linear-gradient(135deg, ${item.colors.background}40, ${item.colors.accent}26), url(${material.photo})` }}
             >
               <span className="tpl-phone-notch" aria-hidden="true" />
               {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}
-              <img className="tpl-phone-seal" src={sealForBackground(item.colors.background)} alt="" />
+              <img className="tpl-phone-seal" src={material.seal} alt="" />
             </div>
             <div className="tpl-card-slot">
               <TemplatePreview layoutKey={item.layoutKey} />

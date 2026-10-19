@@ -1224,7 +1224,13 @@ a.card:hover {
 .tpl-phone-seal {
   width: 44%;
   height: auto;
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
+  /* Echtes Foto statt freigestelltes PNG-Icon (siehe envelopeMaterialFor()
+     in TemplateGallery.tsx) — border-radius:50% schneidet den quadratischen
+     Ausschnitt rund, wie eine Siegel-Nahaufnahme. */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
 .tpl-card-slot {
   flex: 1 1 auto;
@@ -3234,10 +3240,11 @@ footer a:hover {
 .envelope-box.is-opening .envelope-glow {
   animation: envelope-glow-pulse 0.9s ease 0.12s forwards;
 }
-/* Echtes fotografiertes Wachssiegel (public/assets/seals/) — "bricht" beim
-   Oeffnen: skaliert mit leichtem Ueberschwung auf 0 runter, dreht sich
-   leicht, verblasst. Keine Verzoegerung — das Siegel ist der allererste
-   sichtbare Beat der Oeffnung, bevor die Lasche ueberhaupt anfaengt. */
+/* Echtes, pro Material einzigartiges Siegel-Foto (envelopeMaterialFor() in
+   TemplateGallery.tsx, siehe Kommentar dort) — "bricht" beim Oeffnen:
+   skaliert mit leichtem Ueberschwung auf 0 runter, dreht sich leicht,
+   verblasst. Keine Verzoegerung — das Siegel ist der allererste sichtbare
+   Beat der Oeffnung, bevor die Lasche ueberhaupt anfaengt. */
 .envelope-seal-img {
   position: absolute;
   top: 50%;
@@ -3245,8 +3252,11 @@ footer a:hover {
   transform: translate(-50%, -50%);
   width: clamp(48px, 9vw, 88px);
   height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
   z-index: 3;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.55);
   transition: opacity 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
 }

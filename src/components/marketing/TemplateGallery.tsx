@@ -86,14 +86,24 @@ function handleOpenClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
 // das Handy-Mockup (hier/CuratedTemplates.tsx) als auch den echten
 // Umschlag selbst (EnvelopeOpen.tsx), damit Katalog-Vorschau und
 // tatsaechliche Oeffnung zueinander passen (CLAUDE.md Regel 6).
+// Bugfix (Nutzer-Feedback, woertlich: "da sind ueberall auf den Smartphones
+// die gleichen Siegel drauf... kein geiles Design"): jedes generierte Foto
+// hat eigentlich ein EIGENES, einzigartiges Siegel eingebacken (Teil des
+// KI-Prompts) — vorher wurde genau dieser Bereich per background-position
+// bewusst weggeschnitten und stattdessen ueberall dasselbe generische
+// wax-seal-dark/light.png druebergelegt (siehe Git-Historie). Jetzt: ein
+// mit sips zentriert zugeschnittener 420×420-Ausschnitt genau um das
+// eingebackene Siegel jedes Fotos (public/assets/envelope-materials/
+// seals/) ersetzt das generische Icon — 7 echte, unterschiedliche Siegel
+// statt 2 generischer Varianten.
 const ENVELOPE_MATERIALS = {
-  "ivory-gold": "/assets/envelope-materials/ivory-gold.jpg",
-  "emerald-gold": "/assets/envelope-materials/emerald-gold.jpg",
-  "bordeaux-gold": "/assets/envelope-materials/bordeaux-gold.jpg",
-  "navy-gold": "/assets/envelope-materials/navy-gold.jpg",
-  "blush-rosegold": "/assets/envelope-materials/blush-rosegold.jpg",
-  "terracotta-botanical": "/assets/envelope-materials/terracotta-botanical.jpg",
-  "onyx-gold": "/assets/envelope-materials/onyx-gold.jpg",
+  "ivory-gold": { photo: "/assets/envelope-materials/ivory-gold.jpg", seal: "/assets/envelope-materials/seals/ivory-gold.jpg" },
+  "emerald-gold": { photo: "/assets/envelope-materials/emerald-gold.jpg", seal: "/assets/envelope-materials/seals/emerald-gold.jpg" },
+  "bordeaux-gold": { photo: "/assets/envelope-materials/bordeaux-gold.jpg", seal: "/assets/envelope-materials/seals/bordeaux-gold.jpg" },
+  "navy-gold": { photo: "/assets/envelope-materials/navy-gold.jpg", seal: "/assets/envelope-materials/seals/navy-gold.jpg" },
+  "blush-rosegold": { photo: "/assets/envelope-materials/blush-rosegold.jpg", seal: "/assets/envelope-materials/seals/blush-rosegold.jpg" },
+  "terracotta-botanical": { photo: "/assets/envelope-materials/terracotta-botanical.jpg", seal: "/assets/envelope-materials/seals/terracotta-botanical.jpg" },
+  "onyx-gold": { photo: "/assets/envelope-materials/onyx-gold.jpg", seal: "/assets/envelope-materials/seals/onyx-gold.jpg" },
 } as const;
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
@@ -133,7 +143,7 @@ function effectiveSaturation(c: { s: number; l: number }): number {
 // einen cremefarben-neutralen Hintergrund, die eigentliche Signalfarbe
 // (Bordeaux, Lacivert, Zuemrut...) steckt im primary-Text, nicht im
 // Hintergrund.
-export function envelopeMaterialFor(colors: { background: string; accent?: string; primary: string }): string {
+export function envelopeMaterialFor(colors: { background: string; accent?: string; primary: string }): { photo: string; seal: string } {
   const bg = hexToHsl(colors.background);
   const pr = hexToHsl(colors.primary);
   const pick = bg && pr ? (effectiveSaturation(bg) >= effectiveSaturation(pr) ? bg : pr) : (bg ?? pr);
@@ -149,22 +159,9 @@ export function envelopeMaterialFor(colors: { background: string; accent?: strin
   return ENVELOPE_MATERIALS["blush-rosegold"];
 }
 
-export function sealForBackground(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  const isLight = !m || (() => {
-    const n = parseInt(m[1], 16);
-    const r = (n >> 16) & 255;
-    const g = (n >> 8) & 255;
-    const b = n & 255;
-    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
-  })();
-  return isLight ? "/assets/seals/wax-seal-dark.png" : "/assets/seals/wax-seal-light.png";
-}
-
 function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string }) {
   const href = paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`;
-  const sealSrc = sealForBackground(item.colors.background);
-  const materialPhoto = envelopeMaterialFor(item.colors);
+  const material = envelopeMaterialFor(item.colors);
   return (
     <MotionLink
       href={href}
@@ -192,11 +189,11 @@ function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCatego
       <div className="tpl-flatlay">
         <div
           className="tpl-phone"
-          style={{ backgroundImage: `linear-gradient(135deg, ${item.colors.background}40, ${item.colors.accent}26), url(${materialPhoto})` }}
+          style={{ backgroundImage: `linear-gradient(135deg, ${item.colors.background}40, ${item.colors.accent}26), url(${material.photo})` }}
         >
           <span className="tpl-phone-notch" aria-hidden="true" />
           {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset */}
-          <img className="tpl-phone-seal" src={sealSrc} alt="" />
+          <img className="tpl-phone-seal" src={material.seal} alt="" />
         </div>
         <div className="tpl-card-slot">
           <div className="tpl-media">

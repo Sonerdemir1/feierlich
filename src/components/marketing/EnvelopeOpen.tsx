@@ -44,13 +44,13 @@ export function EnvelopeOpen({
 }) {
   const [phase, setPhase] = useState<"closed" | "opening" | "open">("closed");
 
-  // Siegel-Farbvariante aus der Helligkeit der Vorlagenfarbe ableiten (keine
-  // zusaetzliche Prop noetig) — relative Luminanz, W3C-Naeherung. Dunkle
-  // Vorlagen (Jewel-Tones, Statement-Kategorie) bekommen das helle Siegel
-  // als Kontrast, helle Vorlagen das dunkle, damit es nie auf der eigenen
-  // Flaeche verschwindet.
-  const sealSrc = isLight(background) ? "/assets/seals/wax-seal-dark.png" : "/assets/seals/wax-seal-light.png";
-  const materialPhoto = envelopeMaterialFor({ background, accent, primary });
+  // Redesign Nr. 4 (Nutzer-Feedback, woertlich: "da sind ueberall auf den
+  // Smartphones die gleichen Siegel drauf... kein geiles Design"): das
+  // generische wax-seal-dark/light.png (nur 2 Varianten fuer alle 50
+  // Vorlagen) ist weg. Jedes der 7 Material-Fotos hat ein eigenes,
+  // einzigartiges eingebackenes Siegel — material.seal ist ein zentrierter
+  // Ausschnitt genau darum (siehe envelopeMaterialFor()/Kommentar dort).
+  const material = envelopeMaterialFor({ background, accent, primary });
 
   // reduced-motion wird erst beim Klick geprueft (gleiches Muster wie
   // EnvelopeReveal.tsx) statt in einem Mount-Effect — kein SSR/Hydration-
@@ -78,7 +78,7 @@ export function EnvelopeOpen({
           >
             <div
               className="envelope-body"
-              style={{ backgroundImage: `linear-gradient(165deg, ${background}3d, ${accent}21), url(${materialPhoto})`, borderColor: accent }}
+              style={{ backgroundImage: `linear-gradient(165deg, ${background}3d, ${accent}21), url(${material.photo})`, borderColor: accent }}
             />
             <div className="envelope-glow" style={{ background: `radial-gradient(circle, ${accent}cc 0%, transparent 70%)` }} />
             {/* Oben angeschlagene Dreiecks-Lasche (clip-path), klappt per
@@ -90,10 +90,10 @@ export function EnvelopeOpen({
                 Licht anders faengt als die Flaeche darunter. */}
             <div
               className="envelope-flap"
-              style={{ backgroundImage: `linear-gradient(165deg, ${accent}4d, ${background}30), url(${materialPhoto})`, borderColor: accent }}
+              style={{ backgroundImage: `linear-gradient(165deg, ${accent}4d, ${background}30), url(${material.photo})`, borderColor: accent }}
             />
-            {/* eslint-disable-next-line @next/next/no-img-element -- kleines statisches Deko-Asset, keine next/image-Optimierung noetig */}
-            <img className="envelope-seal-img" src={sealSrc} alt="" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- echtes, einzigartiges Siegel-Foto pro Material, keine next/image-Optimierung noetig */}
+            <img className="envelope-seal-img" src={material.seal} alt="" />
           </button>
           <div className="envelope-hint" style={{ color: primary }}>
             Zum Öffnen antippen
@@ -103,18 +103,4 @@ export function EnvelopeOpen({
       <div className="envelope-content">{children}</div>
     </div>
   );
-}
-
-// Relative Luminanz (W3C-Naeherung, ausreichend fuer diese Ja/Nein-
-// Entscheidung) aus einem #rrggbb-Hex-Wert. Nicht-Hex-Werte (sollte bei
-// Vorlagenfarben nicht vorkommen) fallen auf "hell" zurueck.
-function isLight(hex: string): boolean {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return true;
-  const n = parseInt(m[1], 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6;
 }
