@@ -76,10 +76,17 @@ export function EnvelopeOpen({
       return;
     }
     setPhase("opening");
-    setTimeout(() => {
-      setPhase("open");
-      onOpenChange?.(true);
-    }, 920);
+    setTimeout(() => setPhase("open"), 920);
+    // Bugfix-Nachtrag (Nutzer-Feedback, woertlich: "boom, auf einmal ist
+    // diese Karte da... nicht das Gesamt-Smartphone"): onOpenChange (loest
+    // in DesignStudio.tsx den Handy-Rahmen auf) feuerte bisher im selben
+    // Moment wie setPhase("open") — Karteninhalt-Einblendung UND Rahmen-
+    // Aufloesung passierten dadurch gleichzeitig, das las sich wie ein
+    // einziger harter Schnitt. Jetzt zeitlich entzerrt: der Umschlag ist
+    // zuerst fertig offen (Inhalt sichtbar, noch innerhalb des Rahmens),
+    // der Rahmen loest sich erst 480ms spaeter auf — zwei spuerbar
+    // getrennte Beats statt einem.
+    if (onOpenChange) setTimeout(() => onOpenChange(true), 1400);
   }
 
   return (

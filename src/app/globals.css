@@ -1484,6 +1484,9 @@ a.card:hover {
   background: #1a1a1a;
   z-index: 5;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* Weiches Ausblenden statt hartem display:none (siehe .is-open unten) —
+     kleine Verbesserung gegen das "boom"-Gefuehl beim Loesen des Rahmens. */
+  transition: opacity 0.35s ease;
 }
 .studio-phone-screen {
   position: absolute;
@@ -1524,7 +1527,8 @@ a.card:hover {
   box-shadow: none;
 }
 .studio-phone-frame.is-open .studio-phone-notch {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
 }
 .studio-phone-frame.is-open .studio-phone-screen {
   position: static;
