@@ -1867,7 +1867,7 @@ export function DesignStudio({
                     {content}
                   </VideoEnvelope>
                 ) : (
-                  <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary}>
+                  <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary} category={category}>
                     {content}
                   </EnvelopeOpen>
                 );

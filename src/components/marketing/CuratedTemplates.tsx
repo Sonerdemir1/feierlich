@@ -27,7 +27,7 @@ export function CuratedTemplates({ categories, paket }: { categories: GalleryCat
   return (
     <div className="cat-grid">
       {items.map((item) => {
-        const material = envelopeMaterialFor(item.colors);
+        const material = envelopeMaterialFor(item.colors, item.category);
         return (
         <Link
           key={item.id}

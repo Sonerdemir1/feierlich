@@ -35,11 +35,18 @@ export function EnvelopeOpen({
   background,
   accent,
   primary,
+  category,
   children,
 }: {
   background: string;
   accent: string;
   primary: string;
+  // Optional — steuert "Verspielt"/"Business Modern" gezielt auf ihre
+  // eigenen Materialien statt auf die Farb-Heuristik (siehe
+  // envelopeMaterialFor() in TemplateGallery.tsx). Nicht an jeder
+  // Aufrufstelle verfuegbar (e/[slug]/page.tsx selektiert category bisher
+  // nicht aus der DB) — faellt dort auf die Farb-Heuristik zurueck.
+  category?: string;
   children: ReactNode;
 }) {
   const [phase, setPhase] = useState<"closed" | "opening" | "open">("closed");
@@ -50,7 +57,7 @@ export function EnvelopeOpen({
   // Vorlagen) ist weg. Jedes der 7 Material-Fotos hat ein eigenes,
   // einzigartiges eingebackenes Siegel — material.seal ist ein zentrierter
   // Ausschnitt genau darum (siehe envelopeMaterialFor()/Kommentar dort).
-  const material = envelopeMaterialFor({ background, accent, primary });
+  const material = envelopeMaterialFor({ background, accent, primary }, category);
 
   // reduced-motion wird erst beim Klick geprueft (gleiches Muster wie
   // EnvelopeReveal.tsx) statt in einem Mount-Effect — kein SSR/Hydration-

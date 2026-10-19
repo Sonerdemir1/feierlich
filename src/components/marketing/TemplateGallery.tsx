@@ -121,6 +121,8 @@ const ENVELOPE_MATERIALS = {
   "blush-rosegold": { photo: "/assets/envelope-materials/blush-rosegold.jpg", seal: "/assets/envelope-materials/seals/blush-rosegold.jpg", tint: "#C98E92" },
   "terracotta-botanical": { photo: "/assets/envelope-materials/terracotta-botanical.jpg", seal: "/assets/envelope-materials/seals/terracotta-botanical.jpg", tint: "#B2543A" },
   "onyx-gold": { photo: "/assets/envelope-materials/onyx-gold-real.jpg", seal: "/assets/envelope-materials/seals/onyx-gold.jpg", tint: "#2A241C" },
+  "playful-pastel": { photo: "/assets/envelope-materials/playful-pastel.jpg", seal: "/assets/envelope-materials/seals/playful-pastel.jpg", tint: "#F2A6C9" },
+  "modern-corporate": { photo: "/assets/envelope-materials/modern-corporate.jpg", seal: "/assets/envelope-materials/seals/modern-corporate.jpg", tint: "#3A4049" },
 } as const;
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
@@ -160,7 +162,18 @@ function effectiveSaturation(c: { s: number; l: number }): number {
 // einen cremefarben-neutralen Hintergrund, die eigentliche Signalfarbe
 // (Bordeaux, Lacivert, Zuemrut...) steckt im primary-Text, nicht im
 // Hintergrund.
-export function envelopeMaterialFor(colors: { background: string; accent?: string; primary: string }): { photo: string; seal: string; tint: string } {
+// `category` ist optional (nicht an jeder Aufrufstelle verfuegbar, z. B.
+// nicht in der Prisma-Selektion von e/[slug]/page.tsx) — wo vorhanden,
+// steuert sie "Verspielt" (Kindergeburtstage) und "Business Modern"
+// gezielt auf ihre eigens dafuer generierten Materialien statt auf die
+// reine Farb-Heuristik, die fuer diese beiden Stimmungen nicht passt
+// (ein foermlicher Samt-Umschlag fuer eine Kinderparty waere falsch).
+export function envelopeMaterialFor(
+  colors: { background: string; accent?: string; primary: string },
+  category?: string,
+): { photo: string; seal: string; tint: string } {
+  if (category === "Verspielt") return ENVELOPE_MATERIALS["playful-pastel"];
+  if (category === "Business Modern") return ENVELOPE_MATERIALS["modern-corporate"];
   const bg = hexToHsl(colors.background);
   const pr = hexToHsl(colors.primary);
   const pick = bg && pr ? (effectiveSaturation(bg) >= effectiveSaturation(pr) ? bg : pr) : (bg ?? pr);
@@ -176,9 +189,9 @@ export function envelopeMaterialFor(colors: { background: string; accent?: strin
   return ENVELOPE_MATERIALS["blush-rosegold"];
 }
 
-function TemplateCard({ item, index, paket, accentColor }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string }) {
+function TemplateCard({ item, index, paket, accentColor, category }: { item: GalleryCategoryItem; index: number; paket?: string; accentColor?: string; category: string }) {
   const href = paket ? `/gestalten/${item.id}?paket=${paket}` : `/gestalten/${item.id}`;
-  const material = envelopeMaterialFor(item.colors);
+  const material = envelopeMaterialFor(item.colors, category);
   return (
     <MotionLink
       href={href}
@@ -271,7 +284,7 @@ export function TemplateGallery({
           <AnimatePresence>
             <div className="cat-grid vg-masonry">
               {items.map((item, i) => (
-                <TemplateCard key={item.id} item={item} index={i} paket={paket} accentColor={accentColor} />
+                <TemplateCard key={item.id} item={item} index={i} paket={paket} accentColor={accentColor} category={category} />
               ))}
             </div>
           </AnimatePresence>
