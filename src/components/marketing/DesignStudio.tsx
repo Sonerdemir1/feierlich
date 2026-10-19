@@ -508,6 +508,20 @@ export function DesignStudio({
   // weiter unten.
   const [uploadingKind, setUploadingKind] = useState<"envelope-video" | "background-music" | "audio-invitation" | "video-message" | null>(null);
   const [uploadError, setUploadError] = useState<{ kind: string; message: string } | null>(null);
+  // Bugfix (Nutzer-Feedback, woertlich: "nicht das Gesamt-Smartphone...
+  // die Bilder sind uebereinander"): der Handy-Rahmen (.studio-phone-frame,
+  // siehe JSX unten) zwingt die Karte auf eine feste, schmale Breite — fuer
+  // den geschlossenen Umschlag genau richtig, bricht aber Abschnitte, die
+  // auf echte Viewport-Breakpoints angewiesen sind (z. B. CoupleIntro:
+  // Medienquery-basiertes "nebeneinander auf Desktop, untereinander auf
+  // Mobil" reagiert auf die ECHTE Fensterbreite, nicht auf die Breite des
+  // umschliessenden Rahmens — bei geoeffnetem Umschlag auf einem breiten
+  // Desktop-Fenster rendert es darum weiterhin die Desktop-Variante,
+  // gequetscht in die schmale Box). Der Rahmen gilt deshalb nur, solange
+  // der Umschlag noch geschlossen/am Oeffnen ist — EnvelopeOpen meldet per
+  // onOpenChange, sobald er offen ist, und die Karte bekommt wieder ihre
+  // volle, breite Flaeche zum Bearbeiten.
+  const [envelopeOpened, setEnvelopeOpened] = useState(false);
   const [activeTab, setActiveTab] = useState("design");
   const [selectedKey, setSelectedKey] = useState<TextElementKey | undefined>(undefined);
   // Eigener Auswahl-State fuer den Ablaufplan statt selectedKey: eine
@@ -1782,7 +1796,7 @@ export function DesignStudio({
                 teilt sich .iv-page) bleibt bewusst unveraendert, dort IST
                 der Besucher schon auf seinem echten Handy, ein zweiter
                 simulierter Rahmen waere falsch. */}
-            <div className="studio-phone-frame">
+            <div className={`studio-phone-frame${envelopeOpened ? " is-open" : ""}`}>
               <span className="studio-phone-notch" aria-hidden="true" />
               <div className="studio-phone-screen">
             <div className="iv-page">
@@ -1863,11 +1877,11 @@ export function DesignStudio({
                   </>
                 );
                 return draft.envelopeVideoUrl ? (
-                  <VideoEnvelope videoUrl={draft.envelopeVideoUrl} primary={draft.primary}>
+                  <VideoEnvelope videoUrl={draft.envelopeVideoUrl} primary={draft.primary} onOpenChange={setEnvelopeOpened}>
                     {content}
                   </VideoEnvelope>
                 ) : (
-                  <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary} category={category}>
+                  <EnvelopeOpen background={draft.background} accent={draft.accent} primary={draft.primary} category={category} onOpenChange={setEnvelopeOpened}>
                     {content}
                   </EnvelopeOpen>
                 );

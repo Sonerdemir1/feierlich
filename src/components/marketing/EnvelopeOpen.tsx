@@ -36,6 +36,7 @@ export function EnvelopeOpen({
   accent,
   primary,
   category,
+  onOpenChange,
   children,
 }: {
   background: string;
@@ -46,6 +47,11 @@ export function EnvelopeOpen({
   // envelopeMaterialFor() in TemplateGallery.tsx). Faellt auf die reine
   // Farb-Heuristik zurueck, wenn eine Aufrufstelle sie (noch) nicht hat.
   category?: string;
+  // Optional — meldet dem Aufrufer, sobald der Umschlag offen ist (siehe
+  // DesignStudio.tsx: braucht das, um den Handy-Rahmen nach dem Oeffnen
+  // wieder zu verlassen, da dessen schmale Breite sonst mit Layouts
+  // kollidiert, die auf echte Viewport-Breakpoints angewiesen sind).
+  onOpenChange?: (open: boolean) => void;
   children: ReactNode;
 }) {
   const [phase, setPhase] = useState<"closed" | "opening" | "open">("closed");
@@ -66,10 +72,14 @@ export function EnvelopeOpen({
     if (phase !== "closed") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setPhase("open");
+      onOpenChange?.(true);
       return;
     }
     setPhase("opening");
-    setTimeout(() => setPhase("open"), 920);
+    setTimeout(() => {
+      setPhase("open");
+      onOpenChange?.(true);
+    }, 920);
   }
 
   return (
@@ -98,6 +108,17 @@ export function EnvelopeOpen({
               className="envelope-flap"
               style={{ backgroundImage: `linear-gradient(165deg, ${accent}4d, ${background}30), url(${material.photo})`, borderColor: accent }}
             />
+            {/* Bugfix (Nutzer-Feedback, woertlich: "sieht man unten noch den
+                anderen, den originalen Stempel"): das eingebackene Siegel
+                sitzt nicht bei jedem Material-Foto an exakt derselben
+                Stelle — die feste Crop-Position auf .envelope-body/-flap
+                (background-position) hat es darum nicht bei jedem Foto
+                zuverlässig verdeckt, ein Rand blieb sichtbar. Dieser
+                weichgezeichnete Schleier sitzt an derselben Stelle wie das
+                echte Siegel, aber etwas groesser — verwischt zuverlaessig
+                alles darunter, egal wo genau das Original-Siegel im Foto
+                sitzt, unabhaengig von der Crop-Feinabstimmung. */}
+            <span className="envelope-seal-halo" aria-hidden="true" />
             {/* eslint-disable-next-line @next/next/no-img-element -- echtes, einzigartiges Siegel-Foto pro Material, keine next/image-Optimierung noetig */}
             <img className="envelope-seal-img" src={material.seal} alt="" />
           </button>

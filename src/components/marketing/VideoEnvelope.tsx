@@ -6,14 +6,31 @@ import { useRef, useState, type ReactNode } from "react";
 // (Bildsequenz) — spielt beim Antippen ein vom Gastgeber hochgeladenes
 // Video ab, danach erscheint die eigentliche Einladung. "Überspringen"
 // bleibt jederzeit erreichbar, falls jemand nicht warten will.
-export function VideoEnvelope({ videoUrl, primary, children }: { videoUrl: string; primary: string; children: ReactNode }) {
+export function VideoEnvelope({
+  videoUrl,
+  primary,
+  onOpenChange,
+  children,
+}: {
+  videoUrl: string;
+  primary: string;
+  // Optional — siehe gleichnamige Prop in EnvelopeOpen.tsx (DesignStudio.tsx
+  // braucht sie fuer den Handy-Rahmen).
+  onOpenChange?: (open: boolean) => void;
+  children: ReactNode;
+}) {
   const [phase, setPhase] = useState<"idle" | "playing" | "done">("idle");
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  function finish() {
+    setPhase("done");
+    onOpenChange?.(true);
+  }
 
   function handleTap() {
     if (phase !== "idle") return;
     setPhase("playing");
-    videoRef.current?.play().catch(() => setPhase("done"));
+    videoRef.current?.play().catch(() => finish());
   }
 
   if (phase === "done") return <>{children}</>;
@@ -43,7 +60,7 @@ export function VideoEnvelope({ videoUrl, primary, children }: { videoUrl: strin
           ref={videoRef}
           src={videoUrl}
           playsInline
-          onEnded={() => setPhase("done")}
+          onEnded={finish}
           style={{ width: "100%", height: "100%", minHeight: "82vh", objectFit: "cover", display: "block" }}
         />
         {phase === "idle" && (
@@ -79,7 +96,7 @@ export function VideoEnvelope({ videoUrl, primary, children }: { videoUrl: strin
       </button>
       <button
         type="button"
-        onClick={() => setPhase("done")}
+        onClick={finish}
         style={{ marginTop: 12, fontSize: 11.5, opacity: 0.65, background: "none", border: "none", cursor: "pointer", color: primary }}
       >
         Überspringen →

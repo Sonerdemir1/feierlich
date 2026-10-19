@@ -1463,27 +1463,34 @@ a.card:hover {
     inset 0 0 0 2px rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
+/* Bugfix (Nutzer-Feedback, woertlich: "Anna und Lukas... die Bilder sind
+   uebereinander, aber Lukas steht mehr nach rechts, Anna mehr nach
+   links" — tatsaechlich war das der Familiennamen-Block, der beim
+   Scrollen UNTER die Kerbe lief und von ihr optisch durchschnitten
+   wurde): die Kerbe schwebte vorher frei UEBER dem gesamten scrollbaren
+   Screen (inset:0), also auch ueber jedem Inhalt, der dorthin scrollt.
+   Jetzt bekommt sie einen eigenen, nicht scrollenden Streifen oben (30px,
+   erbt den dunklen Rahmen-Hintergrund dahinter wie eine echte Status-
+   Leiste) — der Screen beginnt erst darunter, kein Inhalt kann mehr
+   dahinter verschwinden. */
 .studio-phone-notch {
   position: absolute;
-  top: 14px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   width: 32%;
-  height: 7px;
+  height: 6px;
   border-radius: 4px;
   background: #1a1a1a;
   z-index: 5;
-  /* Sitzt ueber dem Screen (z-index), ist aber Teil des aeusseren Rahmens
-     optisch — kein eigener Hintergrund noetig, der dunkle Rahmen dahinter
-     reicht als Kontrast gegen den hellen Screen-Inhalt. */
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .studio-phone-screen {
   position: absolute;
-  inset: 0;
+  inset: 30px 0 0 0;
   overflow-y: auto;
   overflow-x: hidden;
-  border-radius: 34px;
+  border-radius: 0 0 34px 34px;
   background: var(--ivory);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -1491,13 +1498,48 @@ a.card:hover {
 .studio-phone-screen::-webkit-scrollbar {
   display: none;
 }
+/* Bugfix (Nutzer-Feedback, woertlich: "nicht das Gesamt-Smartphone... die
+   Bilder sind uebereinander, Lukas steht mehr nach rechts, Anna mehr nach
+   links... die restlichen Sachen sind nicht zu sehen"): Abschnitte wie
+   CoupleIntro haben eigene, auf die ECHTE Fensterbreite reagierende
+   Medienquery-Breakpoints ("nebeneinander auf Desktop, gestapelt auf
+   Mobil") — in der schmalen 420px-Box des Handy-Rahmens sieht der Browser
+   aber weiterhin die volle Fensterbreite und rendert faelschlich die
+   Desktop-Variante, zusammengequetscht. Echte CSS-Container-Queries
+   waeren die saubere Loesung, haetten aber jeden betroffenen Abschnitt im
+   ganzen Projekt angefasst. Stattdessen loest sich der Rahmen komplett
+   auf, sobald der Umschlag offen ist (siehe envelopeOpened-State in
+   DesignStudio.tsx, von EnvelopeOpen/VideoEnvelope per onOpenChange
+   gemeldet) — die Karte bekommt dann wieder ihre normale, volle Breite
+   zum Bearbeiten, in der alle Breakpoints wieder zur echten
+   Fensterbreite passen. Der Handy-Rahmen bleibt dadurch auf den
+   geschlossenen Umschlag beschraenkt, wo er unproblematisch ist (kein
+   breakpoint-abhaengiger Inhalt). */
+.studio-phone-frame.is-open {
+  width: 100%;
+  aspect-ratio: unset;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.studio-phone-frame.is-open .studio-phone-notch {
+  display: none;
+}
+.studio-phone-frame.is-open .studio-phone-screen {
+  position: static;
+  inset: auto;
+  overflow: visible;
+  border-radius: 0;
+  background: none;
+}
 @media (max-width: 520px) {
   .studio-phone-frame {
     border-width: 8px;
     border-radius: 36px;
   }
   .studio-phone-screen {
-    border-radius: 28px;
+    border-radius: 0 0 28px 28px;
   }
 }
 .studio-panel-sticky {
@@ -3301,10 +3343,43 @@ footer a:hover {
    TemplateGallery.tsx, siehe Kommentar dort) — "bricht" beim Oeffnen:
    skaliert mit leichtem Ueberschwung auf 0 runter, dreht sich leicht,
    verblasst. Keine Verzoegerung — das Siegel ist der allererste sichtbare
-   Beat der Oeffnung, bevor die Lasche ueberhaupt anfaengt. */
+   Beat der Oeffnung, bevor die Lasche ueberhaupt anfaengt.
+   Bugfix (Nutzer-Feedback, woertlich: "schief und krumm"): top:50% sass
+   geometrisch in der Mitte der GESAMTEN Box, die Lasche (.envelope-flap)
+   endet aber bei 54% Hoehe — das Siegel schwebte dadurch sichtbar ueber
+   der eigentlichen Falz-Naht statt genau darauf zu sitzen. 54% statt 50%
+   setzt es exakt auf die Naht. */
+/* Weichzeichner-Schleier hinter dem echten Siegel (siehe Kommentar in
+   EnvelopeOpen.tsx) — groesser als das Siegel selbst, backdrop-filter
+   verwischt die Material-Flaeche darunter grossflaechig, egal wo genau
+   das eingebackene Original-Siegel im jeweiligen Foto sitzt. */
+.envelope-seal-halo {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(150px, 24vw, 240px);
+  height: clamp(150px, 24vw, 240px);
+  border-radius: 50%;
+  z-index: 2;
+  /* backdrop-filter:blur verliess sich darauf, dass der Browser wirklich
+     verwischt, was dahinter liegt — hat live NICHT zuverlaessig
+     funktioniert (das eingebackene Original-Siegel blieb scharf
+     sichtbar). Ein deckender Kreis in Vorlagenfarbe schliesst die Luecke
+     garantiert, unabhaengig von Browser-Unterstuetzung: komplett deckend
+     bis 75% Radius (verdeckt die Flaeche dahinter vollstaendig), dann
+     weicher Rand nach aussen statt einer harten Kante. */
+  background: radial-gradient(circle, #faf6ef 0%, #faf6ef 55%, #faf6ef00 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.envelope-box.is-opening .envelope-seal-halo {
+  opacity: 0;
+}
 .envelope-seal-img {
   position: absolute;
-  top: 50%;
+  top: 54%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: clamp(48px, 9vw, 88px);
