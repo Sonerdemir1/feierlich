@@ -643,7 +643,7 @@ export default async function PublicEventPage({ params, searchParams }: PageProp
         ) : envelopeImages ? (
           heroInner
         ) : (
-          <EnvelopeOpen background={colors.background} accent={colors.accent} primary={colors.primary}>
+          <EnvelopeOpen background={colors.background} accent={colors.accent} primary={colors.primary} category={event.template.category}>
             {heroInner}
           </EnvelopeOpen>
         )}

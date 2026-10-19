@@ -43,9 +43,8 @@ export function EnvelopeOpen({
   primary: string;
   // Optional — steuert "Verspielt"/"Business Modern" gezielt auf ihre
   // eigenen Materialien statt auf die Farb-Heuristik (siehe
-  // envelopeMaterialFor() in TemplateGallery.tsx). Nicht an jeder
-  // Aufrufstelle verfuegbar (e/[slug]/page.tsx selektiert category bisher
-  // nicht aus der DB) — faellt dort auf die Farb-Heuristik zurueck.
+  // envelopeMaterialFor() in TemplateGallery.tsx). Faellt auf die reine
+  // Farb-Heuristik zurueck, wenn eine Aufrufstelle sie (noch) nicht hat.
   category?: string;
   children: ReactNode;
 }) {
